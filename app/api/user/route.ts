@@ -12,6 +12,17 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const userData: Prisma.userUncheckedCreateInput = await request.json();
+        const existingLocation = await prisma.location.findUnique({
+            where: { id: userData.location_id },
+        });
+
+        if (!existingLocation) {
+            return Response.json({
+                message: "Location not found",
+                data: null,
+            }, { status: 404 });
+        }
+        
         const user = await prisma.user.create({
             data: userData
         });
