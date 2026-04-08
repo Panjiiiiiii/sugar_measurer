@@ -1,0 +1,86 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum role {
+  branch
+  master
+  finance
+}
+
+enum ownership_type {
+  farmer
+  private
+}
+
+enum status_paid {
+  paid
+  unpaid
+}
+
+model user {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  role       role
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+model owner {
+  id             String         @id @default(uuid())
+  name           String
+  account_number String         @unique
+  ownership_type ownership_type
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+  trucks         truck[]
+}
+
+model location {
+  id          String   @id @default(uuid())
+  name        String
+  sugar_price Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  transactions transaction[]
+}
+
+model truck {
+  id            String   @id @default(uuid())
+  license_plate String   @unique
+  owner_id      String
+  owner         owner    @relation(fields: [owner_id], references: [id])
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  transactions transaction[]
+}
+
+model transaction {
+  id               String      @id @default(uuid())
+  transaction_date DateTime
+  truck_id         String
+  truck            truck       @relation(fields: [truck_id], references: [id])
+  location_id      String
+  location         location    @relation(fields: [location_id], references: [id])
+  bruto_weight     Int
+  tarra_weight     Int
+  netto_weight     Int
+  total_price      Int
+  status           status_paid @default(unpaid)
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+}
