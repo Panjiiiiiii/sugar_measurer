@@ -12,7 +12,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const userData: Prisma.userUncheckedCreateInput = await request.json();
+        const userData: Prisma.userCreateInput = await request.json();
         const existingLocation = await prisma.location.findUnique({
             where: { id: userData.location_id },
         });

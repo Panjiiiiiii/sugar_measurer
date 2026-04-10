@@ -11,7 +11,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const locationData: Prisma.locationUncheckedCreateInput = await request.json();
+        const locationData: Prisma.locationCreateInput = await request.json();
         const location = await prisma.location.create({
             data: locationData
         });
