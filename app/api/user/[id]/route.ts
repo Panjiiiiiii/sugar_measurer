@@ -1,5 +1,6 @@
 import { Prisma } from "@/generated/prisma/browser";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcrypt";
 
 export async function GET(
   _request: Request,
@@ -56,6 +57,7 @@ export async function PUT(
     const existingUser = await prisma.user.findUnique({
       where: { id },
     });
+    
 
     if (!existingUser) {
       return Response.json(
@@ -64,12 +66,29 @@ export async function PUT(
       );
     }
 
+    if (userData.location_id && typeof userData.location_id === 'string') {
+      const existingLocation = await prisma.location.findUnique({
+        where: { id: userData.location_id },
+      });
+      if (!existingLocation) {
+        return Response.json(
+          { message: "Location not found", data: null },
+          { status: 404 },
+        );
+      }
+    }
+
+      if(userData.password) {
+        userData.password = await bcrypt.hash(userData.password as string, 10);
+      }
+
     const updatedUser = await prisma.user.update({
       where: { id },
       data: {
         name: userData.name ?? existingUser.name,
         email: userData.email ?? existingUser.email,
         location_id: userData.location_id ?? existingUser.location_id,
+        password: userData.password ?? existingUser.password,
       },
     });
 

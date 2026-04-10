@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
+import bcrypt from "bcrypt";
 
 export async function GET() {
     const users = await prisma.user.findMany();
@@ -21,6 +22,11 @@ export async function POST(request: Request) {
                 message: "Location not found",
                 data: null,
             }, { status: 404 });
+        }
+        
+        // Hash password using bcrypt
+        if (userData.password) {
+            userData.password = await bcrypt.hash(userData.password as string, 10);
         }
         
         const user = await prisma.user.create({
