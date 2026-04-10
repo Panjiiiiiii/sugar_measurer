@@ -4,10 +4,13 @@ import bcrypt from "bcrypt";
 
 export async function GET() {
     const users = await prisma.user.findMany();
-    return Response.json({
-        message : "Data fetched successfully",
-        data : users
-    });
+    return Response.json(
+        {
+            statusCode: 200,
+            data: users,
+        },
+        { status: 200 },
+    );
 }
 
 export async function POST(request: Request) {
@@ -32,10 +35,13 @@ export async function POST(request: Request) {
         const user = await prisma.user.create({
             data: userData
         });
-        return Response.json({
-            message : "User created successfully",
-            data : user
-        });
+        return Response.json(
+            {
+                statusCode: 201,
+                message: "User created successfully",
+            },
+            { status: 201 },
+        );
     } catch (error) {
         return Response.json({
             message : "Error creating user",

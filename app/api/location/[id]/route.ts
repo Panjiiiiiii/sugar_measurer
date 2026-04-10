@@ -20,10 +20,13 @@ export async function GET(
       { status: 404 },
     );
   }
-  return Response.json({
-    message: "Data fetched successfully",
-    data: location,
-  });
+  return Response.json(
+    {
+      statusCode: 200,
+      data: location,
+    },
+    { status: 200 },
+  );
 }
 
 export async function PUT(
@@ -53,10 +56,13 @@ export async function PUT(
         sugar_price: locationData.sugar_price ?? existingLocation.sugar_price,
       },
     });
-    return Response.json({
-      message: "Location updated successfully",
-      data: updatedLocation,
-    });
+    return Response.json(
+      {
+        statusCode: 201,
+        message: "Location updated successfully",
+      },
+      { status: 201 },
+    );
   } catch (error) {
     return Response.json(
       {
@@ -88,8 +94,11 @@ export async function DELETE(
   await prisma.location.delete({
     where: { id },
   });
-  return Response.json({
-    message: "Location deleted successfully",
-    data: null,
-  });
+  return Response.json(
+    {
+      statusCode: 201,
+      message: "Location deleted successfully",
+    },
+    { status: 201 },
+  );
 }

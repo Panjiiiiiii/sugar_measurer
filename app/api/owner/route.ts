@@ -4,10 +4,13 @@ import { Prisma } from "@/generated/prisma/client";
 export async function GET() {
   try {
     const owners = await prisma.owner.findMany();
-    return Response.json({
-      message: "Data fetched successfully",
-      data: owners,
-    });
+    return Response.json(
+      {
+        statusCode: 200,
+        data: owners,
+      },
+      { status: 200 },
+    );
   } catch (error) {
     return Response.json(
       {
@@ -27,10 +30,13 @@ export async function POST(request: Request) {
     const owner = await prisma.owner.create({
       data: ownerData,
     });
-    return Response.json({
-      message: "Owner created successfully",
-      data: owner,
-    });
+    return Response.json(
+      {
+        statusCode: 201,
+        message: "Owner created successfully",
+      },
+      { status: 201 },
+    );
   } catch (error) {
     return Response.json(
       {

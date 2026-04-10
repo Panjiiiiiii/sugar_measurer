@@ -3,10 +3,13 @@ import { Prisma } from "@/generated/prisma/client";
 
 export async function GET() {
     const locations = await prisma.location.findMany();
-    return Response.json({
-        message : "Data fetched successfully",
-        data : locations
-    });
+    return Response.json(
+        {
+            statusCode: 200,
+            data: locations,
+        },
+        { status: 200 },
+    );
 }
 
 export async function POST(request: Request) {
@@ -15,10 +18,13 @@ export async function POST(request: Request) {
         const location = await prisma.location.create({
             data: locationData
         });
-        return Response.json({
-            message : "Location created successfully",
-            data : location
-        });
+        return Response.json(
+            {
+                statusCode: 201,
+                message: "Location created successfully",
+            },
+            { status: 201 },
+        );
     } catch (error) {
         return Response.json({
             message : "Error creating location",

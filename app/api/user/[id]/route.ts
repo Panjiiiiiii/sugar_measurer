@@ -40,10 +40,13 @@ export async function GET(
     })),
   };
 
-  return Response.json({
-    message: "Data fetched successfully",
-    data: data,
-  });
+  return Response.json(
+    {
+      statusCode: 200,
+      data: data,
+    },
+    { status: 200 },
+  );
 }
 
 export async function PUT(
@@ -92,9 +95,13 @@ export async function PUT(
       },
     });
 
-    return Response.json({
-      message: "User updated successfully",
-    });
+    return Response.json(
+      {
+        statusCode: 201,
+        message: "User updated successfully",
+      },
+      { status: 201 },
+    );
   } catch (error) {
     return Response.json(
       { message: "Error updating user", data: null },
@@ -124,9 +131,13 @@ export async function DELETE(
       where: { id },
     });
 
-    return Response.json({
-      message: "User deleted successfully",
-    });
+    return Response.json(
+      {
+        statusCode: 201,
+        message: "User deleted successfully",
+      },
+      { status: 201 },
+    );
   } catch (error) {
     return Response.json(
       { message: "Error deleting user", data: null },
