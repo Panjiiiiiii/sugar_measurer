@@ -75,3 +75,38 @@ export async function PUT(
     );
   }
 }
+
+export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const existingOwner = await prisma.owner.findUnique({
+      where: { id },
+    });
+    if (!existingOwner) {
+        return Response.json(
+        {
+          message: "Owner not found",
+          data: null,
+        },        { status: 404 },
+      );
+    }
+    await prisma.owner.delete({
+      where: { id },
+    });
+    return Response.json(
+      {
+        statusCode: 201,
+        message: "Owner deleted successfully",
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    return Response.json(
+      {
+        message: "Error deleting owner",
+        data: null,
+      },
+      { status: 500 },
+    );
+  } 
+}

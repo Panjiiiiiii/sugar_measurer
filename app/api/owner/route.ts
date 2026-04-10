@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
+
+type CreateOwnerPayload = {
+  name: string;
+  account_number: string;
+  ownership_type: "farmer" | "private";
+};
 
 export async function GET() {
   try {
@@ -26,9 +31,13 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const ownerData: Prisma.ownerCreateInput = await request.json();
+    const ownerData: CreateOwnerPayload = await request.json();
     const owner = await prisma.owner.create({
-      data: ownerData,
+      data: {
+        name: ownerData.name,
+        account_number: ownerData.account_number,
+        ownership_type: ownerData.ownership_type,
+      },
     });
     return Response.json(
       {

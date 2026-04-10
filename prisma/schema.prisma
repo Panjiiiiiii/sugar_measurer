@@ -28,6 +28,11 @@ enum status_paid {
   unpaid
 }
 
+enum truck_type {
+  engkel
+  double
+}
+
 model user {
   id          String   @id @default(uuid())
   name        String
@@ -65,6 +70,8 @@ model truck {
   id            String   @id @default(uuid())
   license_plate String   @unique
   owner_id      String
+  truck_type    String?
+
   owner         owner    @relation(fields: [owner_id], references: [id])
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
