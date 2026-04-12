@@ -10,6 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum role {
@@ -34,15 +35,16 @@ enum truck_type {
 }
 
 model user {
-  id          String   @id @default(uuid())
-  name        String
-  email       String   @unique
-  password    String
-  role        role
-  location_id String
-  location    location @relation(fields: [location_id], references: [id])
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  password     String
+  role         role
+  location_id  String
+  location     location      @relation(fields: [location_id], references: [id])
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  logTransfers logTransfer[]
 }
 
 model owner {
@@ -56,25 +58,39 @@ model owner {
 }
 
 model location {
-  id          String   @id @default(uuid())
-  name        String
-  sugar_price Int
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id              String   @id @default(uuid())
+  name            String
+  sugar_price     Int
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  account_balance Int      @default(0)
+  account_number  String   @default("0000000000")
 
   transactions transaction[]
   users        user[]
+  logTransfers logTransfer[]
+}
+
+model logTransfer {
+  id                 String   @id @default(uuid())
+  user_id            String
+  user               user     @relation(fields: [user_id], references: [id])
+  location_id        String
+  location           location @relation(fields: [location_id], references: [id])
+  total_transactions Int
+  transfer_amount    Int
+  created_at         DateTime @default(now())
 }
 
 model truck {
-  id            String   @id @default(uuid())
-  license_plate String   @unique
+  id            String  @id @default(uuid())
+  license_plate String  @unique
   owner_id      String
   truck_type    String?
 
-  owner         owner    @relation(fields: [owner_id], references: [id])
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  owner      owner    @relation(fields: [owner_id], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   transactions transaction[]
 }
