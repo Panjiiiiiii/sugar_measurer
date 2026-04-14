@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 type CreateTruckPayload = {
+    name?: string;
     license_plate: string;
     owner_id: string;
     truck_type?: string | null;
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
         }
         const truck = await prisma.truck.create({
             data: {
+                name: truckData.name,
                 license_plate: truckData.license_plate,
                 owner_id: truckData.owner_id,
                 truck_type: truckData.truck_type,

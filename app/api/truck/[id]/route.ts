@@ -29,7 +29,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
     try {
         const { id } = params;
-        const truckData: Partial<{ license_plate: string; owner_id: string; truck_type: string | null }> =
+        const truckData: Partial<{ name: string; license_plate: string; owner_id: string; truck_type: string | null }> =
             await request.json();
         const existingTruck = await prisma.truck.findUnique({
             where: { id },
@@ -58,6 +58,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         const updatedTruck = await prisma.truck.update({
             where: { id },
             data: {
+                name: truckData.name ?? existingTruck.name,
                 license_plate: truckData.license_plate ?? existingTruck.license_plate,
                 owner_id: truckData.owner_id ?? existingTruck.owner_id,
                 truck_type: truckData.truck_type ?? existingTruck.truck_type,
