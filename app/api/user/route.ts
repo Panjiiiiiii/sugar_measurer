@@ -27,10 +27,23 @@ function parsePositiveInt(value: string | null, fallback: number) {
     return parsed;
 }
 
+function getFirstQueryParam(searchParams: URLSearchParams, keys: string[]) {
+    for (const key of keys) {
+        const value = searchParams.get(key);
+        if (value) {
+            return value;
+        }
+    }
+
+    return null;
+}
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    const page = parsePositiveInt(searchParams.get("page"), 1);
-    const limit = parsePositiveInt(searchParams.get("limit"), 10);
+    const pageParam = getFirstQueryParam(searchParams, ["page", "number_page", "halaman"]);
+    const limitParam = getFirstQueryParam(searchParams, ["limit", "per_page", "page_size"]);
+    const page = parsePositiveInt(pageParam, 1);
+    const limit = parsePositiveInt(limitParam, 10);
     const skip = (page - 1) * limit;
 
     const [users, totalData] = await Promise.all([
