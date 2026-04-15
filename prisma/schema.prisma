@@ -64,6 +64,7 @@ model transaction {
   tarra_weight     Int
   netto_weight     Int
   total_price      Int
+  bukti_transfer   String
   status           status_paid @default(unpaid)
   loading_in       DateTime
   loading_out      DateTime
