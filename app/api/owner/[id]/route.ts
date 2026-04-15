@@ -86,6 +86,48 @@ export async function PUT(
       );
     }
 
+    // Check for duplicate no_pol in payload
+    const nopolsInPayload = trucksPayload
+      .filter((truck) => truck.no_pol && !truck.is_deleted)
+      .map((truck) => truck.no_pol!.toUpperCase());
+    
+    const duplicateNopol = nopolsInPayload.find((nopol, index) => nopolsInPayload.indexOf(nopol) !== index);
+    if (duplicateNopol) {
+      return Response.json(
+        {
+          statusCode: 400,
+          message: `Duplicate license plate in request: ${duplicateNopol}`,
+          data: null,
+        },
+        { status: 400 },
+      );
+    }
+
+    // Check for duplicate no_pol in existing trucks (excluding deleted ones)
+    const existingTrucks = await prisma.truck.findMany({
+      where: { owner_id: id },
+    });
+
+    const truckIdsBeingUpdated = new Set(
+      trucksPayload.filter((t) => t.id && !t.is_deleted).map((t) => t.id),
+    );
+
+    const existingNopols = existingTrucks
+      .filter((truck) => !truckIdsBeingUpdated.has(truck.id))
+      .map((truck) => truck.license_plate.toUpperCase());
+
+    const conflictingNopol = nopolsInPayload.find((nopol) => existingNopols.includes(nopol));
+    if (conflictingNopol) {
+      return Response.json(
+        {
+          statusCode: 409,
+          message: `License plate already exists: ${conflictingNopol}`,
+          data: null,
+        },
+        { status: 409 },
+      );
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       const updatedOwner = await tx.owner.update({
         where: { id },
@@ -151,6 +193,7 @@ export async function PUT(
         await tx.truck.create({
           data: {
             owner_id: id,
+            name: truck.nama_truck || truck.nama,
             license_plate: truck.no_pol!,
             truck_type: truck.type_truck,
           },

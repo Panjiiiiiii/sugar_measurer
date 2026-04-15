@@ -1,18 +1,6 @@
 import { prisma } from "@/lib/prisma";
-
-type CreateOwnerWithTrucksPayload = {
-  owner: {
-    nama_owner: string;
-    type_owner?: string;
-    account_number: string;
-    type_ownership: "farmer" | "private";
-  };
-  data_truck: Array<{
-    nama_truck?: string;
-    type_truck?: "engkel" | "double";
-    no_pol: string;
-  }>;
-};
+import { validateCreateOwnerInput } from "@/schema/owner";
+import { z } from "zod";
 
 interface PaginationMeta {
   number_page: number;
@@ -92,27 +80,22 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const payload: CreateOwnerWithTrucksPayload = await request.json();
+    const rawData = await request.json();
+    const payload = validateCreateOwnerInput(rawData);
 
-    if (!payload.owner || !payload.owner.nama_owner || !payload.owner.account_number || !payload.owner.type_ownership) {
+    // Check if account_number already exists
+    const existingAccount = await prisma.owner.findUnique({
+      where: { account_number: payload.owner.account_number },
+    });
+
+    if (existingAccount) {
       return Response.json(
         {
-          message: "Invalid owner payload",
+          statusCode: 409,
+          message: "Account number already exists",
           data: null,
         },
-        { status: 400 },
-      );
-    }
-
-    const trucksPayload = Array.isArray(payload.data_truck) ? payload.data_truck : [];
-
-    if (trucksPayload.some((truck) => !truck.no_pol)) {
-      return Response.json(
-        {
-          message: "Each truck must include no_pol",
-          data: null,
-        },
-        { status: 400 },
+        { status: 409 },
       );
     }
 
@@ -125,9 +108,9 @@ export async function POST(request: Request) {
         },
       });
 
-      if (trucksPayload.length > 0) {
+      if (payload.data_truck.length > 0) {
         await tx.truck.createMany({
-          data: trucksPayload.map((truck) => ({
+          data: payload.data_truck.map((truck) => ({
             owner_id: owner.id,
             license_plate: truck.no_pol,
             truck_type: truck.type_truck,
@@ -138,7 +121,7 @@ export async function POST(request: Request) {
 
       return {
         owner,
-        totalTruckCreated: trucksPayload.length,
+        totalTruckCreated: payload.data_truck.length,
       };
     });
 
@@ -146,18 +129,58 @@ export async function POST(request: Request) {
       {
         statusCode: 201,
         message: "Owner created successfully",
+        data: result,
       },
       { status: 201 },
     );
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      const validationErrors = error.issues.map((err) => ({
+        field: err.path.join("."),
+        message: err.message,
+      }));
+      const firstErrorMessage = validationErrors[0]?.message ?? "Validation failed";
+      return Response.json(
+        {
+          statusCode: 400,
+          message: firstErrorMessage,
+          errors: validationErrors,
+          data: null,
+        },
+        { status: 400 },
+      );
+    }
+
+    if (error instanceof Error) {
+      if (error.message.includes("license_plate")) {
+        return Response.json(
+          {
+            statusCode: 409,
+            message: "License plate already exists",
+            data: null,
+          },
+          { status: 409 },
+        );
+      }
+      if (error.message.includes("account_number")) {
+        return Response.json(
+          {
+            statusCode: 409,
+            message: "Account number already exists",
+            data: null,
+          },
+          { status: 409 },
+        );
+      }
+    }
+
     return Response.json(
       {
+        statusCode: 500,
         message: "Error creating owner",
-        data: error,
+        data: null,
       },
-      {
-        status: 500,
-      },
+      { status: 500 },
     );
   }
 }
