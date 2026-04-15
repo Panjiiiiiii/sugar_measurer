@@ -65,6 +65,8 @@ model transaction {
   netto_weight     Int
   total_price      Int
   status           status_paid @default(unpaid)
+  loading_in       DateTime
+  loading_out      DateTime
   created_at       DateTime    @default(now())
   updated_at       DateTime    @updatedAt
   location         location    @relation(fields: [location_id], references: [id])
