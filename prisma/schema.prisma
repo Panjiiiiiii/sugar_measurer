@@ -74,14 +74,14 @@ model transaction {
 }
 
 model logTransfer {
-  id                 String   @id
-  user_id            String
-  location_id        String
-  total_transactions Int
-  transfer_amount    Int
-  created_at         DateTime @default(now())
-  location           location @relation(fields: [location_id], references: [id])
-  user               user     @relation(fields: [user_id], references: [id])
+  id              String   @id
+  user_id         String
+  location_id     String
+  bukti_transfer  String
+  transfer_amount Int
+  created_at      DateTime @default(now())
+  location        location @relation(fields: [location_id], references: [id])
+  user            user     @relation(fields: [user_id], references: [id])
 }
 
 enum role {
