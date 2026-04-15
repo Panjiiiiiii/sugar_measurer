@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { validateCreateTransferInput } from "@/schema/transfer";
+import { z } from "zod";
 
 type TransferPayload = {
     amount?: number;
@@ -52,28 +54,9 @@ function formatTransferTimestamp(date: Date) {
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id: locationId } = await params;
-        const payload: TransferPayload = await request.json();
-        const amount = Number(payload.amount);
-
-        if (!Number.isFinite(amount) || amount <= 0) {
-            return Response.json(
-                {
-                    message: "Invalid transfer amount",
-                    data: null,
-                },
-                { status: 400 },
-            );
-        }
-
-        if (!payload.bukti_transfer) {
-            return Response.json(
-                {
-                    message: "bukti_transfer is required",
-                    data: null,
-                },
-                { status: 400 },
-            );
-        }
+        const rawPayload = await request.json();
+        const payload = validateCreateTransferInput(rawPayload);
+        const amount = payload.amount;
 
         const decodedFile = decodeBase64File(payload.bukti_transfer);
 
@@ -159,6 +142,24 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         );
 
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            const validationErrors = error.issues.map((issue) => ({
+                field: issue.path.join("."),
+                message: issue.message,
+            }));
+            const firstErrorMessage = validationErrors[0]?.message ?? "Validation failed";
+
+            return Response.json(
+                {
+                    statusCode: 400,
+                    message: firstErrorMessage,
+                    errors: validationErrors,
+                    data: null,
+                },
+                { status: 400 },
+            );
+        }
+
         return Response.json(
             {
                 statusCode: 500,
