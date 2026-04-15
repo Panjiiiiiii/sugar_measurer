@@ -74,7 +74,7 @@ model transaction {
 }
 
 model logTransfer {
-  id              String   @id
+  id              String   @id @default(uuid())
   user_id         String
   location_id     String
   bukti_transfer  String
