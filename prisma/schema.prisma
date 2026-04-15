@@ -16,7 +16,6 @@ model user {
   updated_at  DateTime      @updatedAt
   location_id String
   email       String        @unique
-  logTransfer logTransfer[]
   location    location      @relation(fields: [location_id], references: [id])
 }
 
@@ -76,13 +75,11 @@ model transaction {
 
 model logTransfer {
   id              String   @id @default(uuid())
-  user_id         String
   location_id     String
   bukti_transfer  String
   transfer_amount Int
   created_at      DateTime @default(now())
   location        location @relation(fields: [location_id], references: [id])
-  user            user     @relation(fields: [user_id], references: [id])
 }
 
 enum role {
