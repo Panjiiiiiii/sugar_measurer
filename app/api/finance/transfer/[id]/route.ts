@@ -154,7 +154,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             {
                 statusCode: 201,
                 message: "Transfer added successfully",
-                data: transactionResult,
             },
             { status: 201 },
         );
