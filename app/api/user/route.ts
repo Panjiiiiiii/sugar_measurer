@@ -1,14 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import bcrypt from "bcrypt";
+import { validateCreateUserInput } from "@/schema/user";
+import { z } from "zod";
 
-interface CreateUserPayload {
-    name: string;
-    email: string;
-    password: string;
-    role: "branch" | "master" | "finance";
-    location_id: string;
-}
+
 
 interface PaginationMeta {
     number_page: number;
@@ -76,7 +72,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
-        const userData: CreateUserPayload = await request.json();
+        const rawData = await request.json();
+        const userData = validateCreateUserInput(rawData);
+
         const existingLocation = await prisma.location.findUnique({
             where: { id: userData.location_id },
         });
@@ -113,9 +111,41 @@ export async function POST(request: Request) {
             { status: 201 },
         );
     } catch (error) {
-        return Response.json({
-            message : "Error creating user",
-            data : error
-        });
+        if (error instanceof z.ZodError) {
+            const validationErrors = error.issues.map((err) => ({
+                field: err.path.join("."),
+                message: err.message,
+            }));
+            const firstErrorMessage = validationErrors[0]?.message ?? "Validation failed";
+            return Response.json(
+                {
+                    statusCode: 400,
+                    message: firstErrorMessage,
+                    errors: validationErrors,
+                    data: null,
+                },
+                { status: 400 },
+            );
+        }
+
+        if (error instanceof Error && error.message.includes("unique constraint")) {
+            return Response.json(
+                {
+                    statusCode: 409,
+                    message: "Email already exists",
+                    data: null,
+                },
+                { status: 409 },
+            );
+        }
+
+        return Response.json(
+            {
+                statusCode: 500,
+                message: "Error creating user",
+                data: null,
+            },
+            { status: 500 },
+        );
     }
 }
