@@ -44,3 +44,4 @@ next-env.d.ts
 
 # finance transfer proof uploads
 /public/finance/transfer/
+/public/finance/transaction/

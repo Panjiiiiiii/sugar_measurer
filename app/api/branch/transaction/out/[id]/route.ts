@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { validateCreateBranchTransactionInputSafe } from "@/schema/transaction";
 
 export async function PUT(
     request: Request,
