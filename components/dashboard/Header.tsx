@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { 
-  MagnifyingGlass, 
-  Bell, 
-  CaretDown 
+import {
+  MagnifyingGlass,
+  Bell,
+  CaretDown
 } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -24,14 +24,14 @@ export default function Header() {
         <input
           type="text"
           className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl bg-gray-50/50 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-          placeholder="Search or type command..."
+          placeholder="Search..."
         />
       </div>
 
       {/* Right Actions */}
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <Link 
+        <Link
           href="/branch/notification"
           className="relative p-2 text-gray-500 hover:bg-gray-50 rounded-xl transition-colors"
         >
@@ -41,11 +41,10 @@ export default function Header() {
 
         {/* User Profile Section */}
         <div className="relative">
-          <button 
+          <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className={`flex items-center gap-3 cursor-pointer p-1 rounded-xl transition-all ${
-              isDropdownOpen ? "bg-gray-100" : "hover:bg-gray-50"
-            }`}
+            className={`flex items-center gap-3 cursor-pointer p-1 rounded-xl transition-all ${isDropdownOpen ? "bg-gray-100" : "hover:bg-gray-50"
+              }`}
           >
             <div className="relative w-9 h-9 rounded-full overflow-hidden bg-gray-200 border border-gray-100">
               <Image
@@ -59,10 +58,10 @@ export default function Header() {
               <span className="text-sm font-bold text-gray-900">
                 Emirhan Boruch
               </span>
-              <CaretDown 
-                size={12} 
-                weight="bold" 
-                className={`text-gray-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`} 
+              <CaretDown
+                size={12}
+                weight="bold"
+                className={`text-gray-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
               />
             </div>
           </button>
@@ -71,20 +70,20 @@ export default function Header() {
           {isDropdownOpen && (
             <>
               {/* Invisible Backdrop to Close Dropdown */}
-              <div 
-                className="fixed inset-0 z-10" 
+              <div
+                className="fixed inset-0 z-10"
                 onClick={() => setIsDropdownOpen(false)}
               />
-              
+
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-gray-200/50 z-20 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                <Link 
+                <Link
                   href="/branch/profile"
                   onClick={() => setIsDropdownOpen(false)}
                   className="flex items-center px-6 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Profile
                 </Link>
-                <button 
+                <button
                   onClick={() => {
                     setIsDropdownOpen(false);
                     setIsLogoutModalOpen(true);
@@ -100,7 +99,7 @@ export default function Header() {
       </div>
 
       {/* Logout Confirmation Modal */}
-      <LogoutModal 
+      <LogoutModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onLogout={() => {

@@ -39,7 +39,7 @@ export default function TransferTable() {
         <h3 className="text-lg font-bold text-gray-900">Data Riwayat Transfer</h3>
         <button 
           onClick={() => setIsFilterOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all"
         >
           <Funnel size={18} weight="bold" />
           Filter

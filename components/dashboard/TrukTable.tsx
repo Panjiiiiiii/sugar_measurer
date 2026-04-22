@@ -68,14 +68,14 @@ export default function TrukTable() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsFilterOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all"
           >
             <Funnel size={18} weight="bold" />
             Filter
           </button>
           <Link 
             href="/branch/truk/add"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-xl text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-xl text-sm font-semibold text-white hover:bg-blue-700 transition-all"
           >
             <Plus size={18} weight="bold" />
             Add

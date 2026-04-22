@@ -119,13 +119,13 @@ export default function NotificationPage() {
       <div className="flex justify-end gap-3">
         <button 
           onClick={() => setIsFilterOpen(true)}
-          className="flex items-center gap-2 px-6 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-all"
         >
-          <Funnel size={20} />
+          <Funnel size={18} weight="bold" />
           <span>Filter</span>
         </button>
-        <button className="flex items-center gap-2 px-6 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-700 font-bold hover:bg-gray-50 transition-all">
-          <Checks size={20} />
+        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-all">
+          <Checks size={18} weight="bold" />
           <span>Tandai sudah di baca semua</span>
         </button>
       </div>

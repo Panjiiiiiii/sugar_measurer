@@ -113,16 +113,16 @@ export default function RiwayatTable() {
         <div className="flex items-center gap-2">
           <button 
             onClick={() => setIsFilterOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 border border-gray-100 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all"
           >
-            <Funnel size={16} weight="bold" />
+            <Funnel size={18} weight="bold" />
             Filter
           </button>
           <Link 
             href="/branch/timbangan"
-            className="flex items-center gap-2 px-3 py-1.5 border border-gray-100 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all"
           >
-            <Eye size={16} weight="bold" />
+            <Eye size={18} weight="bold" />
             See all
           </Link>
         </div>
