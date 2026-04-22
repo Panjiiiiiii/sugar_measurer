@@ -9,8 +9,8 @@ export default function InputTimbanganPage() {
   const router = useRouter();
   const [form, setForm] = useState({
     nopol: "",
-    bruto: "",
-    tara: "",
+    bruto: "10",
+    tara: "2",
   });
 
   const bruto = parseFloat(form.bruto) || 0;
@@ -66,9 +66,9 @@ export default function InputTimbanganPage() {
               <input
                 type="number"
                 placeholder="0"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 focus:outline-none cursor-not-allowed text-gray-500 font-medium"
                 value={form.bruto}
-                onChange={(e) => setForm({ ...form, bruto: e.target.value })}
+                disabled
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -76,9 +76,9 @@ export default function InputTimbanganPage() {
               <input
                 type="number"
                 placeholder="0"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 focus:outline-none cursor-not-allowed text-gray-500 font-medium"
                 value={form.tara}
-                onChange={(e) => setForm({ ...form, tara: e.target.value })}
+                disabled
               />
             </div>
           </div>

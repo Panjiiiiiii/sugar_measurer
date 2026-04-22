@@ -90,14 +90,13 @@ export default function TonaseChart() {
     <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col gap-8 transition-all">
       <style>{`
         .bar-foreground {
-          transform: scaleY(0);
-          transform-origin: bottom;
-          transform-box: fill-box;
-          transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          clip-path: inset(100% 0 0 0);
+          transition: clip-path 1.2s cubic-bezier(0.4, 0, 0.2, 1);
           pointer-events: none;
         }
         .bar-group:hover .bar-foreground {
-          transform: scaleY(1);
+          clip-path: inset(0% 0 0 0);
+          transition: clip-path 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
       `}</style>
       <div className="flex items-center justify-between">
@@ -106,11 +105,11 @@ export default function TonaseChart() {
         <div className="relative">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 border border-gray-100 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-100 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all"
           >
             {selectedDay}
             <CaretDown
-              size={12}
+              size={18}
               weight="bold"
               className={`text-gray-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`}
             />
@@ -131,8 +130,8 @@ export default function TonaseChart() {
                       setIsDropdownOpen(false);
                     }}
                     className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors ${selectedDay === day
-                        ? "text-[#009253] bg-green-50/50"
-                        : "text-gray-600 hover:bg-gray-50"
+                      ? "text-[#009253] bg-green-50/50"
+                      : "text-gray-600 hover:bg-gray-50"
                       }`}
                   >
                     {day}
