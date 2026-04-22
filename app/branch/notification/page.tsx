@@ -7,8 +7,10 @@ import {
   ArrowsLeftRight 
 } from "@phosphor-icons/react";
 import NotificationFilterModal from "@/components/dashboard/NotificationFilterModal";
+import Breadcrumb from "@/components/dashboard/Breadcrumb";
 
 const notifications = [
+// ... (keep existing notifications)
   {
     id: 1,
     title: "Transaksi masuk",
@@ -105,11 +107,12 @@ export default function NotificationPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Notifikasi</h1>
-        <nav className="flex text-sm text-gray-500 gap-2 items-center">
-          <span>Dashboard</span>
-          <span className="text-gray-300 font-light">&gt;</span>
-          <span className="text-gray-900 font-medium">Notifikasi</span>
-        </nav>
+        <Breadcrumb 
+          items={[
+            { label: "Dashboard", href: "/branch/dashboard" },
+            { label: "Notifikasi" }
+          ]} 
+        />
       </div>
 
       {/* Actions */}

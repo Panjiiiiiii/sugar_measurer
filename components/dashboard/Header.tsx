@@ -8,8 +8,12 @@ import {
 } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
+import LogoutModal from "./LogoutModal";
 
 export default function Header() {
+  const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
+
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-10 transition-all">
       {/* Search Bar */}
@@ -35,27 +39,76 @@ export default function Header() {
           <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
         </Link>
 
-        {/* User Profile */}
-        <Link 
-          href="/branch/profile"
-          className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-1 rounded-xl transition-colors"
-        >
-          <div className="relative w-9 h-9 rounded-full overflow-hidden bg-gray-200 border border-gray-100">
-            <Image
-              src="https://avatar.iran.liara.run/public/boy?username=Emirhan"
-              alt="User"
-              fill
-              className="object-cover"
-            />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-bold text-gray-900">
-              Emirhan Boruch
-            </span>
-            <CaretDown size={12} weight="bold" className="text-gray-400" />
-          </div>
-        </Link>
+        {/* User Profile Section */}
+        <div className="relative">
+          <button 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className={`flex items-center gap-3 cursor-pointer p-1 rounded-xl transition-all ${
+              isDropdownOpen ? "bg-gray-100" : "hover:bg-gray-50"
+            }`}
+          >
+            <div className="relative w-9 h-9 rounded-full overflow-hidden bg-gray-200 border border-gray-100">
+              <Image
+                src="https://avatar.iran.liara.run/public/boy?username=Emirhan"
+                alt="User"
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-bold text-gray-900">
+                Emirhan Boruch
+              </span>
+              <CaretDown 
+                size={12} 
+                weight="bold" 
+                className={`text-gray-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`} 
+              />
+            </div>
+          </button>
+
+          {/* Dropdown Menu */}
+          {isDropdownOpen && (
+            <>
+              {/* Invisible Backdrop to Close Dropdown */}
+              <div 
+                className="fixed inset-0 z-10" 
+                onClick={() => setIsDropdownOpen(false)}
+              />
+              
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-gray-200/50 z-20 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <Link 
+                  href="/branch/profile"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="flex items-center px-6 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Profile
+                </Link>
+                <button 
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    setIsLogoutModalOpen(true);
+                  }}
+                  className="w-full flex items-center px-6 py-3 text-sm font-bold text-red-500 hover:bg-red-50/50 transition-colors border-t border-gray-50"
+                >
+                  Log Out
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutModal 
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onLogout={() => {
+          console.log("Logging out...");
+          setIsLogoutModalOpen(false);
+          // Add actual logout logic/redirect here if needed
+        }}
+      />
     </header>
   );
 }

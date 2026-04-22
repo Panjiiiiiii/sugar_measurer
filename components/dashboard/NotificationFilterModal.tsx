@@ -50,13 +50,10 @@ export default function NotificationFilterModal({ isOpen, onClose, onApply }: No
               <div className="relative">
                 <input 
                   type="date"
-                  className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-100 bg-white font-medium text-xs text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-[#009253] transition-all shadow-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-white font-medium text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-[#009253] transition-all shadow-sm"
                   value={dates.start}
                   onChange={(e) => setDates({ ...dates, start: e.target.value })}
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <CalendarBlank size={18} weight="bold" />
-                </div>
               </div>
             </div>
 
@@ -71,13 +68,10 @@ export default function NotificationFilterModal({ isOpen, onClose, onApply }: No
               <div className="relative">
                 <input 
                   type="date"
-                  className="w-full pl-4 pr-10 py-3 rounded-xl border border-gray-100 bg-white font-medium text-xs text-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-[#009253] transition-all shadow-sm"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-white font-medium text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-[#009253] transition-all shadow-sm"
                   value={dates.end}
                   onChange={(e) => setDates({ ...dates, end: e.target.value })}
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                  <CalendarBlank size={18} weight="bold" />
-                </div>
               </div>
             </div>
           </div>

@@ -1,12 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Funnel, 
   Eye, 
   DotsThreeVertical 
 } from "@phosphor-icons/react";
 import Link from "next/link";
+import FilterModal from "./FilterModal";
+import BuktiTransferModal from "./BuktiTransferModal";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
 
 const tableData = [
   {
@@ -57,13 +60,61 @@ const tableData = [
 ];
 
 export default function RiwayatTable() {
+  const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isBuktiOpen, setIsBuktiOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuIndex(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col gap-6 transition-all">
+      {/* Filter Modal */}
+      <FilterModal 
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        onApply={(filters) => {
+          console.log("Applying filters:", filters);
+          setIsFilterOpen(false);
+        }}
+      />
+
+      {/* Bukti Transfer Modal */}
+      <BuktiTransferModal 
+        isOpen={isBuktiOpen}
+        onClose={() => setIsBuktiOpen(false)}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal 
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={() => {
+          console.log("Item deleted");
+          setIsDeleteOpen(false);
+        }}
+      />
+
       {/* Table Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-gray-900 tracking-tight">Riwayat Timbangan</h3>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-100 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+          <button 
+            onClick={() => setIsFilterOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 border border-gray-100 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+          >
             <Funnel size={16} weight="bold" />
             Filter
           </button>
@@ -78,7 +129,7 @@ export default function RiwayatTable() {
       </div>
 
       {/* Table grid */}
-      <div className="overflow-x-auto pb-2">
+      <div className="overflow-x-auto pb-2 overflow-visible">
         <table className="w-full text-left min-w-[800px]">
           <thead>
             <tr className="border-b border-gray-50">
@@ -110,10 +161,48 @@ export default function RiwayatTable() {
                     {row.status}
                   </span>
                 </td>
-                <td className="py-4 text-right whitespace-nowrap">
-                  <button className="p-1.5 border border-transparent rounded-lg text-gray-400 hover:border-gray-100 hover:bg-gray-50 transition-all">
+                <td className="py-4 text-right whitespace-nowrap relative">
+                  <button 
+                    onClick={() => setOpenMenuIndex(openMenuIndex === index ? null : index)}
+                    className="p-1.5 border border-transparent rounded-lg text-gray-400 hover:border-gray-100 hover:bg-gray-50 transition-all"
+                  >
                     <DotsThreeVertical size={18} weight="bold" />
                   </button>
+
+                  {openMenuIndex === index && (
+                    <div 
+                      ref={menuRef}
+                      className="absolute right-0 top-full mt-1 w-44 bg-white border border-gray-100 rounded-xl shadow-2xl z-[9999] overflow-hidden flex flex-col"
+                    >
+                      <button 
+                        onClick={() => {
+                          setIsBuktiOpen(true);
+                          setOpenMenuIndex(null);
+                        }}
+                        className="w-full px-5 py-3 text-[13px] font-medium text-gray-700 text-left hover:bg-gray-50 transition-all border-b border-gray-100"
+                      >
+                        Bukti Transfer
+                      </button>
+                      <button className="w-full px-5 py-3 text-[13px] font-medium text-gray-700 text-left hover:bg-gray-50 transition-colors border-b border-gray-100">
+                        Cetak Struk
+                      </button>
+                      <Link 
+                        href="/branch/timbangan/edit/123"
+                        className="w-full px-5 py-3 text-[13px] font-medium text-gray-700 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 block"
+                      >
+                        Edit
+                      </Link>
+                      <button 
+                        onClick={() => {
+                          setIsDeleteOpen(true);
+                          setOpenMenuIndex(null);
+                        }}
+                        className="w-full px-5 py-3 text-[13px] font-bold text-red-500 text-left hover:bg-red-50 transition-all focus:outline-none"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

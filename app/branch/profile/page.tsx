@@ -3,20 +3,22 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { Eye, EyeSlash } from "@phosphor-icons/react";
+import Breadcrumb from "@/components/dashboard/Breadcrumb";
 
 export default function ProfilePage() {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="max-w-[860px] mx-auto space-y-5">
+    <div className="max-w-[960px] mx-auto space-y-5">
       {/* Page Header Outside Card */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Profile</h1>
-        <nav className="flex text-xs text-gray-500 gap-2 items-center uppercase tracking-wider">
-          <span>Dashboard</span>
-          <span className="text-gray-300 font-light">&gt;</span>
-          <span className="text-gray-900 font-bold">Profile</span>
-        </nav>
+        <Breadcrumb
+          items={[
+            { label: "Dashboard", href: "/branch/dashboard" },
+            { label: "Profile" }
+          ]}
+        />
       </div>
 
       <div className="bg-white rounded-[20px] border border-gray-100 overflow-hidden shadow-sm">
@@ -49,7 +51,7 @@ export default function ProfilePage() {
               <input
                 type="text"
                 defaultValue="Dadang Utama Jaya"
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500/10 focus:border-[#009253] transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-[#009253] transition-all"
               />
             </div>
 
@@ -61,7 +63,7 @@ export default function ProfilePage() {
               <input
                 type="text"
                 defaultValue="dadangjaya21"
-                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500/10 focus:border-[#009253] transition-all"
+                className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-[#009253] transition-all"
               />
             </div>
 
@@ -74,7 +76,7 @@ export default function ProfilePage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   defaultValue="dadangjaya21"
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500/10 focus:border-[#009253] transition-all"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-[#009253] transition-all"
                 />
                 <button
                   type="button"
@@ -96,7 +98,7 @@ export default function ProfilePage() {
               </button>
               <button
                 type="button"
-                className="flex-[2] px-8 py-2.5 rounded-lg bg-[#009253] text-white font-bold hover:bg-[#007d47] transition-all text-xs"
+                className="flex-1 px-8 py-2.5 rounded-lg bg-[#009253] text-white font-bold hover:bg-[#007d47] transition-all text-xs"
               >
                 Simpan
               </button>
