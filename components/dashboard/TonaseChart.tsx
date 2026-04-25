@@ -91,7 +91,7 @@ export default function TonaseChart() {
       <style>{`
         .bar-foreground {
           clip-path: inset(100% 0 0 0);
-          transition: clip-path 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: clip-path 0.8s cubic-bezier(0.4, 0, 0.2, 1);
           pointer-events: none;
         }
         .bar-group:hover .bar-foreground {
@@ -179,5 +179,12 @@ export default function TonaseChart() {
         </ResponsiveContainer>
       </div>
     </div>
+  );
+}
+            />
+          </BarChart >
+        </ResponsiveContainer >
+      </div >
+    </div >
   );
 }

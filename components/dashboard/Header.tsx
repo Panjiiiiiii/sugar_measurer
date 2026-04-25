@@ -32,7 +32,7 @@ export default function Header() {
       <div className="flex items-center gap-4">
         {/* Notifications */}
         <Link
-          href="/branch/notification"
+          href="/finance/notification"
           className="relative p-2 text-gray-500 hover:bg-gray-50 rounded-xl transition-colors"
         >
           <Bell size={22} weight="regular" />
@@ -77,7 +77,7 @@ export default function Header() {
 
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-gray-200/50 z-20 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                 <Link
-                  href="/branch/profile"
+                  href="/finance/profile"
                   onClick={() => setIsDropdownOpen(false)}
                   className="flex items-center px-6 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
                 >
