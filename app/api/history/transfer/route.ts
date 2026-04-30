@@ -146,7 +146,7 @@ export async function GET(request: Request) {
 			tanggal: formatDateOnly(transfer.created_at),
 			bukti_tf: transfer.bukti_transfer,
 			jumlah_nominal: transfer.transfer_amount,
-			location: transfer.location.name,
+			location: transfer.location?.name,
 		}));
 
 		const totalPage = Math.max(1, Math.ceil(totalData / limit));
