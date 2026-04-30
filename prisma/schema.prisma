@@ -76,6 +76,7 @@ model transaction {
   location         location       @relation(fields: [location_id], references: [id])
   truck            truck          @relation(fields: [truck_id], references: [id], onDelete: Cascade)
   owner            owner?         @relation(fields: [owner_id], references: [id])
+  logTransfers     logTransfer[]
 }
 
 model logTransfer {
@@ -85,7 +86,9 @@ model logTransfer {
   transfer_status transfer_status @default(in)
   bukti_transfer  String
   transfer_amount Int
+  transaction_id  String?
   created_at      DateTime        @default(now())
+  transaction     transaction?    @relation(fields: [transaction_id], references: [id])
   location        location?       @relation(fields: [location_id], references: [id])
   user            user            @relation(fields: [user_id], references: [id])
 }
