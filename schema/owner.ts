@@ -1,17 +1,5 @@
 import { z } from "zod";
 
-const TruckSchema = z.object({
-  nama_truck: z
-    .string()
-    .max(255, "Truck name must not exceed 255 characters")
-    .optional(),
-  type_truck: z.enum(["engkel", "double"]).optional(),
-  no_pol: z
-    .string()
-    .min(1, "License plate is required")
-    .max(255, "License plate must not exceed 255 characters"),
-});
-
 export const CreateOwnerSchema = z.object({
   nama_owner: z
     .string()
