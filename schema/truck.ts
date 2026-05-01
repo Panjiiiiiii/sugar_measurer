@@ -6,11 +6,6 @@ const NewOwnerSchema = z.object({
         .min(1, "Owner name is required")
         .max(255, "Owner name must not exceed 255 characters")
         .trim(),
-    account_number: z
-        .string()
-        .min(1, "Account number is required")
-        .max(255, "Account number must not exceed 255 characters")
-        .trim(),
     type_ownership: z.enum(["farmer", "private"], {
         message: "Ownership type must be either farmer or private",
     }),

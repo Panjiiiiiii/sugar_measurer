@@ -6,10 +6,10 @@ export const CreateOwnerSchema = z.object({
     .min(1, "Owner name is required")
     .max(255, "Owner name must not exceed 255 characters")
     .trim(),
-  account_number: z
+  phone_number: z
     .string()
-    .min(1, "Account number is required")
-    .max(255, "Account number must not exceed 255 characters")
+    .min(1, "Phone number is required")
+    .max(255, "Phone number must not exceed 255 characters")
     .trim()
     .optional(),
   type_ownership: z.enum(["farmer", "private", "special"], {
