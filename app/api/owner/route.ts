@@ -82,10 +82,21 @@ export async function POST(request: Request) {
   try {
     const rawData = await request.json();
     const payload = validateCreateOwnerInput(rawData);
+    const accountNumber = payload.account_number;
+
+    if (!accountNumber) {
+      return Response.json(
+        {
+          statusCode: 400,
+          message: "Account number is required",
+        },
+        { status: 400 },
+      );
+    }
 
     // Check if account_number already exists
     const existingAccount = await prisma.owner.findUnique({
-      where: { account_number: payload.owner.account_number },
+      where: { account_number: accountNumber },
     });
 
     if (existingAccount) {
@@ -93,35 +104,45 @@ export async function POST(request: Request) {
         {
           statusCode: 409,
           message: "Account number already exists",
-          data: null,
         },
         { status: 409 },
+      );
+    }
+
+    if(payload.type_ownership === "special" && (payload.special_price === undefined || payload.special_price === null)) {
+      return Response.json(
+        {
+          statusCode: 400,
+          message: "Special price is required for special ownership type",
+        },
+        { status: 400 },
+      );
+    }
+
+    if(payload.type_ownership !== "special" && payload.special_price !== undefined) {
+      return Response.json(
+        {
+          statusCode: 400,
+          message: "Special price should only be provided for special ownership type",
+        },
+        { status: 400 },
       );
     }
 
     const result = await prisma.$transaction(async (tx) => {
       const owner = await tx.owner.create({
         data: {
-          name: payload.owner.nama_owner,
-          account_number: payload.owner.account_number,
-          ownership_type: payload.owner.type_ownership,
+          name: payload.nama_owner,
+          account_number: accountNumber,
+          ownership_type: payload.type_ownership,
+          special_price : payload.special_price,
         },
       });
 
-      if (payload.data_truck.length > 0) {
-        await tx.truck.createMany({
-          data: payload.data_truck.map((truck) => ({
-            owner_id: owner.id,
-            license_plate: truck.no_pol,
-            truck_type: truck.type_truck,
-            name: truck.nama_truck,
-          })),
-        });
-      }
+    
 
       return {
         owner,
-        totalTruckCreated: payload.data_truck.length,
       };
     });
 
@@ -129,7 +150,6 @@ export async function POST(request: Request) {
       {
         statusCode: 201,
         message: "Owner created successfully",
-        data: result,
       },
       { status: 201 },
     );
@@ -149,29 +169,6 @@ export async function POST(request: Request) {
         },
         { status: 400 },
       );
-    }
-
-    if (error instanceof Error) {
-      if (error.message.includes("license_plate")) {
-        return Response.json(
-          {
-            statusCode: 409,
-            message: "License plate already exists",
-            data: null,
-          },
-          { status: 409 },
-        );
-      }
-      if (error.message.includes("account_number")) {
-        return Response.json(
-          {
-            statusCode: 409,
-            message: "Account number already exists",
-            data: null,
-          },
-          { status: 409 },
-        );
-      }
     }
 
     return Response.json(
