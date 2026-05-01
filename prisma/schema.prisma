@@ -23,7 +23,7 @@ model user {
 model owner {
   id             String         @id @default(uuid())
   name           String
-  account_number String         @unique
+  phone_number   String         @unique
   ownership_type ownership_type
   special_price  Int?
   created_at     DateTime       @default(now())
