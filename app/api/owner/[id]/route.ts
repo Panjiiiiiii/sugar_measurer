@@ -4,7 +4,6 @@ type UpdateOwnerPayload = {
   id?: string;
   nama_owner?: string;
   type_owner?: string;
-  account_number?: string;
   type_ownership?: "farmer" | "private" | "special";
   special_price?: number;
 };
@@ -60,23 +59,6 @@ export async function PUT(
       );
     }
 
-    if (payload.account_number) {
-      const accountNumber = payload.account_number;
-      const accountNumberOwner = await prisma.owner.findUnique({
-        where: { account_number: accountNumber },
-      });
-
-      if (accountNumberOwner && accountNumberOwner.id !== id) {
-        return Response.json(
-          {
-            statusCode: 409,
-            message: "Account number already exists",
-          },
-          { status: 409 },
-        );
-      }
-    }
-
     if (
       payload.type_ownership === "special" &&
       (payload.special_price === undefined || payload.special_price === null)
@@ -110,8 +92,6 @@ export async function PUT(
         name: payload.nama_owner ?? existingOwner.name,
         ownership_type:
           payload.type_ownership ?? existingOwner.ownership_type,
-        account_number:
-          payload.account_number ?? existingOwner.account_number,
         special_price:
           payload.special_price ?? existingOwner.special_price,
       },

@@ -166,7 +166,7 @@ export async function POST(request: Request) {
         if (isNewOwner) {
             const newOwner = truckData.new_owner;
 
-            if (!newOwner?.nama_owner || !newOwner.account_number || !newOwner.type_ownership) {
+            if (!newOwner?.nama_owner || !newOwner.type_ownership) {
                 return Response.json(
                     {
                         statusCode: 400,
@@ -177,26 +177,10 @@ export async function POST(request: Request) {
                 );
             }
 
-            const existingOwnerAccount = await prisma.owner.findUnique({
-                where: { account_number: newOwner.account_number },
-            });
-
-            if (existingOwnerAccount) {
-                return Response.json(
-                    {
-                        statusCode: 409,
-                        message: "Account number already exists",
-                        data: null,
-                    },
-                    { status: 409 },
-                );
-            }
-
             const result = await prisma.$transaction(async (tx) => {
                 const owner = await tx.owner.create({
                     data: {
                         name: newOwner.nama_owner,
-                        account_number: newOwner.account_number,
                         ownership_type: newOwner.type_ownership,
                     },
                 });

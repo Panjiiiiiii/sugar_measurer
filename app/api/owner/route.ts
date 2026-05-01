@@ -82,28 +82,28 @@ export async function POST(request: Request) {
   try {
     const rawData = await request.json();
     const payload = validateCreateOwnerInput(rawData);
-    const accountNumber = payload.account_number;
+    const phone_number = payload.phone_number;
 
-    if (!accountNumber) {
+    if (!phone_number) {
       return Response.json(
         {
           statusCode: 400,
-          message: "Account number is required",
+          message: "Phone number is required",
         },
         { status: 400 },
       );
     }
 
-    // Check if account_number already exists
+    // Check if phone_number already exists
     const existingAccount = await prisma.owner.findUnique({
-      where: { account_number: accountNumber },
+      where: { phone_number: phone_number },
     });
 
     if (existingAccount) {
       return Response.json(
         {
           statusCode: 409,
-          message: "Account number already exists",
+          message: "Phone number already exists",
         },
         { status: 409 },
       );
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
       const owner = await tx.owner.create({
         data: {
           name: payload.nama_owner,
-          account_number: accountNumber,
+          phone_number: phone_number,
           ownership_type: payload.type_ownership,
           special_price : payload.special_price,
         },
