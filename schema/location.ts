@@ -16,6 +16,11 @@ export const CreateLocationSchema = z.object({
         .min(0, "Account balance must be a positive number")
         .optional()
         .default(0),
+    account_number: z
+        .string()
+        .min(1, "Account number is required")
+        .max(255, "Account number must not exceed 255 characters")
+        .trim(),
 });
 
 export type CreateLocationInput = z.infer<typeof CreateLocationSchema>;
