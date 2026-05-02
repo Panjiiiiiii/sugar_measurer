@@ -118,6 +118,19 @@ export async function GET(request: Request) {
 				: {}),
 		};
 
+		// compute KPI counts for statuses: paid, unpaid and inqueue (DB uses 'queue')
+		const [paidCount, unpaidCount, inqueueCount] = await Promise.all([
+			prisma.transaction.count({ where: { ...whereClause, status: "paid" } }),
+			prisma.transaction.count({ where: { ...whereClause, status: "unpaid" } }),
+			prisma.transaction.count({ where: { ...whereClause, status: "queue" } }),
+		]);
+
+		const kpi = {
+			paid: paidCount,
+			unpaid: unpaidCount,
+			inqueue: inqueueCount,
+		};
+
 		const [transactions, totalData] = await Promise.all([
 			prisma.transaction.findMany({
 				where: whereClause,
@@ -131,6 +144,7 @@ export async function GET(request: Request) {
 					netto_weight: true,
 					total_price: true,
 					status: true,
+					driver_name: true,
 					truck: {
 						select: {
 							license_plate: true,
@@ -138,6 +152,7 @@ export async function GET(request: Request) {
 								select: {
 									name: true,
 									ownership_type: true,
+									
 								},
 							},
 						},
@@ -148,16 +163,15 @@ export async function GET(request: Request) {
 				where: whereClause,
 			}),
 		]);
-
 		const data = transactions.map((transaction) => ({
 			tanggal_transaksi: formatDateOnly(transaction.transaction_date),
 			no_pol_truck: transaction.truck.license_plate,
-			nama_petani: transaction.truck.owner.name,
-			type_ownership:
-				transaction.truck.owner.ownership_type === "private" ? "pribadi" : "petani",
+			nama_petani: ((transaction.truck as any).owner?.name ?? ""),
+			nama_driver: transaction.driver_name,
+			type_ownership: ((transaction.truck as any).owner?.ownership_type === "private" ? "pribadi" : "petani"),
 			netto: transaction.netto_weight ?? 0,
 			amount: transaction.total_price ?? 0,
-			status_pembayaran: transaction.status,
+			status: transaction.status,
 		}));
 
 		const totalPage = Math.max(1, Math.ceil(totalData / limit));
@@ -170,6 +184,7 @@ export async function GET(request: Request) {
 		return Response.json(
 			{
 				statusCode: 200,
+				kpi,
 				data,
 				page: pagination,
 			},

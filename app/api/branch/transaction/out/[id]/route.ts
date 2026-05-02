@@ -77,6 +77,7 @@ export async function PUT(
                     id: true,
                     bruto_weight: true,
                     location_id: true,
+                    current_price: true,
                 },
             });
 
@@ -98,7 +99,7 @@ export async function PUT(
             }
 
             const nettoWeight = existingTransaction.bruto_weight - tareWeight;
-            const totalPrice = nettoWeight * location.sugar_price;
+            const totalPrice = nettoWeight * existingTransaction.current_price;
 
             return tx.transaction.update({
                 where: { id },

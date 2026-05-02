@@ -65,7 +65,7 @@ model transaction {
   bruto_weight     Int
   tarra_weight     Int
   netto_weight     Int?
-  current_price    Int?
+  current_price    Int
   total_price      Int?
   status           status_paid    @default(unpaid)
   payment_method   payment_method
