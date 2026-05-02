@@ -8,7 +8,6 @@ export const CreateTransferSchema = z.object({
         .string({ message: "bukti_transfer is required" })
         .min(1, "bukti_transfer is required")
         .optional(),
-    location_id : z.string({ message: "location_id is required" }).min(1, "location_id is required"),
     user_id : z.string({ message: "user_id is required" }).min(1, "user_id is required"),
 });
 

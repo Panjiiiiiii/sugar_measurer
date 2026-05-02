@@ -59,8 +59,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         if (!decodedFile) {
             return Response.json(
                 {
-                    message: "Invalid bukti_transfer base64 format",
-                    data: null,
+                    message: "Invalid bukti transfer base64 format",
                 },
                 { status: 400 },
             );
