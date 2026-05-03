@@ -44,7 +44,6 @@ export async function PUT(
       {
         statusCode: 200,
         message: "Truck updated successfully",
-        data: updatedTruck,
       },
       { status: 200 },
     );
@@ -88,7 +87,6 @@ export async function DELETE(
         {
           statusCode: 404,
           message: "Truck not found",
-          data: null,
         },
         { status: 404 },
       );
@@ -102,7 +100,6 @@ export async function DELETE(
       {
         statusCode: 200,
         message: "Truck deleted successfully",
-        data: null,
       },
       { status: 200 },
     );
@@ -111,7 +108,6 @@ export async function DELETE(
       {
         statusCode: 500,
         message: "Error deleting truck",
-        data: null,
       },
       { status: 500 },
     );
