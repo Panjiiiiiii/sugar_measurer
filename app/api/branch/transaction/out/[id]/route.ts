@@ -73,12 +73,9 @@ export async function PUT(
         const updatedTransaction = await prisma.$transaction(async (tx) => {
             const existingTransaction = await tx.transaction.findUnique({
                 where: { id },
-                select: {
-                    id: true,
-                    bruto_weight: true,
-                    location_id: true,
-                    current_price: true,
-                },
+                include: {
+                    owner: true,
+                }
             });
 
             if (!existingTransaction) {
@@ -108,6 +105,7 @@ export async function PUT(
                     netto_weight: nettoWeight,
                     total_price: totalPrice,
                     loading_out: loadingOutDate,
+                    status: existingTransaction.owner?.ownership_type === "private" ? "paid" : "unpaid",
                 },
             });
         });

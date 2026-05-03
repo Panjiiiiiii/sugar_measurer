@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
+import { id } from "zod/locales";
 
 interface PaginationMeta {
 	number_page: number;
@@ -140,21 +141,22 @@ export async function GET(request: Request) {
 					transaction_date: "desc",
 				},
 				select: {
+					id: true,
 					transaction_date: true,
 					netto_weight: true,
 					total_price: true,
 					status: true,
 					driver_name: true,
+					current_price: true,
 					truck: {
 						select: {
 							license_plate: true,
-							owner: {
-								select: {
-									name: true,
-									ownership_type: true,
-									
-								},
-							},
+						},
+					},
+					owner: {
+						select: {
+							name: true,
+							ownership_type: true,
 						},
 					},
 				},
@@ -164,11 +166,13 @@ export async function GET(request: Request) {
 			}),
 		]);
 		const data = transactions.map((transaction) => ({
+			id: transaction.id,
 			tanggal_transaksi: formatDateOnly(transaction.transaction_date),
 			no_pol_truck: transaction.truck.license_plate,
-			nama_petani: ((transaction.truck as any).owner?.name ?? ""),
+			nama_petani: transaction.owner?.name ?? "",
 			nama_driver: transaction.driver_name,
-			type_ownership: ((transaction.truck as any).owner?.ownership_type === "private" ? "pribadi" : "petani"),
+			price : transaction.current_price,
+			type_ownership: transaction.owner?.ownership_type,
 			netto: transaction.netto_weight ?? 0,
 			amount: transaction.total_price ?? 0,
 			status: transaction.status,
