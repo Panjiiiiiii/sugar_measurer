@@ -25,7 +25,7 @@ export const CreateBranchTransactionSchema = z.object({
     .string({ message: "owner_id is required" })
     .min(1, "owner_id is required")
     .trim(),
-  sugar_price: z.number().int().min(0),
+  sugar_price: z.number().int().min(0).optional(),
   driver_name: z.string().optional(),
   tarra_weight: z.number().int().min(0).optional(),
   loading_out: z.string().optional(),

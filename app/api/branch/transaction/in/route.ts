@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   try {
     const rawBody = await request.json();
     const parsedInput = validateCreateBranchTransactionInputSafe(rawBody);
-
+    
     if (!parsedInput.success) {
       const firstErrorMessage =
         parsedInput.error.issues[0]?.message ?? "Validation failed";
@@ -35,7 +35,10 @@ export async function POST(request: Request) {
 
     const hasTare = tarra_weight !== undefined && tarra_weight > 0;
     const tareWeight = tarra_weight ?? 0;
-    const hasLoadingOut = typeof loading_out === "string" && loading_out.trim() !== "" && loading_out !== "0";
+    const hasLoadingOut =
+      typeof loading_out === "string" &&
+      loading_out.trim() !== "" &&
+      loading_out !== "0";
     const transactionStatus = hasTare && hasLoadingOut ? "unpaid" : "queue";
 
     const loadingInDate = new Date(loading_in);
@@ -96,15 +99,15 @@ export async function POST(request: Request) {
       ]);
 
       if (!location) {
-      throw new Error("LOCATION_NOT_FOUND");
+        throw new Error("LOCATION_NOT_FOUND");
       }
 
       if (!truck) {
-      throw new Error("TRUCK_NOT_FOUND");
+        throw new Error("TRUCK_NOT_FOUND");
       }
 
       if (!owner) {
-      throw new Error("OWNER_NOT_FOUND");
+        throw new Error("OWNER_NOT_FOUND");
       }
 
       const nettoWeight = hasTare ? bruto_weight - tareWeight : 0;
@@ -112,16 +115,16 @@ export async function POST(request: Request) {
       let specialOwner = await tx.owner.findFirst({
         where: {
           id: owner_id,
-          status : "special",
+          ownership_type : "special",
         },
-        select : {
-          special_price : true
-        }
+        select: {
+          special_price: true,
+        },
       });
 
       const resolvedSugarPrice =
         sugar_price ?? specialOwner?.special_price ?? location.sugar_price;
-      
+
       const totalPrice =
         nettoWeight !== 0 ? nettoWeight * resolvedSugarPrice : 0;
 
@@ -134,7 +137,7 @@ export async function POST(request: Request) {
           current_price: resolvedSugarPrice,
           driver_name: driver_name,
           total_price: totalPrice,
-        status: transactionStatus,
+          status: transactionStatus,
           payment_method: "cash",
           loading_in: loadingInDate,
           loading_out: loadingOutDate,
@@ -157,7 +160,7 @@ export async function POST(request: Request) {
             connect: {
               id: user_id,
             },
-          }
+          },
         },
       });
     });
@@ -192,11 +195,11 @@ export async function POST(request: Request) {
 
     if (error instanceof Error && error.message === "OWNER_NOT_FOUND") {
       return Response.json(
-      {
-        statusCode: 404,
-        message: "Owner not found",
-      },
-      { status: 404 },
+        {
+          statusCode: 404,
+          message: "Owner not found",
+        },
+        { status: 404 },
       );
     }
 

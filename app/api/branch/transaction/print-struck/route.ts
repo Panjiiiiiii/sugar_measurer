@@ -46,11 +46,8 @@ export async function POST(request: Request) {
         const transaction = await prisma.transaction.findUnique({
             where: { id: transaction_id },
             include: {
-                truck: {
-                    include: {
-                        owner: true,
-                    },
-                },
+                truck: true,
+                owner: true,
                 location: true,
             },
         });
@@ -82,7 +79,7 @@ export async function POST(request: Request) {
         }
 
         const loadingIn = formatDateTime(new Date(transaction.loading_in));
-        const loadingOut = formatDateTime(new Date(transaction.loading_out));
+        const loadingOut = formatDateTime(new Date(transaction.loading_out ?? new Date()));
 
         const harga = transaction.location.sugar_price;
         const netto = transaction.netto_weight ?? 0;
@@ -98,7 +95,7 @@ export async function POST(request: Request) {
                         judul: "BUKTI PENIMBANGAN / NOTA PEMBAYARAN",
                     },
                     detail: {
-                        customer: transaction.truck.owner.name,
+                        customer: transaction.owner?.name,
                         material: "TEBU",
                         no_pol: transaction.truck.license_plate,
                         masuk: {
