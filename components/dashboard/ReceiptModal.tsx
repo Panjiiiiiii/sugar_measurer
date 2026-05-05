@@ -39,22 +39,22 @@ export function ReceiptModal({ isOpen, onClose, data }: ReceiptModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Preview Struk" size="sm" centerTitle>
-      <div className="bg-white p-2 flex flex-col items-center">
+      <div className="bg-white flex flex-col items-center">
         {/* Receipt Paper Simulation */}
-        <div className="w-full max-w-[300px] font-mono text-[11px] text-gray-800 flex flex-col gap-4">
+        <div className="w-full max-w-[240px] font-mono text-[10px] text-gray-800 flex flex-col gap-3">
           {/* Header */}
-          <div className="text-center flex flex-col gap-0.5">
-            <h3 className="text-sm font-bold uppercase tracking-wider">UD.FADJAR</h3>
-            <p>Dsn.Bandarangin, Kec. Pagak</p>
-            <p>Kab.Malang</p>
-            <p className="mt-3">{dateStr} • {timeStr}</p>
+          <div className="text-center flex flex-col gap-0.5 pt-2">
+            <h3 className="text-[12px] font-bold uppercase tracking-wider">UD.FADJAR</h3>
+            <p className="text-[9px]">Dsn.Bandarangin, Kec. Pagak</p>
+            <p className="text-[9px]">Kab.Malang</p>
+            <p className="mt-2 text-[9px] opacity-70">{dateStr} • {timeStr}</p>
           </div>
 
           {/* Details */}
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-1.5 px-1">
             <div className="flex justify-between">
               <span className="text-gray-500">Customer</span>
-              <span className="font-bold uppercase text-right max-w-[160px]">{data.customer || "-"}</span>
+              <span className="font-bold uppercase text-right max-w-[140px]">{data.customer || "-"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Material</span>
@@ -75,10 +75,10 @@ export function ReceiptModal({ isOpen, onClose, data }: ReceiptModalProps) {
           </div>
 
           {/* Divider */}
-          <div className="border-t border-dashed border-gray-300 w-full" />
+          <div className="border-t border-dashed border-gray-200 w-full" />
 
           {/* Weight Details */}
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-1.5 px-1">
             <div className="flex justify-between">
               <span className="text-gray-500">Bruto</span>
               <span className="font-bold">{data.bruto || "0"}Kg</span>
@@ -100,27 +100,27 @@ export function ReceiptModal({ isOpen, onClose, data }: ReceiptModalProps) {
           </div>
 
           {/* Divider */}
-          <div className="border-t border-dashed border-gray-300 w-full" />
+          <div className="border-t border-dashed border-gray-200 w-full" />
 
           {/* Price Details */}
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-1.5 px-1">
             <div className="flex justify-between items-center">
               <span className="text-gray-500">Harga per kw</span>
-              <span className="font-bold text-[12px]">Rp. {data.hargaPerKw},- /kw</span>
+              <span className="font-bold text-[11px]">Rp. {data.hargaPerKw},- /kw</span>
             </div>
-            <div className="flex justify-between items-center mt-1">
-              <span className="text-xs font-bold uppercase">Total</span>
-              <span className="font-bold text-[14px] text-gray-900">{data.total}</span>
+            <div className="flex justify-between items-center mt-0.5">
+              <span className="text-[10px] font-bold uppercase">Total</span>
+              <span className="font-bold text-[13px] text-gray-900">{data.total}</span>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="border-t border-dashed border-gray-300 w-full" />
+          <div className="border-t border-dashed border-gray-200 w-full" />
 
           {/* Signature Section */}
-          <div className="mt-4 flex flex-col items-center gap-2">
-            <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-bold">Operator</p>
-            <div className="relative h-14 w-32 flex items-center justify-center">
+          <div className="mt-2 flex flex-col items-center gap-1">
+            <p className="text-[9px] text-gray-400 uppercase tracking-[0.2em] font-bold">Operator</p>
+            <div className="relative h-10 w-24 flex items-center justify-center">
               {/* Simple SVG for Signature Look */}
               <svg viewBox="0 0 100 40" className="w-full h-full text-gray-900">
                 <path 
@@ -136,19 +136,19 @@ export function ReceiptModal({ isOpen, onClose, data }: ReceiptModalProps) {
                   stroke="currentColor" 
                   strokeWidth="1.5" 
                   strokeLinecap="round" 
-                  opacity="0.6"
+                  opacity="0.4"
                 />
               </svg>
             </div>
-            <p className="font-bold uppercase text-gray-900 mt-1">{data.operator}</p>
+            <p className="font-bold uppercase text-[9px] text-gray-900">{data.operator}</p>
           </div>
 
           {/* Bottom Space */}
-          <div className="h-4" />
+          <div className="h-2" />
         </div>
       </div>
       
-      <div className="mt-6 flex flex-col gap-3">
+      <div className="mt-4 flex flex-col gap-3">
         <button 
           onClick={() => window.print()}
           className="w-full py-4 bg-[#009262] text-white rounded-2xl font-bold hover:bg-[#007a52] transition-all shadow-lg shadow-green-100"
@@ -157,5 +157,6 @@ export function ReceiptModal({ isOpen, onClose, data }: ReceiptModalProps) {
         </button>
       </div>
     </Modal>
+
   );
 }
