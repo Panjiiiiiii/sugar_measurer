@@ -8,11 +8,14 @@ import {
 } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import LogoutModal from "./LogoutModal";
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
+  const params = useParams();
+  const role = (params.role as string) || "branch";
 
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-10 transition-all">
@@ -32,7 +35,7 @@ export default function Header() {
       <div className="flex items-center gap-4">
         {/* Notifications */}
         <Link
-          href="/finance/notification"
+          href={`/${role}/notification`}
           className="relative p-2 text-gray-500 hover:bg-gray-50 rounded-xl transition-colors"
         >
           <Bell size={22} weight="regular" />
@@ -77,7 +80,7 @@ export default function Header() {
 
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-gray-200/50 z-20 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
                 <Link
-                  href="/finance/profile"
+                  href={`/${role}/profile`}
                   onClick={() => setIsDropdownOpen(false)}
                   className="flex items-center px-6 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
                 >
@@ -105,7 +108,6 @@ export default function Header() {
         onLogout={() => {
           console.log("Logging out...");
           setIsLogoutModalOpen(false);
-          // Add actual logout logic/redirect here if needed
         }}
       />
     </header>

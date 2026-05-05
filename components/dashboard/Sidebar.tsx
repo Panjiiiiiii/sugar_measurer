@@ -2,46 +2,49 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import { 
-  SquaresFour, 
   Scales, 
   Truck, 
+  User,
   ArrowsLeftRight,
   Lightning
 } from "@phosphor-icons/react";
 
-const menuItems = [
-  {
-    name: "Dashboard",
-    icon: SquaresFour,
-    href: "/branch/dashboard",
-  },
-  {
-    name: "Data Timbangan",
-    icon: Scales,
-    href: "/branch/timbangan",
-  },
-  {
-    name: "Data Truk",
-    icon: Truck,
-    href: "/branch/truk",
-  },
-  {
-    name: "Riwayat Transfer",
-    icon: ArrowsLeftRight,
-    href: "/branch/transfer",
-  },
-];
-
 export default function Sidebar() {
   const pathname = usePathname();
+  const params = useParams();
+  
+  const role = (params.role as string) || "branch";
+
+  const menuItems = [
+    {
+      name: "Timbangan",
+      icon: Scales,
+      href: `/${role}/timbangan`,
+    },
+    {
+      name: "Data Truk",
+      icon: Truck,
+      href: `/${role}/truk`,
+    },
+    {
+      name: "Data Customer",
+      icon: User,
+      href: `/${role}/customer`,
+    },
+    {
+      name: "Riwayat Transaksi",
+      icon: ArrowsLeftRight,
+      href: `/${role}/transaksi`,
+    },
+  ];
 
   return (
-    <div className="w-60 h-full bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 transition-all">
+    <div className="w-64 h-full bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 transition-all z-50">
       {/* Brand */}
       <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
           <Lightning weight="fill" className="text-white text-xl" />
         </div>
         <span className="font-bold text-gray-900 text-lg leading-tight">
@@ -51,7 +54,7 @@ export default function Sidebar() {
 
       {/* Menu Label */}
       <div className="px-6 py-4">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em]">
           Menu
         </span>
       </div>
@@ -60,24 +63,26 @@ export default function Sidebar() {
       <nav className="flex-1 px-3">
         <ul className="space-y-1">
           {menuItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname.startsWith(item.href);
             const Icon = item.icon;
             
             return (
               <li key={item.name}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${
                     isActive
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                      ? "bg-blue-50/80 text-[#2563EB]"
+                      : "text-[#64748B] hover:bg-gray-50/80 hover:text-gray-900"
                   }`}
                 >
                   <Icon 
                     size={22} 
-                    weight={isActive ? "fill" : "regular"} 
+                    weight={isActive ? "fill" : "bold"} 
                   />
-                  <span className="font-medium">{item.name}</span>
+                  <span className={`text-sm font-bold ${isActive ? "text-[#2563EB]" : "text-[#64748B]"}`}>
+                    {item.name}
+                  </span>
                 </Link>
               </li>
             );
