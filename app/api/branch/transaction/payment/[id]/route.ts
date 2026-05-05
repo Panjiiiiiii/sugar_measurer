@@ -142,6 +142,8 @@ export async function PUT(
     try {
         const { id: transactionId } = await params;
 
+        const { status, payment_method } = await request.json();
+
         if (!transactionId) {
             return Response.json(
                 {
@@ -153,54 +155,10 @@ export async function PUT(
             );
         }
 
-        const rawPayload = await request.json();
-        const { file_tf } = rawPayload;
-
-        if (!file_tf || typeof file_tf !== "string") {
-            return Response.json(
-                {
-                    statusCode: 400,
-                    message: "file_tf is required and must be a base64 string",
-                    data: null,
-                },
-                { status: 400 },
-            );
-        }
-
-        const decodedFile = decodeBase64File(file_tf);
-
-        if (!decodedFile) {
-            return Response.json(
-                {
-                    statusCode: 400,
-                    message: "Invalid file_tf base64 format",
-                    data: null,
-                },
-                { status: 400 },
-            );
-        }
-
-        const extension = getExtensionFromMimeType(decodedFile.mimeType);
-        const relativeDirectory = path.join("finance", "transaction");
-        const absoluteDirectory = path.join(process.cwd(), "public", relativeDirectory);
-        const transferTimestamp = formatTransferTimestamp(new Date());
-        const fileName = `${transactionId}-${transferTimestamp}.${extension}`;
-        const absoluteFilePath = path.join(absoluteDirectory, fileName);
-        const publicFilePath = `/${relativeDirectory.replace(/\\/g, "/")}/${fileName}`;
-
-        await mkdir(absoluteDirectory, { recursive: true });
-        await writeFile(absoluteFilePath, decodedFile.buffer);
-
-        let result: unknown | null = null;
-
         try {
-            result = await prisma.$transaction(async (tx) => {
+            await prisma.$transaction(async (tx) => {
                 const transaction = await tx.transaction.findUnique({
                     where: { id: transactionId },
-                    select: {
-                        id: true,
-                        status: true,
-                    },
                 });
 
                 if (!transaction) {
@@ -211,31 +169,70 @@ export async function PUT(
                     throw new Error("TRANSACTION_ALREADY_PAID");
                 }
 
-                return tx.transaction.update({
+                tx.transaction.update({
                     where: { id: transactionId },
                     data: {
-                        status: "paid",
-                        bukti_transfer: publicFilePath,
+                        status: status,
+                        payment_method : payment_method
+                    },
+                });
+
+                const existingLocation = await tx.location.findUnique({
+                    where: { id: transaction.location_id },
+                });
+
+                if (!existingLocation) {
+                    return Response.json(
+                        {
+                            statusCode: 400,
+                            message: "Location not found",
+                        },
+                        { status: 400 },
+                    );
+                }
+
+                let amountLocation : number = existingLocation.account_balance ?? 0;
+
+                let amountTransaction : number = transaction.total_price ?? 0;
+
+                if(amountLocation < amountTransaction){
+                    return Response.json(
+                        {
+                            statusCode: 400,
+                            message: "Insufficient balance in location",
+                        },
+                        { status: 400 },
+                    );
+                }
+
+                tx.logTransfer.create({
+                    data: {
+                        transaction_id: transactionId,
+                        user_id: transaction.user_id,
+                        transfer_amount: transaction.total_price ?? 0,
+                        transfer_status : "out",
+                        bukti_transfer : ""
+                    },
+                });
+
+                tx.location.update({
+                    where: { id: transaction.location_id },
+                    data: {
+                        account_balance: {
+                            decrement: transaction.total_price ?? 0,
+                        },
                     },
                 });
             });
         } catch (dbError) {
-            await unlink(absoluteFilePath).catch(() => undefined);
-            throw dbError;
-        }
-
-        if (!result) {
-            await unlink(absoluteFilePath).catch(() => undefined);
             return Response.json(
                 {
-                    statusCode: 404,
-                    message: "Transaction not found",
-                    data: null,
+                    statusCode: 500,
+                    message : dbError
                 },
-                { status: 404 },
+                { status: 500 },
             );
         }
-
         return Response.json(
             {
                 statusCode: 200,
@@ -248,11 +245,10 @@ export async function PUT(
             if (error.message === "TRANSACTION_NOT_FOUND") {
                 return Response.json(
                     {
-                        statusCode: 404,
+                        statusCode: 400,
                         message: "Transaction not found",
-                        data: null,
                     },
-                    { status: 404 },
+                    { status: 400 },
                 );
             }
 
@@ -261,7 +257,6 @@ export async function PUT(
                     {
                         statusCode: 400,
                         message: "Transaction has already been paid",
-                        data: null,
                     },
                     { status: 400 },
                 );
@@ -272,7 +267,7 @@ export async function PUT(
             {
                 statusCode: 500,
                 message: "Internal server error",
-                data: null,
+                error: error instanceof Error ? error.message : String(error),                
             },
             { status: 500 },
         );
