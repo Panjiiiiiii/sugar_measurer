@@ -8,14 +8,35 @@ import {
 } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import LogoutModal from "./LogoutModal";
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
   const params = useParams();
+  const pathname = usePathname();
   const role = (params.role as string) || "branch";
+
+  // Navigation tracking for dynamic breadcrumbs
+  React.useEffect(() => {
+    const mainPages = ["timbangan", "truk", "customer", "transaksi"];
+    const currentPage = mainPages.find(page => pathname.includes(`/${role}/${page}`));
+    
+    if (currentPage) {
+      const pageLabels: Record<string, string> = {
+        timbangan: "Timbangan",
+        truk: "Data Truk",
+        customer: "Data Customer",
+        transaksi: "Riwayat Transaksi"
+      };
+      
+      sessionStorage.setItem("lastMainPage", JSON.stringify({
+        label: pageLabels[currentPage],
+        href: `/${role}/${currentPage}`
+      }));
+    }
+  }, [role, pathname]);
 
   return (
     <header className="h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 fixed top-0 right-0 left-64 z-40 transition-all">

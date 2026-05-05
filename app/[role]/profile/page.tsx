@@ -16,6 +16,15 @@ export default function DynamicProfilePage() {
     password: "password123",
   });
 
+  const [lastPage, setLastPage] = useState({ label: "Timbangan", href: `/${role}/timbangan` });
+
+  React.useEffect(() => {
+    const saved = sessionStorage.getItem("lastMainPage");
+    if (saved) {
+      setLastPage(JSON.parse(saved));
+    }
+  }, []);
+
   return (
     <div className="flex flex-col gap-8 max-w-5xl mx-auto">
       {/* Header & Breadcrumb */}
@@ -23,7 +32,7 @@ export default function DynamicProfilePage() {
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Profile</h1>
         <Breadcrumb 
           items={[
-            { label: "Dashboard", href: `/${role}` },
+            { label: lastPage.label, href: lastPage.href },
             { label: "Profile" }
           ]} 
         />

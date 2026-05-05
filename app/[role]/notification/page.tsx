@@ -33,6 +33,14 @@ export default function DynamicNotificationPage() {
   const params = useParams();
   const role = Array.isArray(params.role) ? params.role[0] : (params.role || "branch");
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
+  const [lastPage, setLastPage] = React.useState({ label: "Timbangan", href: `/${role}/timbangan` });
+
+  React.useEffect(() => {
+    const saved = sessionStorage.getItem("lastMainPage");
+    if (saved) {
+      setLastPage(JSON.parse(saved));
+    }
+  }, []);
 
   const groupedNotifications = mockNotifications.reduce((acc, curr) => {
     if (!acc[curr.group]) acc[curr.group] = [];
@@ -57,7 +65,7 @@ export default function DynamicNotificationPage() {
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Notifikasi</h1>
         <Breadcrumb 
           items={[
-            { label: "Dashboard", href: `/${role}` },
+            { label: lastPage.label, href: lastPage.href },
             { label: "Notifikasi" }
           ]} 
         />
