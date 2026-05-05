@@ -89,10 +89,16 @@ export default function TransaksiPage() {
         noPadding
         headerAction={
           <div className="flex items-center gap-3">
-            <Button variant="white" icon={<Export size={18} weight="bold" />}>Export</Button>
             <Button 
               variant="white" 
-              className="px-4 py-2 text-xs font-bold h-[40px] border-gray-100 min-w-[120px]"
+              className="px-6 py-2 text-xs font-bold h-[40px] border-gray-100 min-w-[120px]"
+              icon={<Export size={18} weight="bold" />}
+            >
+              Export
+            </Button>
+            <Button 
+              variant="white" 
+              className="px-6 py-2 text-xs font-bold h-[40px] border-gray-100 min-w-[120px]"
               onClick={() => setIsDateModalOpen(true)}
               icon={<CaretDown size={14} weight="bold" />}
               iconPosition="right"
@@ -107,7 +113,7 @@ export default function TransaksiPage() {
                 { value: "Masuk", label: "Masuk" },
                 { value: "Keluar", label: "Keluar" }
               ]} 
-              className="w-32"
+              className="min-w-[120px]"
             />
           </div>
         }
