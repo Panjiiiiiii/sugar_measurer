@@ -35,6 +35,29 @@ export default function AntrianTimbanganDetailPage() {
     paymentMethod: "Cash"
   });
 
+  const isFormValid = 
+    formData.nopol && 
+    formData.customer && 
+    formData.supir && 
+    formData.masuk && 
+    formData.keluar && 
+    formData.bruto && 
+    formData.tara && 
+    formData.harga && 
+    formData.paymentMethod;
+
+  // Derived values
+  const brutoVal = parseFloat(formData.bruto) || 0;
+  const taraVal = parseFloat(formData.tara) || 0;
+  const nettoKw = Math.max(0, brutoVal - taraVal) / 100;
+  const hargaVal = parseFloat(formData.harga.replace(/[^0-9]/g, "")) || 0;
+  const totalHarga = nettoKw * 100 * hargaVal;
+  const totalHargaDisplay = new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0
+  }).format(totalHarga);
+
   return (
     <div className="flex flex-col gap-6 w-full max-w-full pb-10">
       {/* Header & Breadcrumbs */}
@@ -92,15 +115,15 @@ export default function AntrianTimbanganDetailPage() {
                 <Input 
                   label="Masuk" 
                   required 
+                  type="time"
                   value={formData.masuk}
                   onChange={(e) => setFormData({ ...formData, masuk: e.target.value })}
-                  icon={<Clock size={20} className="text-gray-400" />}
                 />
                 <Input 
                   label="Keluar" 
+                  type="time"
                   value={formData.keluar}
                   onChange={(e) => setFormData({ ...formData, keluar: e.target.value })}
-                  icon={<Clock size={20} className="text-gray-400" />}
                 />
               </div>
 
@@ -108,11 +131,13 @@ export default function AntrianTimbanganDetailPage() {
                 <Input 
                   label="Bruto(Kg)" 
                   required 
+                  type="number"
                   value={formData.bruto}
                   onChange={(e) => setFormData({ ...formData, bruto: e.target.value })}
                 />
                 <Input 
                   label="Tara(Kg)" 
+                  type="number"
                   value={formData.tara}
                   onChange={(e) => setFormData({ ...formData, tara: e.target.value })}
                 />
@@ -155,11 +180,13 @@ export default function AntrianTimbanganDetailPage() {
                 label="Output Netto(kw)" 
                 placeholder=""
                 disabled
+                value={nettoKw.toFixed(2)}
               />
               <Input 
                 label="Output Harga" 
                 placeholder=""
                 disabled
+                value={totalHargaDisplay}
               />
             </div>
           </Card>
@@ -187,8 +214,9 @@ export default function AntrianTimbanganDetailPage() {
           </Button>
           <Button 
             variant="primary" 
-            className="w-full py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52]"
-            onClick={() => console.log("Simpan", formData)}
+            className={`w-full py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52] ${!isFormValid ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={!isFormValid}
+            onClick={() => router.push(`/${role}/timbangan?success=true`)}
           >
             Simpan
           </Button>
