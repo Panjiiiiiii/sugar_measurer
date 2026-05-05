@@ -33,7 +33,8 @@ interface TransactionData {
 export default function TransaksiPage() {
   const params = useParams();
   const router = useRouter();
-  const role = (params.role as string) || "branch";
+  const roleRaw = params.role as string;
+  const role = (!roleRaw || roleRaw === "undefined") ? "branch" : roleRaw;
 
   const [isLoading, setIsLoading] = useState(true);
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
@@ -71,7 +72,13 @@ export default function TransaksiPage() {
             <Select 
               variant="compact"
               defaultValue="Month" 
-              options={[{ value: "Month", label: "Month" }]} 
+              options={[
+                { value: "All", label: "All" },
+                { value: "Year", label: "Year" },
+                { value: "Month", label: "Month" },
+                { value: "Week", label: "Week" },
+                { value: "Day", label: "Day" }
+              ]} 
             />
           </div>
         }

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { CustomerTable } from "@/components/dashboard/CustomerTable";
-import { DeleteModal, Toast } from "@/components/ui";
+import { DeleteModal, Toast, Select } from "@/components/ui";
 
 // These types would ideally come from a central types file or generated prisma types
 interface Customer {
@@ -18,7 +18,8 @@ export default function CustomerPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const role = (params.role as string) || "branch";
+  const roleRaw = params.role as string;
+  const role = (!roleRaw || roleRaw === "undefined") ? "branch" : roleRaw;
 
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -64,6 +65,21 @@ export default function CustomerPage() {
       />
       <PageHeader 
         title="Data Customer"
+        extraActions={
+          <div className="w-32">
+            <Select 
+              variant="compact"
+              defaultValue="Month" 
+              options={[
+                { value: "All", label: "All" },
+                { value: "Year", label: "Year" },
+                { value: "Month", label: "Month" },
+                { value: "Week", label: "Week" },
+                { value: "Day", label: "Day" }
+              ]} 
+            />
+          </div>
+        }
         primaryAction={{
           label: "Add",
           onClick: () => router.push(`/${role}/customer/add`)
