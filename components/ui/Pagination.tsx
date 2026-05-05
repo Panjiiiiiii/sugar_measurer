@@ -45,7 +45,7 @@ export function Pagination({
               return (
                 <button 
                   key={page}
-                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 text-gray-900 font-bold border border-gray-100"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-blue-50 text-[#00A3FF] font-bold border border-blue-100"
                 >
                   {page}
                 </button>
@@ -55,7 +55,7 @@ export function Pagination({
               <button 
                 key={page}
                 onClick={() => onPageChange?.(page)}
-                className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 font-bold hover:bg-gray-50 transition-colors"
+                className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 font-bold hover:bg-blue-50 hover:text-[#00A3FF] transition-colors"
               >
                 {page}
               </button>
