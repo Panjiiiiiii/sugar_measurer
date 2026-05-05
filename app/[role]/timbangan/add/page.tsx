@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/Card";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
 
 export default function InputTimbanganPage() {
   const params = useParams();
@@ -30,6 +31,8 @@ export default function InputTimbanganPage() {
     isHargaSpesial: false
   });
 
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+
   const isFormValid = 
     formData.nopol && 
     formData.customer && 
@@ -44,8 +47,7 @@ export default function InputTimbanganPage() {
   const taraVal = parseFloat(formData.tara) || 0;
   const nettoKw = Math.max(0, brutoVal - taraVal) / 100;
   const hargaVal = parseFloat(formData.harga.replace(/[^0-9]/g, "")) || 0;
-  const totalHarga = nettoKw * 100 * hargaVal; // Assuming harga is per kg if netto is in kg? 
-  // Wait, let's keep it simple: Netto (kg) * Harga (per kg)
+  const totalHarga = nettoKw * 100 * hargaVal;
   const totalHargaDisplay = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
@@ -216,7 +218,11 @@ export default function InputTimbanganPage() {
           </Button>
         </div>
         <div className="lg:col-span-5 flex flex-col gap-4">
-          <Button variant="white" className="w-full py-4">
+          <Button 
+            variant="white" 
+            className="w-full py-4"
+            onClick={() => setIsReceiptOpen(true)}
+          >
             Print Struk
           </Button>
           <Button 
@@ -229,6 +235,23 @@ export default function InputTimbanganPage() {
           </Button>
         </div>
       </div>
+
+      <ReceiptModal 
+        isOpen={isReceiptOpen}
+        onClose={() => setIsReceiptOpen(false)}
+        data={{
+          customer: formData.customer,
+          nopol: formData.nopol,
+          masuk: formData.jamMasuk,
+          keluar: formData.jamKeluar,
+          bruto: formData.bruto,
+          tara: formData.tara,
+          netto: nettoKw.toFixed(2),
+          hargaPerKw: (hargaVal).toLocaleString("id-ID"),
+          total: totalHargaDisplay,
+          operator: "Dadang Utama Jaya"
+        }}
+      />
     </div>
   );
 }
