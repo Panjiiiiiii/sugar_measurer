@@ -16,7 +16,8 @@ export default function Header() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
   const params = useParams();
   const pathname = usePathname();
-  const role = (params.role as string) || "branch";
+  const roleRaw = params.role as string;
+  const role = (!roleRaw || roleRaw === "undefined") ? "branch" : roleRaw;
 
   // Navigation tracking for dynamic breadcrumbs
   React.useEffect(() => {

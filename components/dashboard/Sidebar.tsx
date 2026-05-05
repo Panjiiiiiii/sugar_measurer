@@ -15,7 +15,8 @@ export default function Sidebar() {
   const pathname = usePathname();
   const params = useParams();
   
-  const role = (params.role as string) || "branch";
+  const roleRaw = params.role as string;
+  const role = (!roleRaw || roleRaw === "undefined") ? "branch" : roleRaw;
 
   const menuItems = [
     {

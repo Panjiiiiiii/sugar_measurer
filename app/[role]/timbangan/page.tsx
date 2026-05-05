@@ -13,7 +13,8 @@ export default function TimbanganPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const role = (params.role as string) || "branch";
+  const roleRaw = params.role as string;
+  const role = (!roleRaw || roleRaw === "undefined") ? "branch" : roleRaw;
 
   const [isLoading, setIsLoading] = useState(true);
   const [antrian, setAntrian] = useState<any[]>([]);
