@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { 
   Funnel, 
   Plus, 
@@ -22,6 +23,9 @@ const tableData = Array(15).fill({
 });
 
 export default function TimbanganTable() {
+  const params = useParams();
+  const role = Array.isArray(params.role) ? params.role[0] : (params.role || "branch");
+  
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isBuktiOpen, setIsBuktiOpen] = useState(false);
@@ -81,7 +85,7 @@ export default function TimbanganTable() {
             Filter
           </button>
           <Link 
-            href="/branch/timbangan/add"
+            href={`/${role}/timbangan/add`}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-xl text-sm font-semibold text-white hover:bg-blue-700 transition-all"
           >
             <Plus size={18} weight="bold" />
@@ -148,7 +152,7 @@ export default function TimbanganTable() {
                           Cetak Struk
                         </button>
                         <Link 
-                          href="/branch/timbangan/edit/123"
+                          href={`/${role}/timbangan/edit/123`}
                           className="w-full px-5 py-3 text-[13px] font-medium text-gray-700 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 block"
                         >
                           Edit
