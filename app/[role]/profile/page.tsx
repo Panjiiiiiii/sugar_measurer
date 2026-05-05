@@ -2,12 +2,13 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Eye, EyeSlash } from "@phosphor-icons/react";
 import Breadcrumb from "@/components/dashboard/Breadcrumb";
 
 export default function DynamicProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const role = Array.isArray(params.role) ? params.role[0] : (params.role || "branch");
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -108,12 +109,14 @@ export default function DynamicProfilePage() {
               <button 
                 type="button"
                 className="flex-1 py-4.5 bg-white border border-gray-100 text-gray-900 rounded-2xl font-bold hover:bg-gray-50 transition-all shadow-sm text-sm tracking-tight text-center"
+                onClick={() => router.back()}
               >
                 Cancel
               </button>
               <button 
                 type="button"
-                className="flex-1 py-4.5 bg-[#009253] text-white rounded-2xl font-bold hover:bg-[#007a45] transition-all shadow-lg shadow-green-100 text-sm tracking-tight"
+                className="flex-1 py-4.5 bg-[#009253] text-white rounded-2xl font-bold hover:bg-[#007a45] transition-all shadow-lg shadow-green-100 text-sm tracking-tight text-center"
+                onClick={() => router.push(`/${role}/timbangan?success=true`)}
               >
                 Simpan
               </button>

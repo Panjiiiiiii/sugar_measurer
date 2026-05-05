@@ -1,17 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { AntrianTable } from "@/components/dashboard/AntrianTable";
 import { RiwayatTimbanganTable } from "@/components/dashboard/RiwayatTimbanganTable";
 import { StatCard } from "@/components/ui/StatCard";
-import { DeleteModal } from "@/components/ui";
+import { DeleteModal, Toast } from "@/components/ui";
 import TimbanganFilterModal from "@/components/dashboard/TimbanganFilterModal";
 
 export default function TimbanganPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const role = (params.role as string) || "branch";
 
   const [isLoading, setIsLoading] = useState(true);
@@ -20,6 +21,15 @@ export default function TimbanganPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("success") === "true") {
+      setShowToast(true);
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,6 +74,11 @@ export default function TimbanganPage() {
 
   return (
     <div className="flex flex-col w-full max-w-full pb-10">
+      <Toast 
+        isVisible={showToast} 
+        message="Data Berhasil Disimpan" 
+        type="success" 
+      />
       <PageHeader 
         title="Timbangan"
         primaryAction={{
