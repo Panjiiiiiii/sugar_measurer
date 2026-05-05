@@ -38,7 +38,7 @@ export function PageHeader({
               variant={secondaryAction.variant || "white"} 
               icon={secondaryAction.icon || <Funnel size={18} weight="bold" />}
               onClick={secondaryAction.onClick}
-              className="text-xs font-bold"
+              className="text-xs font-bold py-3 px-6"
             >
               {secondaryAction.label}
             </Button>
