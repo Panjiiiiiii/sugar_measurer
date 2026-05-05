@@ -1,5 +1,21 @@
 import { prisma } from "@/lib/prisma";
 
+export async function GET(
+    _request: Request,
+    { params }: { params: Promise<{ id: string }> },
+) {
+    const { id } = await params;
+
+    return Response.json(
+        {
+            statusCode: 200,
+            message: "Route is available. Use PUT with tare and loading_out in request body.",
+            data: { id },
+        },
+        { status: 200 },
+    );
+}
+
 export async function PUT(
     request: Request,
     { params }: { params: Promise<{ id: string }> },
