@@ -31,14 +31,12 @@ export function DateFilterModal({ isOpen, onClose, onApply }: DateFilterModalPro
             type="date"
             value={dates.start}
             onChange={(e) => setDates({ ...dates, start: e.target.value })}
-            icon={<CalendarBlank size={18} className="text-gray-400" />}
           />
           <Input 
             label="Akhir tanggal" 
             type="date"
             value={dates.end}
             onChange={(e) => setDates({ ...dates, end: e.target.value })}
-            icon={<CalendarBlank size={18} className="text-gray-400" />}
           />
         </div>
 
