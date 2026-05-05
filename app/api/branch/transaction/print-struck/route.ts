@@ -19,24 +19,13 @@ function formatDateTime(date: Date) {
 export async function POST(request: Request) {
     try {
         const rawBody = await request.json();
-        const { transaction_id, user_id } = rawBody;
+        const { transaction_id } = rawBody;
 
         if (!transaction_id || typeof transaction_id !== "string" || transaction_id.trim() === "") {
             return Response.json(
                 {
                     statusCode: 400,
                     message: "transaction_id is required",
-                    data: null,
-                },
-                { status: 400 },
-            );
-        }
-
-        if (!user_id || typeof user_id !== "string" || user_id.trim() === "") {
-            return Response.json(
-                {
-                    statusCode: 400,
-                    message: "user_id is required",
                     data: null,
                 },
                 { status: 400 },
@@ -64,7 +53,7 @@ export async function POST(request: Request) {
         }
 
         const operator = await prisma.user.findUnique({
-            where: { id: user_id },
+            where: { id: transaction.user_id },
         });
 
         if (!operator) {
@@ -81,7 +70,12 @@ export async function POST(request: Request) {
         const loadingIn = formatDateTime(new Date(transaction.loading_in));
         const loadingOut = formatDateTime(new Date(transaction.loading_out ?? new Date()));
 
-        const harga = transaction.location.sugar_price;
+        let harga = transaction.location.sugar_price;
+        if (transaction.owner?.ownership_type === "special") {
+            harga = transaction.location.sugar_price;
+        } else {
+            harga = transaction.current_price;
+        }
         const netto = transaction.netto_weight ?? 0;
         const total = transaction.total_price ?? netto * harga;
 
@@ -120,12 +114,12 @@ export async function POST(request: Request) {
                         },
                         netto: {
                             value: netto,
-                            satuan: "kw",
+                            satuan: "kg",
                         },
                     },
                     pembayaran: {
-                        harga_per_kw: harga,
-                        harga_display: `Rp. ${harga.toLocaleString("id-ID")},-/kw`,
+                        harga_per_kg: harga,
+                        harga_display: `Rp. ${harga.toLocaleString("id-ID")},-/kg`,
                         total: total,
                         total_display: `Rp. ${total.toLocaleString("id-ID")},-`,
                     },
