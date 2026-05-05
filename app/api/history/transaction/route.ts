@@ -159,6 +159,18 @@ export async function GET(request: Request) {
 							ownership_type: true,
 						},
 					},
+					location : {
+						select : {
+							id : true,
+							name : true
+						}
+					},
+					user : {
+						select : {
+							id : true,
+							name : true
+						}
+					}
 				},
 			}),
 			prisma.transaction.count({
@@ -172,6 +184,8 @@ export async function GET(request: Request) {
 			nama_petani: transaction.owner?.name ?? "",
 			nama_driver: transaction.driver_name,
 			price : transaction.current_price,
+			location : transaction.location.name,
+			operator : transaction.user?.name,
 			type_ownership: transaction.owner?.ownership_type,
 			netto: transaction.netto_weight ?? 0,
 			amount: transaction.total_price ?? 0,
