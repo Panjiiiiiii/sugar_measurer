@@ -112,6 +112,7 @@ export default function InputTimbanganPage() {
                 <Input 
                   label="Masuk" 
                   required 
+                  type="time"
                   placeholder="00:00" 
                   icon={<Clock size={18} weight="bold" />}
                   value={formData.jamMasuk}
@@ -119,6 +120,7 @@ export default function InputTimbanganPage() {
                 />
                 <Input 
                   label="Keluar" 
+                  type="time"
                   placeholder="00:00" 
                   icon={<Clock size={18} weight="bold" />}
                   value={formData.jamKeluar}
