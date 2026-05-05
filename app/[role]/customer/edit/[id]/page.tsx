@@ -25,6 +25,8 @@ export default function EditCustomerPage() {
     phoneNumber: "087459687412"
   });
 
+  const isFormValid = formData.nama && formData.typeOwner && formData.phoneNumber;
+
   return (
     <div className="flex flex-col gap-6 w-full max-w-full pb-10">
       {/* Header & Breadcrumbs */}
@@ -44,6 +46,7 @@ export default function EditCustomerPage() {
           <div className="flex flex-col gap-6 py-2">
             <Input 
               label="Nama" 
+              required
               placeholder="Masukkan nama customer"
               value={formData.nama}
               onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
@@ -51,6 +54,7 @@ export default function EditCustomerPage() {
             
             <Select 
               label="Type Owner" 
+              required
               placeholder="Pilih type owner"
               value={formData.typeOwner}
               onChange={(e) => setFormData({ ...formData, typeOwner: e.target.value })}
@@ -63,6 +67,7 @@ export default function EditCustomerPage() {
 
             <Input 
               label="Phone Number" 
+              required
               placeholder="Masukkan nomor telepon"
               value={formData.phoneNumber}
               onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
@@ -81,8 +86,9 @@ export default function EditCustomerPage() {
           </Button>
           <Button 
             variant="primary" 
-            className="flex-1 py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52]"
-            onClick={() => console.log("Simpan", formData)}
+            className={`flex-1 py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52] ${!isFormValid ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={!isFormValid}
+            onClick={() => router.push(`/${role}/customer?success=true`)}
           >
             Simpan
           </Button>

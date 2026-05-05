@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { CustomerTable } from "@/components/dashboard/CustomerTable";
-import { DeleteModal } from "@/components/ui";
+import { DeleteModal, Toast } from "@/components/ui";
 
 // These types would ideally come from a central types file or generated prisma types
 interface Customer {
@@ -17,12 +17,22 @@ interface Customer {
 export default function CustomerPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const role = (params.role as string) || "branch";
 
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("success") === "true") {
+      setShowToast(true);
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
 
   // Simulating data fetch from backend
   useEffect(() => {
@@ -47,6 +57,11 @@ export default function CustomerPage() {
 
   return (
     <div className="flex flex-col w-full max-w-full pb-10">
+      <Toast 
+        isVisible={showToast} 
+        message="Data Berhasil Disimpan" 
+        type="success" 
+      />
       <PageHeader 
         title="Data Customer"
         primaryAction={{
