@@ -15,7 +15,7 @@ export default function DynamicDashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col ml-64 transition-all overflow-x-hidden">
         <Header />
-        <main className="flex-1 p-8 overflow-x-hidden">
+        <main className="flex-1 p-8 pt-24 overflow-x-hidden">
           {children}
         </main>
       </div>

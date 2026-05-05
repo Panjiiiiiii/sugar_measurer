@@ -18,7 +18,7 @@ export default function Header() {
   const role = (params.role as string) || "branch";
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 sticky top-0 z-10 transition-all">
+    <header className="h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 fixed top-0 right-0 left-64 z-40 transition-all">
       {/* Search Bar */}
       <div className="relative w-[440px]">
         <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
