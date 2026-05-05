@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
+import { id } from "zod/locales";
 
 interface PaginationMeta {
 	number_page: number;
@@ -118,6 +119,19 @@ export async function GET(request: Request) {
 				: {}),
 		};
 
+		// compute KPI counts for statuses: paid, unpaid and inqueue (DB uses 'queue')
+		const [paidCount, unpaidCount, inqueueCount] = await Promise.all([
+			prisma.transaction.count({ where: { ...whereClause, status: "paid" } }),
+			prisma.transaction.count({ where: { ...whereClause, status: "unpaid" } }),
+			prisma.transaction.count({ where: { ...whereClause, status: "queue" } }),
+		]);
+
+		const kpi = {
+			paid: paidCount,
+			unpaid: unpaidCount,
+			inqueue: inqueueCount,
+		};
+
 		const [transactions, totalData] = await Promise.all([
 			prisma.transaction.findMany({
 				where: whereClause,
@@ -127,37 +141,59 @@ export async function GET(request: Request) {
 					transaction_date: "desc",
 				},
 				select: {
+					id: true,
 					transaction_date: true,
 					netto_weight: true,
+					bruto_weight: true,
+					tarra_weight: true,
 					total_price: true,
 					status: true,
+					driver_name: true,
+					current_price: true,
 					truck: {
 						select: {
 							license_plate: true,
-							owner: {
-								select: {
-									name: true,
-									ownership_type: true,
-								},
-							},
 						},
 					},
+					owner: {
+						select: {
+							name: true,
+							ownership_type: true,
+						},
+					},
+					location : {
+						select : {
+							id : true,
+							name : true
+						}
+					},
+					user : {
+						select : {
+							id : true,
+							name : true
+						}
+					}
 				},
 			}),
 			prisma.transaction.count({
 				where: whereClause,
 			}),
 		]);
-
 		const data = transactions.map((transaction) => ({
+			id: transaction.id,
 			tanggal_transaksi: formatDateOnly(transaction.transaction_date),
 			no_pol_truck: transaction.truck.license_plate,
-			nama_petani: transaction.truck.owner.name,
-			type_ownership:
-				transaction.truck.owner.ownership_type === "private" ? "pribadi" : "petani",
+			nama_petani: transaction.owner?.name ?? "",
+			nama_driver: transaction.driver_name,
+			price : transaction.current_price,
+			location : transaction.location.name,
+			operator : transaction.user?.name,
+			type_ownership: transaction.owner?.ownership_type,
+			bruto : transaction.bruto_weight ?? 0,
+			tara : transaction.tarra_weight ?? 0,
 			netto: transaction.netto_weight ?? 0,
 			amount: transaction.total_price ?? 0,
-			status_pembayaran: transaction.status,
+			status: transaction.status,
 		}));
 
 		const totalPage = Math.max(1, Math.ceil(totalData / limit));
@@ -170,6 +206,7 @@ export async function GET(request: Request) {
 		return Response.json(
 			{
 				statusCode: 200,
+				kpi,
 				data,
 				page: pagination,
 			},

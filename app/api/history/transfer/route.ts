@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma, transfer_status } from "@/generated/prisma/client";
 
 interface PaginationMeta {
 	number_page: number;
@@ -130,6 +130,7 @@ export async function GET(request: Request) {
 					created_at: true,
 					bukti_transfer: true,
 					transfer_amount: true,
+					transfer_status: true,
 					location: {
 						select: {
 							name: true,
@@ -146,7 +147,8 @@ export async function GET(request: Request) {
 			tanggal: formatDateOnly(transfer.created_at),
 			bukti_tf: transfer.bukti_transfer,
 			jumlah_nominal: transfer.transfer_amount,
-			location: transfer.location.name,
+			location: transfer.location?.name,
+			transfer_status: transfer.transfer_status
 		}));
 
 		const totalPage = Math.max(1, Math.ceil(totalData / limit));

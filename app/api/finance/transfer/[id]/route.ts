@@ -4,11 +4,6 @@ import path from "node:path";
 import { validateCreateTransferInput } from "@/schema/transfer";
 import { z } from "zod";
 
-type TransferPayload = {
-    amount?: number;
-    bukti_transfer?: string;
-};
-
 const BASE64_PATTERN = /^data:([\w/+.-]+);base64,([A-Za-z0-9+/=\s]+)$/;
 
 function getExtensionFromMimeType(mimeType: string) {
@@ -23,7 +18,8 @@ function getExtensionFromMimeType(mimeType: string) {
     return mimeMap[mimeType] ?? "bin";
 }
 
-function decodeBase64File(base64Input: string) {
+function decodeBase64File(base64Input?: string) {
+    if (!base64Input) return null;
     const trimmedInput = base64Input.trim();
     const matched = trimmedInput.match(BASE64_PATTERN);
     const mimeType = matched?.[1];
@@ -51,7 +47,7 @@ function formatTransferTimestamp(date: Date) {
     return date.toISOString().replace(/[:.]/g, "-");
 }
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id: locationId } = await params;
         const rawPayload = await request.json();
@@ -63,8 +59,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         if (!decodedFile) {
             return Response.json(
                 {
-                    message: "Invalid bukti_transfer base64 format",
-                    data: null,
+                    message: "Invalid bukti transfer base64 format",
                 },
                 { status: 400 },
             );
@@ -108,7 +103,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
                 const transferLog = await tx.logTransfer.create({
                     data: {
                         location_id: existingLocation.id,
-                        bukti_transfer: publicFilePath,
+                        user_id: payload.user_id,
+                        bukti_transfer: publicFilePath ?? "cash",
+                        transfer_status : "in",
                         transfer_amount: amount,
                     },
                 });

@@ -49,6 +49,14 @@ export async function GET(request: Request) {
             orderBy: {
                 created_at: "desc",
             },
+            include: {
+                location: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+            },
         }),
         prisma.user.count(),
     ]);

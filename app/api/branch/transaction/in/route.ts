@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   try {
     const rawBody = await request.json();
     const parsedInput = validateCreateBranchTransactionInputSafe(rawBody);
-
+    
     if (!parsedInput.success) {
       const firstErrorMessage =
         parsedInput.error.issues[0]?.message ?? "Validation failed";
@@ -20,28 +20,26 @@ export async function POST(request: Request) {
       );
     }
 
-    const {
-      bruto,
-      tare,
+    let {
+      bruto_weight,
+      tarra_weight,
       loading_in,
       loading_out,
       truck_id,
       location_id,
+      user_id,
+      owner_id,
+      driver_name,
+      sugar_price,
     } = parsedInput.data;
 
-    const hasTare = tare !== undefined && tare > 0;
-    const tareWeight = tare ?? 0;
-
-    if (tareWeight > 0 && !loading_out) {
-      return Response.json(
-        {
-          statusCode: 400,
-          message: "loading_out is required when tare is provided",
-          data: null,
-        },
-        { status: 400 },
-      );
-    }
+    const hasTare = tarra_weight !== undefined && tarra_weight > 0;
+    const tareWeight = tarra_weight ?? 0;
+    const hasLoadingOut =
+      typeof loading_out === "string" &&
+      loading_out.trim() !== "" &&
+      loading_out !== "0";
+    const transactionStatus = hasTare && hasLoadingOut ? "unpaid" : "queue";
 
     const loadingInDate = new Date(loading_in);
 
@@ -58,7 +56,7 @@ export async function POST(request: Request) {
 
     let loadingOutDate = loadingInDate;
 
-    if (loading_out) {
+    if (hasLoadingOut) {
       loadingOutDate = new Date(loading_out);
 
       if (Number.isNaN(loadingOutDate.getTime())) {
@@ -73,7 +71,7 @@ export async function POST(request: Request) {
       }
     }
 
-    if (tareWeight > bruto) {
+    if (tareWeight > bruto_weight) {
       return Response.json(
         {
           statusCode: 400,
@@ -85,13 +83,17 @@ export async function POST(request: Request) {
     }
 
     const transaction = await prisma.$transaction(async (tx) => {
-      const [location, truck] = await Promise.all([
+      const [location, truck, owner] = await Promise.all([
         tx.location.findUnique({
           where: { id: location_id },
           select: { id: true, sugar_price: true },
         }),
         tx.truck.findUnique({
           where: { id: truck_id },
+          select: { id: true },
+        }),
+        tx.owner.findUnique({
+          where: { id: owner_id },
           select: { id: true },
         }),
       ]);
@@ -104,19 +106,39 @@ export async function POST(request: Request) {
         throw new Error("TRUCK_NOT_FOUND");
       }
 
-      const nettoWeight = hasTare ? bruto - tareWeight : 0;
+      if (!owner) {
+        throw new Error("OWNER_NOT_FOUND");
+      }
+
+      const nettoWeight = hasTare ? bruto_weight - tareWeight : 0;
+
+      let specialOwner = await tx.owner.findFirst({
+        where: {
+          id: owner_id,
+          ownership_type : "special",
+        },
+        select: {
+          special_price: true,
+        },
+      });
+
+      const resolvedSugarPrice =
+        sugar_price ?? specialOwner?.special_price ?? location.sugar_price;
+
       const totalPrice =
-        nettoWeight !== 0 ? nettoWeight * location.sugar_price : 0;
+        nettoWeight !== 0 ? nettoWeight * resolvedSugarPrice : 0;
 
       return tx.transaction.create({
         data: {
           transaction_date: new Date(),
-          bruto_weight: bruto,
+          bruto_weight: bruto_weight,
           tarra_weight: tareWeight,
           netto_weight: nettoWeight,
+          current_price: resolvedSugarPrice,
+          driver_name: driver_name,
           total_price: totalPrice,
-          status: "unpaid",
-          bukti_transfer: "",
+          status: transactionStatus,
+          payment_method: "cash",
           loading_in: loadingInDate,
           loading_out: loadingOutDate,
           location: {
@@ -127,6 +149,16 @@ export async function POST(request: Request) {
           truck: {
             connect: {
               id: truck_id,
+            },
+          },
+          owner: {
+            connect: {
+              id: owner_id,
+            },
+          },
+          user: {
+            connect: {
+              id: user_id,
             },
           },
         },
@@ -156,6 +188,16 @@ export async function POST(request: Request) {
         {
           statusCode: 404,
           message: "Truck not found",
+        },
+        { status: 404 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "OWNER_NOT_FOUND") {
+      return Response.json(
+        {
+          statusCode: 404,
+          message: "Owner not found",
         },
         { status: 404 },
       );
