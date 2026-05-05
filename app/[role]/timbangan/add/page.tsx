@@ -114,7 +114,6 @@ export default function InputTimbanganPage() {
                   required 
                   type="time"
                   placeholder="00:00" 
-                  icon={<Clock size={18} weight="bold" />}
                   value={formData.jamMasuk}
                   onChange={(e) => setFormData({ ...formData, jamMasuk: e.target.value })}
                 />
@@ -122,7 +121,6 @@ export default function InputTimbanganPage() {
                   label="Keluar" 
                   type="time"
                   placeholder="00:00" 
-                  icon={<Clock size={18} weight="bold" />}
                   value={formData.jamKeluar}
                   onChange={(e) => setFormData({ ...formData, jamKeluar: e.target.value })}
                 />
