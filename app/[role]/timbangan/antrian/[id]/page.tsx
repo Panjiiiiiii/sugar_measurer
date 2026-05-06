@@ -15,6 +15,7 @@ import {
   Breadcrumbs, 
   Switch 
 } from "@/components/ui";
+import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
 
 export default function AntrianTimbanganDetailPage() {
   const params = useParams();
@@ -34,6 +35,8 @@ export default function AntrianTimbanganDetailPage() {
     harga: "7.900",
     paymentMethod: "Cash"
   });
+
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
   const isFormValid = 
     formData.nopol && 
@@ -208,7 +211,7 @@ export default function AntrianTimbanganDetailPage() {
           <Button 
             variant="white" 
             className="w-full py-4 text-sm font-bold"
-            onClick={() => console.log("Print Struk")}
+            onClick={() => setIsReceiptOpen(true)}
           >
             Print Struk
           </Button>
@@ -222,6 +225,23 @@ export default function AntrianTimbanganDetailPage() {
           </Button>
         </div>
       </div>
+
+      <ReceiptModal 
+        isOpen={isReceiptOpen}
+        onClose={() => setIsReceiptOpen(false)}
+        data={{
+          customer: formData.customer,
+          nopol: formData.nopol,
+          masuk: formData.masuk,
+          keluar: formData.keluar,
+          bruto: formData.bruto,
+          tara: formData.tara,
+          netto: nettoKw.toFixed(2),
+          hargaPerKw: (hargaVal).toLocaleString("id-ID"),
+          total: totalHargaDisplay,
+          operator: "Dadang Utama Jaya"
+        }}
+      />
     </div>
   );
 }

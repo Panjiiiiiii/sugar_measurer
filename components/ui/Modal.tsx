@@ -28,8 +28,8 @@ export function Modal({ isOpen, onClose, title, children, footer, size = "md", c
         className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" 
         onClick={onClose}
       />
-      <div className={`bg-white rounded-3xl shadow-2xl w-full ${sizes[size]} relative z-10 overflow-hidden animate-in zoom-in-95 duration-200`}>
-        <div className="px-8 py-6 border-b border-gray-50 flex items-center relative">
+      <div className={`bg-white rounded-3xl shadow-2xl w-full ${sizes[size]} relative z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200`}>
+        <div className="px-8 py-6 border-b border-gray-50 flex items-center shrink-0 relative">
           <h3 className={`text-xl font-bold text-gray-900 ${centerTitle ? "w-full text-center" : ""}`}>
             {title}
           </h3>
@@ -40,11 +40,11 @@ export function Modal({ isOpen, onClose, title, children, footer, size = "md", c
             <X size={20} weight="bold" />
           </button>
         </div>
-        <div className="p-8">
+        <div className="p-8 overflow-y-auto">
           {children}
         </div>
         {footer && (
-          <div className="px-8 py-6 border-t border-gray-50 flex items-center justify-end gap-3 bg-gray-50/50">
+          <div className="px-8 py-6 border-t border-gray-50 flex items-center justify-end gap-3 bg-gray-50/50 shrink-0">
             {footer}
           </div>
         )}
