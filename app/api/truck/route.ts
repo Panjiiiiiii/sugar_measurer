@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { validateCreateTruckInput } from "@/schema/truck";
 
 interface PaginationMeta {
+    per_page: number;
     number_page: number;
     total_page: number;
     total_data: number;
@@ -30,15 +31,10 @@ export async function GET(request: Request) {
         const pageParam = getFirstQueryParam(searchParams, ["page", "number_page", "halaman"]);
         const limitParam = getFirstQueryParam(searchParams, ["limit", "per_page", "page_size"]);
         const truckTypeParam = getFirstQueryParam(searchParams, ["type_truck", "truck_type"]);
-        const ownershipTypeParam = getFirstQueryParam(searchParams, [
-            "type_ownership",
-            "ownership_type",
-        ]);
         const page = parsePositiveInt(pageParam, 1);
         const limit = parsePositiveInt(limitParam, 10);
         const skip = (page - 1) * limit;
         const truckType = truckTypeParam?.toLowerCase();
-        const ownershipType = ownershipTypeParam?.toLowerCase();
         if (truckType && truckType !== "engkel" && truckType !== "double") {
             return Response.json(
                 {
@@ -66,6 +62,7 @@ export async function GET(request: Request) {
         ]);
         const totalPage = Math.max(1, Math.ceil(totalData / limit));    
         const pagination: PaginationMeta = {
+            per_page: trucks.length,
             number_page: page,
             total_page: totalPage,
             total_data: totalData,
@@ -94,13 +91,27 @@ export async function POST(request: Request) {
     try {
         const rawData = await request.json();
         const truckData = validateCreateTruckInput(rawData);
+        const existingTruck = await prisma.truck.findFirst({
+            where: {
+                license_plate: truckData.license_plate,
+            },
+        });
+        if (existingTruck) {
+            return Response.json(
+                {
+                    statusCode: 400,
+                    message: "Truck dengan nomor polisi tersebut sudah ada",
+                },
+                { status: 400 },
+            );
+        }
         const truck = await prisma.truck.create({
             data: truckData as unknown as Prisma.truckCreateInput,
         });
         return Response.json(
             {
                 statusCode: 201,
-                message: "Truck created successfully",
+                message: "Truck berhasil dibuat",
             },
             { status: 201 },
         );

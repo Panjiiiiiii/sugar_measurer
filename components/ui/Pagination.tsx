@@ -28,6 +28,7 @@ export function Pagination({
       )}
       <div className="flex items-center gap-2">
         <Button 
+          type="button"
           variant="white" 
           size="sm" 
           onClick={() => onPageChange?.(currentPage - 1)}
@@ -45,6 +46,7 @@ export function Pagination({
               return (
                 <button 
                   key={page}
+                  type="button"
                   className="w-10 h-10 flex items-center justify-center rounded-xl bg-blue-50 text-[#00A3FF] font-bold border border-blue-100"
                 >
                   {page}
@@ -54,6 +56,7 @@ export function Pagination({
             return (
               <button 
                 key={page}
+                type="button"
                 onClick={() => onPageChange?.(page)}
                 className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 font-bold hover:bg-blue-50 hover:text-[#00A3FF] transition-colors"
               >
@@ -64,6 +67,7 @@ export function Pagination({
         </div>
 
         <Button 
+          type="button"
           variant="white" 
           size="sm" 
           onClick={() => onPageChange?.(currentPage + 1)}

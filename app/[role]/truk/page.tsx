@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useParams, useRouter } from "next/navigation";
+import axios from "axios";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import TrukTable from "@/components/dashboard/TrukTable";
 import TrukFilterModal from "@/components/dashboard/TrukFilterModal";
@@ -14,14 +15,34 @@ interface Truck {
   truck_type: string;
 }
 
+interface PaginationMeta {
+  per_page: number;
+  number_page: number;
+  total_page: number;
+  total_data: number;
+}
+
+interface TruckListResponse {
+  data: Truck[];
+  page: PaginationMeta;
+}
+
 export default function TrukPage() {
   const searchParams = useSearchParams();
   const params = useParams();
   const router = useRouter();
   const role = Array.isArray(params.role) ? params.role[0] : (params.role || "branch");
+  const currentPage = Number(searchParams.get("page") || 1);
+  const currentTruckType = searchParams.get("truck_type") || searchParams.get("type_truck") || "";
   
   const [isLoading, setIsLoading] = useState(true);
   const [trucks, setTrucks] = useState<Truck[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    per_page: 0,
+    number_page: 1,
+    total_page: 1,
+    total_data: 0,
+  });
   const [showToast, setShowToast] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -37,25 +58,70 @@ export default function TrukPage() {
     }
   }, [searchParams]);
 
-  // Simulating data fetch
   useEffect(() => {
     const fetchTrucks = async () => {
       setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const mockData: Truck[] = Array(10).fill(null).map((_, i) => ({
-        id: (i + 1).toString(),
-        name: `Truck Scania ${i + 1}`,
-        license_plate: `N ${1234 + i} AC`,
-        truck_type: i % 2 === 0 ? "Engkel" : "Double"
-      }));
-      
-      setTrucks(mockData);
-      setIsLoading(false);
+      try {
+        const response = await axios.get<TruckListResponse>("/api/truck", {
+          params: {
+            page: currentPage,
+            limit: 10,
+            type_truck: currentTruckType || undefined,
+          },
+        });
+
+        setTrucks(response.data.data ?? []);
+        setPagination(
+          response.data.page ?? {
+            per_page: response.data.data?.length ?? 0,
+            number_page: currentPage,
+            total_page: 1,
+            total_data: response.data.data?.length ?? 0,
+          },
+        );
+      } catch (error) {
+        console.error("Error fetching trucks:", error);
+        setTrucks([]);
+        setPagination({
+          per_page: 0,
+          number_page: currentPage,
+          total_page: 1,
+          total_data: 0,
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchTrucks();
-  }, []);
+  }, [currentPage, currentTruckType]);
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > pagination.total_page) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams();
+    nextParams.set("page", String(page));
+
+    if (currentTruckType) {
+      nextParams.set("truck_type", currentTruckType);
+    }
+
+    router.push(`/${role}/truk?${nextParams.toString()}`);
+  };
+
+  const handleFilterApply = (filters: { type: string }) => {
+    const nextParams = new URLSearchParams();
+    nextParams.set("page", "1");
+
+    if (filters.type) {
+      nextParams.set("truck_type", filters.type.toLowerCase());
+    }
+
+    router.push(`/${role}/truk?${nextParams.toString()}`);
+    setIsFilterOpen(false);
+  };
 
   return (
     <div className="flex flex-col w-full max-w-full pb-10">
@@ -80,6 +146,8 @@ export default function TrukPage() {
       <TrukTable 
         data={trucks}
         isLoading={isLoading}
+        pagination={pagination}
+        onPageChange={handlePageChange}
         onEdit={(id) => router.push(`/${role}/truk/edit/${id}`)}
         onDelete={(id) => {
           setSelectedTruckId(id);
@@ -90,7 +158,8 @@ export default function TrukPage() {
       <TrukFilterModal 
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        onApply={(f) => console.log("Apply truck filters", f)}
+        initialType={currentTruckType}
+        onApply={handleFilterApply}
       />
 
       <DeleteModal 
