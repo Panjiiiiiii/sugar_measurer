@@ -44,12 +44,18 @@ export default function TrukPage() {
     total_data: 0,
   });
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Data Berhasil Disimpan");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedTruckId, setSelectedTruckId] = useState<string | null>(null);
 
   useEffect(() => {
     if (searchParams.get("success") === "true") {
+      const storedMessage = sessionStorage.getItem("truck-toast-message");
+      if (storedMessage) {
+        setToastMessage(storedMessage);
+        sessionStorage.removeItem("truck-toast-message");
+      }
       setShowToast(true);
       const timer = setTimeout(() => {
         setShowToast(false);
@@ -127,7 +133,7 @@ export default function TrukPage() {
     <div className="flex flex-col w-full max-w-full pb-10">
       <Toast 
         isVisible={showToast} 
-        message="Data Berhasil Disimpan" 
+        message={toastMessage} 
         type="success" 
       />
 

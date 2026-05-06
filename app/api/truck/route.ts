@@ -111,7 +111,7 @@ export async function POST(request: Request) {
         return Response.json(
             {
                 statusCode: 201,
-                message: "Truck berhasil dibuat",
+                message: "Truck baru berhasil disimpan",
             },
             { status: 201 },
         );
@@ -120,7 +120,8 @@ export async function POST(request: Request) {
         return Response.json(
             {
                 statusCode: 500,
-                message: "Internal server error",
+                message: "Error dalam menambah truk",
+                error: error instanceof Error ? error.message : String(error),
             },
             { status: 500 },
         );
