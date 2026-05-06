@@ -1,21 +1,11 @@
 import { prisma } from "@/lib/prisma";
 
 type UpdateOwnerPayload = {
-  owner?: {
-    id?: string;
-    nama_owner?: string;
-    type_owner?: string;
-    account_number?: string;
-    type_ownership?: "farmer" | "private";
-  };
-  data_truck?: Array<{
-    id?: string;
-    nama?: string;
-    type_truck?: string;
-    no_pol?: string;
-    nama_truck?: string;
-    is_deleted?: boolean;
-  }>;
+  id?: string;
+  nama_owner?: string;
+  type_owner?: string;
+  type_ownership?: "farmer" | "private" | "special";
+  special_price?: number;
 };
 
 export async function GET(
@@ -26,9 +16,6 @@ export async function GET(
   const owner = await prisma.owner.findUnique({
     where: {
       id,
-    },
-    include: {
-      trucks: true,
     },
   });
   console.log(owner);
@@ -72,142 +59,42 @@ export async function PUT(
       );
     }
 
-    const trucksPayload = Array.isArray(payload.data_truck)
-      ? payload.data_truck
-      : [];
-
-    if (trucksPayload.some((truck) => !truck.id && !truck.no_pol)) {
-      return Response.json(
-        {
-          message: "Truck without id must include no_pol",
-          data: null,
-        },
-        { status: 400 },
-      );
-    }
-
-    // Check for duplicate no_pol in payload
-    const nopolsInPayload = trucksPayload
-      .filter((truck) => truck.no_pol && !truck.is_deleted)
-      .map((truck) => truck.no_pol!.toUpperCase());
-    
-    const duplicateNopol = nopolsInPayload.find((nopol, index) => nopolsInPayload.indexOf(nopol) !== index);
-    if (duplicateNopol) {
+    if (
+      payload.type_ownership === "special" &&
+      (payload.special_price === undefined || payload.special_price === null)
+    ) {
       return Response.json(
         {
           statusCode: 400,
-          message: `Duplicate license plate in request: ${duplicateNopol}`,
-          data: null,
+          message: "Special price is required for special ownership type",
         },
         { status: 400 },
       );
     }
 
-    // Check for duplicate no_pol in existing trucks (excluding deleted ones)
-    const existingTrucks = await prisma.truck.findMany({
-      where: { owner_id: id },
-    });
-
-    const truckIdsBeingUpdated = new Set(
-      trucksPayload.filter((t) => t.id && !t.is_deleted).map((t) => t.id),
-    );
-
-    const existingNopols = existingTrucks
-      .filter((truck) => !truckIdsBeingUpdated.has(truck.id))
-      .map((truck) => truck.license_plate.toUpperCase());
-
-    const conflictingNopol = nopolsInPayload.find((nopol) => existingNopols.includes(nopol));
-    if (conflictingNopol) {
+    if (
+      payload.type_ownership !== "special" &&
+      payload.special_price !== undefined
+    ) {
       return Response.json(
         {
-          statusCode: 409,
-          message: `License plate already exists: ${conflictingNopol}`,
-          data: null,
+          statusCode: 400,
+          message:
+            "Special price should only be provided for special ownership type",
         },
-        { status: 409 },
+        { status: 400 },
       );
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      const updatedOwner = await tx.owner.update({
-        where: { id },
-        data: {
-          name: payload.owner?.nama_owner ?? existingOwner.name,
-          ownership_type:
-            payload.owner?.type_ownership ?? existingOwner.ownership_type,
-          account_number:
-            payload.owner?.account_number ?? existingOwner.account_number,
-        },
-      });
-
-      let updatedTruckCount = 0;
-      let createdTruckCount = 0;
-      let deletedTruckCount = 0;
-
-      for (const truck of trucksPayload) {
-        if (truck.id) {
-          if (truck.is_deleted === true) {
-            const existingTruck = await tx.truck.findFirst({
-              where: {
-                id: truck.id,
-                owner_id: id,
-              },
-            });
-
-            if (!existingTruck) {
-              throw new Error(`Truck with id ${truck.id} not found for this owner`);
-            }
-
-            await tx.truck.delete({
-              where: { id: truck.id },
-            });
-
-            deletedTruckCount += 1;
-            continue;
-          }
-
-          const existingTruck = await tx.truck.findFirst({
-            where: {
-              id: truck.id,
-              owner_id: id,
-            },
-          });
-
-          if (!existingTruck) {
-            throw new Error(`Truck with id ${truck.id} not found for this owner`);
-          }
-
-          await tx.truck.update({
-            where: { id: truck.id },
-            data: {
-              name: truck.nama_truck ?? existingTruck.name,
-              license_plate: truck.no_pol ?? existingTruck.license_plate,
-              truck_type: truck.type_truck ?? existingTruck.truck_type,
-            },
-          });
-
-          updatedTruckCount += 1;
-          continue;
-        }
-
-        await tx.truck.create({
-          data: {
-            owner_id: id,
-            name: truck.nama_truck || truck.nama,
-            license_plate: truck.no_pol!,
-            truck_type: truck.type_truck,
-          },
-        });
-
-        createdTruckCount += 1;
-      }
-
-      return {
-        owner: updatedOwner,
-        updated_truck: updatedTruckCount,
-        created_truck: createdTruckCount,
-        deleted_truck: deletedTruckCount,
-      };
+    await prisma.owner.update({
+      where: { id },
+      data: {
+        name: payload.nama_owner ?? existingOwner.name,
+        ownership_type:
+          payload.type_ownership ?? existingOwner.ownership_type,
+        special_price:
+          payload.special_price ?? existingOwner.special_price,
+      },
     });
 
     return Response.json(
@@ -241,11 +128,11 @@ export async function DELETE(
       where: { id },
     });
     if (!existingOwner) {
-        return Response.json(
+      return Response.json(
         {
           message: "Owner not found",
-          data: null,
-        },        { status: 404 },
+        },
+        { status: 404 },
       );
     }
     await prisma.owner.delete({
@@ -266,5 +153,5 @@ export async function DELETE(
       },
       { status: 500 },
     );
-  } 
+  }
 }
