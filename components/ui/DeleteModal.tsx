@@ -1,20 +1,34 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 
 interface DeleteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   message?: string;
+  isLoading?: boolean;
 }
 
 export function DeleteModal({ 
   isOpen, 
   onClose, 
   onConfirm,
-  message = "Apakah anda yakin ingin menghapus data ini?"
+  message = "Apakah anda yakin ingin menghapus data ini?",
+  isLoading = false,
 }: DeleteModalProps) {
+  const [localLoading, setLocalLoading] = useState(false);
+
+  const handleConfirm = async () => {
+    try {
+      setLocalLoading(true);
+      await onConfirm();
+      onClose();
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -41,13 +55,11 @@ export function DeleteModal({
             Batal
           </button>
           <button 
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
-            className="flex-1 py-4.5 px-6 bg-[#FF0000] rounded-2xl text-sm font-bold text-white hover:bg-red-700 shadow-lg shadow-red-100 transition-all transform active:scale-[0.98] h-[60px] flex items-center justify-center"
+            onClick={handleConfirm}
+            disabled={localLoading || isLoading}
+            className="flex-1 py-4.5 px-6 bg-[#FF0000] rounded-2xl text-sm font-bold text-white hover:bg-red-700 shadow-lg shadow-red-100 transition-all transform active:scale-[0.98] h-[60px] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Hapus
+            {localLoading || isLoading ? "Menghapus..." : "Hapus"}
           </button>
         </div>
       </div>

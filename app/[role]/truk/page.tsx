@@ -47,6 +47,7 @@ export default function TrukPage() {
   const [toastMessage, setToastMessage] = useState("Data Berhasil Disimpan");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeletingTruck, setIsDeletingTruck] = useState(false);
   const [selectedTruckId, setSelectedTruckId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -134,7 +135,7 @@ export default function TrukPage() {
       <Toast 
         isVisible={showToast} 
         message={toastMessage} 
-        type="success" 
+        type={toastMessage.toLowerCase().includes("gagal") ? "error" : "success"} 
       />
 
       <PageHeader 
@@ -171,9 +172,32 @@ export default function TrukPage() {
       <DeleteModal 
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
-        onConfirm={() => {
-          console.log("Delete truck", selectedTruckId);
-          setIsDeleteOpen(false);
+        isLoading={isDeletingTruck}
+        onConfirm={async () => {
+          if (!selectedTruckId) return;
+          
+          try {
+            setIsDeletingTruck(true);
+            const response = await axios.delete<{
+              statusCode: number;
+              message: string;
+            }>(`/api/truck/${selectedTruckId}`);
+            
+            setToastMessage(response.data?.message || "Truck berhasil dihapus");
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            
+            // Refresh truck list
+            window.location.href = `/${role}/truk`;
+          } catch (error) {
+            console.error("Error deleting truck:", error);
+            setToastMessage("Gagal menghapus truck");
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+          } finally {
+            setIsDeletingTruck(false);
+            setSelectedTruckId(null);
+          }
         }}
         message="Apakah anda yakin ingin menghapus data truck ini?"
       />
