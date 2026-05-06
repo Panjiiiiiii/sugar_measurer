@@ -55,12 +55,12 @@ export default function TrukPage() {
       if (storedMessage) {
         setToastMessage(storedMessage);
         sessionStorage.removeItem("truck-toast-message");
+        setShowToast(true);
+        const timer = setTimeout(() => {
+          setShowToast(false);
+        }, 3000);
+        return () => clearTimeout(timer);
       }
-      setShowToast(true);
-      const timer = setTimeout(() => {
-        setShowToast(false);
-      }, 3000);
-      return () => clearTimeout(timer);
     }
   }, [searchParams]);
 
