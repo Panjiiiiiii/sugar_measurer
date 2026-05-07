@@ -104,7 +104,7 @@ export default function InputCustomerPage() {
                 }
               />
             )}
-            
+
             <Input
               label="Nomor Telepon"
               required

@@ -22,7 +22,8 @@ export async function GET(
   if (!owner) {
     return Response.json(
       {
-        message: "Owner tidak ditemukan",
+        statusCode: 404,
+        message: "Customer tidak ditemukan",
         data: null,
       },
       { status: 404 },
@@ -31,6 +32,7 @@ export async function GET(
   return Response.json(
     {
       statusCode: 200,
+      message: "Customer found",
       data: owner,
     },
     { status: 200 },
@@ -52,7 +54,7 @@ export async function PUT(
     if (!existingOwner) {
       return Response.json(
         {
-          message: "Owner tidak ditemukan",
+          message: "Customer tidak ditemukan",
           data: null,
         },
         { status: 404 },
@@ -99,10 +101,10 @@ export async function PUT(
 
     return Response.json(
       {
-        statusCode: 201,
-        message: "Owner updated successfully",
+        statusCode: 200,
+        message: "Customer berhasil diperbarui",
       },
-      { status: 201 },
+      { status: 200 },
     );
   } catch (error) {
     const errorMessage =
@@ -110,6 +112,7 @@ export async function PUT(
 
     return Response.json(
       {
+        statusCode: 500,
         message: errorMessage,
         data: null,
       },
@@ -130,7 +133,8 @@ export async function DELETE(
     if (!existingOwner) {
       return Response.json(
         {
-          message: "Owner tidak ditemukan",
+          statusCode: 404,
+          message: "Customer tidak ditemukan",
         },
         { status: 404 },
       );
@@ -140,15 +144,16 @@ export async function DELETE(
     });
     return Response.json(
       {
-        statusCode: 201,
-        message: "Owner deleted successfully",
+        statusCode: 200,
+        message: "Customer deleted successfully",
       },
-      { status: 201 },
+      { status: 200 },
     );
   } catch (error) {
     return Response.json(
       {
-        message: "Error deleting owner",
+        statusCode: 500,
+        message: "Error deleting customer",
         data: null,
       },
       { status: 500 },
