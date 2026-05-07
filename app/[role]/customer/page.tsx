@@ -45,6 +45,7 @@ export default function CustomerPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("Data Berhasil Disimpan");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
     null,
   );
@@ -192,10 +193,31 @@ export default function CustomerPage() {
       <DeleteModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={() => {
-          console.log("Delete customer", selectedCustomerId);
-          // Here you would call your API to delete
-          setIsDeleteModalOpen(false);
+        isLoading={isDeletingCustomer}
+        onConfirm={async () => {
+          if (!selectedCustomerId) return;
+
+          try {
+            setIsDeletingCustomer(true);
+            const response = await axios.delete<{
+              statusCode: number;
+              message: string;
+            }>(`/api/owner/${selectedCustomerId}`);
+
+            sessionStorage.setItem(
+              "customer-toast-message",
+              response.data?.message || "Customer berhasil dihapus",
+            );
+            window.location.href = `/${role}/customer?success=true`;
+          } catch (error) {
+            console.error("Error deleting customer:", error);
+            setToastMessage("Gagal menghapus customer");
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+          } finally {
+            setIsDeletingCustomer(false);
+            setSelectedCustomerId(null);
+          }
         }}
         message="Apakah anda yakin ingin menghapus data user ini?"
       />

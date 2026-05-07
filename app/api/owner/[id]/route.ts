@@ -145,7 +145,7 @@ export async function DELETE(
     return Response.json(
       {
         statusCode: 200,
-        message: "Customer deleted successfully",
+        message: "Customer berhasil dihapus",
       },
       { status: 200 },
     );

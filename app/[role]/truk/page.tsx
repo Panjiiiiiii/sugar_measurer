@@ -183,12 +183,11 @@ export default function TrukPage() {
               message: string;
             }>(`/api/truck/${selectedTruckId}`);
             
-            setToastMessage(response.data?.message || "Truck berhasil dihapus");
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 3000);
-            
-            // Refresh truck list
-            window.location.href = `/${role}/truk`;
+            sessionStorage.setItem(
+              "truck-toast-message",
+              response.data?.message || "Truck berhasil dihapus",
+            );
+            window.location.href = `/${role}/truk?success=true`;
           } catch (error) {
             console.error("Error deleting truck:", error);
             setToastMessage("Gagal menghapus truck");
