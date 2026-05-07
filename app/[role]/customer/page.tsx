@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/dashboard/PageHeader";
 import { CustomerTable } from "@/components/dashboard/CustomerTable";
 import { DeleteModal, Toast, Select } from "@/components/ui";
 import axios from "axios";
+import CustomerFilterModal from "@/components/dashboard/CustomerFilterModal";
 
 interface Customer {
   id: string;
@@ -179,6 +180,13 @@ export default function CustomerPage() {
           setSelectedCustomerId(id);
           setIsDeleteModalOpen(true);
         }}
+      />
+
+      <CustomerFilterModal
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        onApply={handleFilterApply}
+        initialType={currentOwnershipType}
       />
 
       <DeleteModal

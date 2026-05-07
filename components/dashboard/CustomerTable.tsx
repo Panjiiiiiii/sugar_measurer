@@ -94,7 +94,12 @@ export function CustomerTable({
                     {customer.name}
                   </td>
                   <td className="px-4 py-4 text-xs font-medium text-gray-600 text-center capitalize">
-                    {customer.ownership_type}
+                    {(() => {
+                      if (customer.ownership_type === "private") return "Pribadi";
+                      if (customer.ownership_type === "farmer") return "Petani";
+                      if (customer.ownership_type === "special") return "Special";
+                      return customer.ownership_type;
+                    })()}
                   </td>
                   <td className="px-4 py-4 text-xs font-medium text-gray-600 text-center">
                     {customer.phone_number}
