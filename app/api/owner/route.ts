@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 400,
-          message: "Phone number is required",
+          message: "Nomor telepon wajib diisi",
         },
         { status: 400 },
       );
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 409,
-          message: "Phone number already exists",
+          message: "Nomor telepon sudah digunakan",
         },
         { status: 409 },
       );
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 400,
-          message: "Special price is required for special ownership type",
+          message: "Harga khusus wajib diisi untuk tipe kepemilikan khusus",
         },
         { status: 400 },
       );
@@ -134,7 +134,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 400,
-          message: "Special price should only be provided for special ownership type",
+          message: "Harga khusus hanya boleh diisi untuk tipe kepemilikan khusus",
         },
         { status: 400 },
       );
@@ -160,7 +160,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         statusCode: 201,
-        message: "Owner created successfully",
+        message: "Customer berhasil dibuat",
       },
       { status: 201 },
     );

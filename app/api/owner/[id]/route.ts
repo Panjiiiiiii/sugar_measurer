@@ -22,7 +22,7 @@ export async function GET(
   if (!owner) {
     return Response.json(
       {
-        message: "Owner not found",
+        message: "Owner tidak ditemukan",
         data: null,
       },
       { status: 404 },
@@ -52,7 +52,7 @@ export async function PUT(
     if (!existingOwner) {
       return Response.json(
         {
-          message: "Owner not found",
+          message: "Owner tidak ditemukan",
           data: null,
         },
         { status: 404 },
@@ -130,7 +130,7 @@ export async function DELETE(
     if (!existingOwner) {
       return Response.json(
         {
-          message: "Owner not found",
+          message: "Owner tidak ditemukan",
         },
         { status: 404 },
       );
