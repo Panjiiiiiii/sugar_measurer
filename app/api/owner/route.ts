@@ -1,8 +1,10 @@
+import { Prisma } from "@/generated/prisma/browser";
 import { prisma } from "@/lib/prisma";
 import { validateCreateOwnerInput } from "@/schema/owner";
 import { z } from "zod";
 
 interface PaginationMeta {
+  per_page: number;
   number_page: number;
   total_page: number;
   total_data: number;
@@ -35,23 +37,32 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const pageParam = getFirstQueryParam(searchParams, ["page", "number_page", "halaman"]);
     const limitParam = getFirstQueryParam(searchParams, ["limit", "per_page", "page_size"]);
+    const ownershipTypeParam = getFirstQueryParam(searchParams, ["type_ownership", "ownership_type"]);
     const page = parsePositiveInt(pageParam, 1);
     const limit = parsePositiveInt(limitParam, 10);
     const skip = (page - 1) * limit;
 
+        const whereClause: Prisma.ownerWhereInput = {};
+    if (ownershipTypeParam) {
+      whereClause.ownership_type = {
+            equals: ownershipTypeParam.toLowerCase() as any,
+      };
+    }
     const [owners, totalData] = await Promise.all([
       prisma.owner.findMany({
+        where: whereClause,
         skip,
         take: limit,
         orderBy: {
           created_at: "desc",
         },
       }),
-      prisma.owner.count(),
+      prisma.owner.count({ where: whereClause }),
     ]);
 
     const totalPage = Math.max(1, Math.ceil(totalData / limit));
     const pagination: PaginationMeta = {
+      per_page: owners.length,
       number_page: page,
       total_page: totalPage,
       total_data: totalData,
