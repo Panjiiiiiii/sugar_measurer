@@ -64,9 +64,15 @@ export default function CustomerPage() {
         setToastMessage(storedMessage);
         sessionStorage.removeItem("customer-toast-message");
         setShowToast(true);
+
         const timer = setTimeout(() => {
           setShowToast(false);
+          // Bersihkan ?success=true dari URL supaya effect tidak re-trigger
+          const cleanParams = new URLSearchParams(searchParams.toString());
+          cleanParams.delete("success");
+          router.replace(`/${role}/customer?${cleanParams.toString()}`);
         }, 3000);
+
         return () => clearTimeout(timer);
       }
     }
@@ -143,7 +149,9 @@ export default function CustomerPage() {
         isVisible={showToast}
         message={toastMessage}
         type="success"
+        onClose={() => setShowToast(false)}
       />
+
       <PageHeader
         title="Data Customer"
         extraActions={
@@ -170,7 +178,6 @@ export default function CustomerPage() {
           onClick: () => setIsFilterOpen(true),
         }}
       />
-
       <CustomerTable
         data={customers}
         isLoading={isLoading}
@@ -182,14 +189,12 @@ export default function CustomerPage() {
           setIsDeleteModalOpen(true);
         }}
       />
-
       <CustomerFilterModal
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         onApply={handleFilterApply}
         initialType={currentOwnershipType}
       />
-
       <DeleteModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
