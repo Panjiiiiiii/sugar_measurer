@@ -41,6 +41,27 @@ interface ApiPaginationMeta {
   total_data: number;
 }
 
+interface TransactionDetail {
+  id: string;
+  transaction_date: string;
+  loading_in: string;
+  loading_out: string | null;
+  bruto: number;
+  tare: number;
+  netto: number | null;
+  current_price: number;
+  total_price: number | null;
+  payment_method: string;
+  status: string;
+  driver_name: string | null;
+  truck_name: string;
+  license_plate: string;
+  owner_name: string | null;
+  ownership_type: string | null;
+  location_name: string;
+  sugar_price: number;
+}
+
 interface ApiHistoryData {
   transaction_in: number;
   transaction_out: number;
@@ -74,6 +95,21 @@ function formatRupiah(value: number) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("id-ID").format(value || 0);
+}
+
+function formatDisplayDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
 function normalizeRangeValue(value: string) {
@@ -123,6 +159,8 @@ export default function TransaksiPage() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [isBuktiModalOpen, setIsBuktiModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [selectedDetail, setSelectedDetail] = useState<TransactionDetail | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -149,7 +187,7 @@ export default function TransaksiPage() {
         setTransactions(
           transferHistory.map((item) => ({
             id: item.transaction_id,
-            transaction_date: item.tanggal,
+            transaction_date: formatDisplayDate(item.tanggal),
             loading_in: item.waktu,
             amount: Number(item.jumlah_nominal ?? 0),
             type: item.transfer_status === "in" ? "Masuk" : "Keluar",
@@ -252,6 +290,28 @@ export default function TransaksiPage() {
 
     nextParams.set("page", "1");
     router.push(`/${role}/transaksi?${nextParams.toString()}`);
+  };
+
+  const handleViewOutgoingTransaction = async (transactionId: string | null) => {
+    if (!transactionId) {
+      return;
+    }
+
+    try {
+      setIsDetailLoading(true);
+      const response = await axios.get<{ statusCode: number; data: TransactionDetail }>(
+        `/api/history/transaction/${transactionId}`,
+      );
+
+      setSelectedDetail(response.data?.data ?? null);
+      setIsBuktiModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching transaction detail:", error);
+      setSelectedDetail(null);
+      setIsBuktiModalOpen(true);
+    } finally {
+      setIsDetailLoading(false);
+    }
   };
 
   return (
@@ -388,8 +448,12 @@ export default function TransaksiPage() {
                     <td className="px-8 py-4 text-center">
                       <button
                         onClick={() => {
-                          if (row.type === "Keluar") setIsBuktiModalOpen(true);
-                          else setIsReceiptModalOpen(true);
+                          if (row.type === "Keluar") {
+                            void handleViewOutgoingTransaction(row.id);
+                            return;
+                          }
+
+                          setIsReceiptModalOpen(true);
                         }}
                         className="p-2 text-gray-400 hover:text-gray-900 border border-gray-100 rounded-xl hover:bg-white transition-all inline-flex items-center justify-center"
                       >
@@ -421,6 +485,8 @@ export default function TransaksiPage() {
       <BuktiTransaksiModal
         isOpen={isBuktiModalOpen}
         onClose={() => setIsBuktiModalOpen(false)}
+        isLoading={isDetailLoading}
+        data={selectedDetail}
       />
       <BuktiTransferReceiptModal
         isOpen={isReceiptModalOpen}

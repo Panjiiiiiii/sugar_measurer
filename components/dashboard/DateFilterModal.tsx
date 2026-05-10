@@ -27,13 +27,13 @@ export function DateFilterModal({ isOpen, onClose, onApply }: DateFilterModalPro
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-4">
           <Input 
-            label="Awal tanggal" 
+            label="Tanggal mulai" 
             type="date"
             value={dates.start}
             onChange={(e) => setDates({ ...dates, start: e.target.value })}
           />
           <Input 
-            label="Akhir tanggal" 
+            label="Tanggal berakhir" 
             type="date"
             value={dates.end}
             onChange={(e) => setDates({ ...dates, end: e.target.value })}
