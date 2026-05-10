@@ -43,7 +43,79 @@ function parseDateParam(value: string | null) {
 }
 
 function formatDateOnly(value: Date) {
-	return value.toISOString().slice(0, 10);
+	const parts = new Intl.DateTimeFormat("en-GB", {
+		timeZone: "Asia/Jakarta",
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	}).formatToParts(value);
+
+	const day = parts.find((part) => part.type === "day")?.value ?? "01";
+	const month = parts.find((part) => part.type === "month")?.value ?? "01";
+	const year = parts.find((part) => part.type === "year")?.value ?? "1970";
+
+	return `${year}-${month}-${day}`;
+}
+
+function formatTimeOnly(value: Date) {
+	return new Intl.DateTimeFormat("en-GB", {
+		timeZone: "Asia/Jakarta",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit",
+		hour12: false,
+	}).format(value);
+}
+
+function getSummaryDateFilter(range: string | null) {
+	if (!range) {
+		return null;
+	}
+
+	const normalizedRange = range.toLowerCase();
+	const now = new Date();
+	const start = new Date(now);
+	const end = new Date(now);
+
+	if (normalizedRange === "daily") {
+		start.setHours(0, 0, 0, 0);
+		end.setHours(23, 59, 59, 999);
+		return { gte: start, lte: end };
+	}
+
+	if (normalizedRange === "weekly") {
+		const day = now.getDay();
+		const diffToMonday = day === 0 ? 6 : day - 1;
+		start.setDate(now.getDate() - diffToMonday);
+		start.setHours(0, 0, 0, 0);
+
+		end.setDate(start.getDate() + 6);
+		end.setHours(23, 59, 59, 999);
+		return { gte: start, lte: end };
+	}
+
+	if (normalizedRange === "monthly") {
+		start.setDate(1);
+		start.setHours(0, 0, 0, 0);
+
+		end.setMonth(start.getMonth() + 1, 0);
+		end.setHours(23, 59, 59, 999);
+		return { gte: start, lte: end };
+	}
+
+	return null;
+}
+
+function parseTransferStatus(value: string | null): transfer_status | null {
+	if (!value) {
+		return null;
+	}
+
+	if (value === transfer_status.in || value === transfer_status.out) {
+		return value;
+	}
+
+	return null;
 }
 
 export async function GET(request: Request) {
@@ -53,6 +125,10 @@ export async function GET(request: Request) {
 		const pageParam = getFirstQueryParam(searchParams, ["page", "number_page", "halaman"]);
 		const limitParam = getFirstQueryParam(searchParams, ["limit", "per_page", "page_size"]);
 		const locationId = getFirstQueryParam(searchParams, ["location_id", "id_location", "location"]);
+		const status = getFirstQueryParam(searchParams, ["status", "transfer_status"]);
+		const parsedStatus = parseTransferStatus(status);
+		const range = getFirstQueryParam(searchParams, ["range", "tanggal_range"]);
+		const normalizedRange = range?.toLowerCase() ?? null;
 
 		const startDateRaw = getFirstQueryParam(searchParams, ["start_date", "tanggal_mulai"]);
 		const endDateRaw = getFirstQueryParam(searchParams, ["end_date", "tanggal_akhir"]);
@@ -97,6 +173,17 @@ export async function GET(request: Request) {
 			);
 		}
 
+		if (normalizedRange && !["daily", "weekly", "monthly"].includes(normalizedRange)) {
+			return Response.json(
+				{
+					statusCode: 400,
+					message: "range must be one of: daily, weekly, monthly",
+					data: null,
+				},
+				{ status: 400 },
+			);
+		}
+
 		const dateFilter: Prisma.DateTimeFilter = {};
 
 		if (parsedStartDate) {
@@ -111,6 +198,7 @@ export async function GET(request: Request) {
 
 		const whereClause: Prisma.logTransferWhereInput = {
 			...(locationId ? { location_id: locationId } : {}),
+			...(parsedStatus ? { transfer_status: parsedStatus } : {}),
 			...(Object.keys(dateFilter).length > 0
 				? {
 					created_at: dateFilter,
@@ -118,7 +206,17 @@ export async function GET(request: Request) {
 				: {}),
 		};
 
-		const [transferHistory, totalData] = await Promise.all([
+		const summaryDateFilter = getSummaryDateFilter(normalizedRange);
+		const summaryWhereBase: Prisma.logTransferWhereInput = {
+			...(locationId ? { location_id: locationId } : {}),
+			...(summaryDateFilter
+				? {
+					created_at: summaryDateFilter,
+				}
+				: {}),
+		};
+
+		const [transferHistory, totalData, transactionInAggregate, transactionOutAggregate, countOutTransaction] = await Promise.all([
 			prisma.logTransfer.findMany({
 				where: whereClause,
 				skip,
@@ -131,9 +229,11 @@ export async function GET(request: Request) {
 					bukti_transfer: true,
 					transfer_amount: true,
 					transfer_status: true,
+					transaction_id: true,
 					location: {
 						select: {
 							name: true,
+							account_balance: true,
 						},
 					},
 				},
@@ -141,14 +241,43 @@ export async function GET(request: Request) {
 			prisma.logTransfer.count({
 				where: whereClause,
 			}),
+			prisma.logTransfer.aggregate({
+				where: {
+					...summaryWhereBase,
+					transfer_status: transfer_status.in,
+				},
+				_sum: {
+					transfer_amount: true,
+				},
+			}),
+			prisma.logTransfer.aggregate({
+				where: {
+					...summaryWhereBase,
+					transfer_status: transfer_status.out,
+				},
+				_sum: {
+					transfer_amount: true,
+				},
+			}),
+			prisma.logTransfer.count({
+				where: {
+					...summaryWhereBase,
+					transfer_status: transfer_status.out,
+				},
+			}),
 		]);
+
+		const transactionIn = Number(transactionInAggregate._sum.transfer_amount ?? 0);
+		const transactionOut = Number(transactionOutAggregate._sum.transfer_amount ?? 0);
 
 		const data = transferHistory.map((transfer) => ({
 			tanggal: formatDateOnly(transfer.created_at),
+			waktu: formatTimeOnly(transfer.created_at),
 			bukti_tf: transfer.bukti_transfer,
 			jumlah_nominal: transfer.transfer_amount,
 			location: transfer.location?.name,
-			transfer_status: transfer.transfer_status
+			transfer_status: transfer.transfer_status,
+			transaction_id : transfer.transaction_id,
 		}));
 
 		const totalPage = Math.max(1, Math.ceil(totalData / limit));
@@ -162,6 +291,10 @@ export async function GET(request: Request) {
 			{
 				statusCode: 200,
 				data: {
+					transaction_in : transactionIn,
+					transaction_out : transactionOut,
+					count_out_transaction : countOutTransaction,
+					account_balance : transferHistory[0]?.location?.account_balance || 0,
 					transfer_history: data,
 					page: pagination,
 				},
