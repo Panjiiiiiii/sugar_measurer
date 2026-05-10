@@ -129,6 +129,20 @@ function getRangeLabel(range: string) {
   return "Semua";
 }
 
+function buildReceiptImageSrc(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const fileName = value.split("/").pop()?.trim();
+
+  if (!fileName) {
+    return null;
+  }
+
+  return `/finance/transfer/${encodeURIComponent(fileName)}`;
+}
+
 export default function TransaksiPage() {
   const params = useParams();
   const router = useRouter();
@@ -159,6 +173,7 @@ export default function TransaksiPage() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [isBuktiModalOpen, setIsBuktiModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [selectedReceiptImage, setSelectedReceiptImage] = useState<string | null>(null);
   const [selectedDetail, setSelectedDetail] = useState<TransactionDetail | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
@@ -453,6 +468,7 @@ export default function TransaksiPage() {
                             return;
                           }
 
+                          setSelectedReceiptImage(buildReceiptImageSrc(row.bukti_tf));
                           setIsReceiptModalOpen(true);
                         }}
                         className="p-2 text-gray-400 hover:text-gray-900 border border-gray-100 rounded-xl hover:bg-white transition-all inline-flex items-center justify-center"
@@ -491,6 +507,7 @@ export default function TransaksiPage() {
       <BuktiTransferReceiptModal
         isOpen={isReceiptModalOpen}
         onClose={() => setIsReceiptModalOpen(false)}
+        imageSrc={selectedReceiptImage}
       />
     </div>
   );
