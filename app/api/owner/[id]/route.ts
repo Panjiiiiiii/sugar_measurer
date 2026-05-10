@@ -32,7 +32,6 @@ export async function GET(
   return Response.json(
     {
       statusCode: 200,
-      message: "Customer found",
       data: owner,
     },
     { status: 200 },
@@ -68,7 +67,7 @@ export async function PUT(
       return Response.json(
         {
           statusCode: 400,
-          message: "Special price is required for special ownership type",
+          message: "Harga khusus diperlukan untuk tipe kepemilikan khusus",
         },
         { status: 400 },
       );
@@ -82,7 +81,7 @@ export async function PUT(
         {
           statusCode: 400,
           message:
-            "Special price should only be provided for special ownership type",
+            "Harga khusus hanya boleh diberikan untuk tipe kepemilikan khusus",
         },
         { status: 400 },
       );

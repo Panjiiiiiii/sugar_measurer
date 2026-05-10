@@ -82,7 +82,7 @@ export async function PUT(
     return Response.json(
       {
         statusCode: 200,
-        message: "Berhasil diupdate",
+        message: "Truk berhasil diupdate",
       },
       { status: 200 },
     );
@@ -138,7 +138,7 @@ export async function DELETE(
     return Response.json(
       {
         statusCode: 200,
-        message: "Truck deleted successfully",
+        message: "Truk berhasil dihapus",
       },
       { status: 200 },
     );
