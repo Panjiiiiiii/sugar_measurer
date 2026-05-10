@@ -3,18 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import { 
-  Export, 
-  CaretDown, 
-  Eye, 
-} from "@phosphor-icons/react";
-import { 
-  StatCard, 
-  Card, 
-  Badge, 
-  Pagination, 
-  Button, 
-  Select
+import { Export, CaretDown, Eye } from "@phosphor-icons/react";
+import {
+  StatCard,
+  Card,
+  Badge,
+  Pagination,
+  Button,
+  Select,
 } from "@/components/ui";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { DateFilterModal } from "@/components/dashboard/DateFilterModal";
@@ -102,9 +98,11 @@ export default function TransaksiPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roleRaw = params.role as string;
-  const role = (!roleRaw || roleRaw === "undefined") ? "branch" : roleRaw;
+  const role = !roleRaw || roleRaw === "undefined" ? "branch" : roleRaw;
   const currentPage = Number(searchParams.get("page") || 1);
-  const currentRange = normalizeRangeValue(searchParams.get("range") || "monthly");
+  const currentRange = normalizeRangeValue(
+    searchParams.get("range") || "monthly",
+  );
   const currentStatus = searchParams.get("status") || "";
   const currentStartDate = searchParams.get("start_date") || "";
   const currentEndDate = searchParams.get("end_date") || "";
@@ -130,17 +128,20 @@ export default function TransaksiPage() {
     const fetchTransactions = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get<TransferHistoryResponse>("/api/history/transfer", {
-          params: {
-            page: currentPage,
-            limit: 3,
-            location_id: DEFAULT_BRANCH_LOCATION_ID,
-            range: currentRange || undefined,
-            status: currentStatus || undefined,
-            start_date: currentStartDate || undefined,
-            end_date: currentEndDate || undefined,
+        const response = await axios.get<TransferHistoryResponse>(
+          "/api/history/transfer",
+          {
+            params: {
+              page: currentPage,
+              limit: 3,
+              location_id: DEFAULT_BRANCH_LOCATION_ID,
+              range: currentRange || undefined,
+              status: currentStatus || undefined,
+              start_date: currentStartDate || undefined,
+              end_date: currentEndDate || undefined,
+            },
           },
-        });
+        );
 
         const payload = response.data?.data;
         const transferHistory = payload?.transfer_history ?? [];
@@ -190,7 +191,13 @@ export default function TransaksiPage() {
     };
 
     fetchTransactions();
-	}, [currentPage, currentRange, currentStatus, currentStartDate, currentEndDate]);
+  }, [
+    currentPage,
+    currentRange,
+    currentStatus,
+    currentStartDate,
+    currentEndDate,
+  ]);
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > pagination.total_page) {
@@ -249,45 +256,61 @@ export default function TransaksiPage() {
 
   return (
     <div className="flex flex-col w-full max-w-full pb-10">
-      <PageHeader 
+      <PageHeader
         title="Riwayat Transaksi"
         extraActions={
           <div className="w-32">
-            <Select 
+            <Select
               value={currentRange}
               onChange={(e) => handleRangeChange(e.target.value)}
               options={[
                 { value: "", label: "Semua" },
                 { value: "monthly", label: "Bulanan" },
                 { value: "weekly", label: "Mingguan" },
-                { value: "daily", label: "Harian" }
-              ]} 
+                { value: "daily", label: "Harian" },
+              ]}
             />
           </div>
         }
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard title="Uang Masuk" value={formatRupiah(summary.transactionIn)} label={getRangeLabel(currentRange)} />
-        <StatCard title="Uang Keluar" value={formatRupiah(summary.transactionOut)} label={getRangeLabel(currentRange)} />
-        <StatCard title="Sisa Uang" value={formatRupiah(summary.accountBalance)} label={getRangeLabel(currentRange)} />
-        <StatCard title="Total Transaksi Keluar" value={formatNumber(summary.countOutTransaction)} label={getRangeLabel(currentRange)} />
+        <StatCard
+          title="Uang Masuk"
+          value={formatRupiah(summary.transactionIn)}
+          label={getRangeLabel(currentRange)}
+        />
+        <StatCard
+          title="Uang Keluar"
+          value={formatRupiah(summary.transactionOut)}
+          label={getRangeLabel(currentRange)}
+        />
+        <StatCard
+          title="Sisa Uang"
+          value={formatRupiah(summary.accountBalance)}
+          label={getRangeLabel(currentRange)}
+        />
+        <StatCard
+          title="Total Transaksi Keluar"
+          value={formatNumber(summary.countOutTransaction)}
+          label={getRangeLabel(currentRange)}
+        />
       </div>
 
-      <Card 
-        title="Data Riwayat Transaksi" 
+      <Card
+        title="Data Riwayat Transaksi"
         noPadding
         headerAction={
           <div className="flex items-center gap-3">
-            <Button 
-              variant="white" 
+            <Button
+              variant="white"
               className="px-6 py-2 text-xs font-bold h-10 border-gray-100 min-w-30"
               icon={<Export size={18} weight="bold" />}
             >
               Export
             </Button>
-            <Button 
-              variant="white" 
+            <Button
+              variant="white"
               className="px-6 py-2 text-xs font-bold h-10 border-gray-100 min-w-30"
               onClick={() => setIsDateModalOpen(true)}
               icon={<CaretDown size={14} weight="bold" />}
@@ -295,14 +318,14 @@ export default function TransaksiPage() {
             >
               Tanggal
             </Button>
-            <Select 
+            <Select
               value={currentStatus}
               onChange={(e) => handleStatusChange(e.target.value)}
               options={[
-                { value: "", label: "Status" },
+                { value: "", label: "Semua" },
                 { value: "in", label: "Masuk" },
-                { value: "out", label: "Keluar" }
-              ]} 
+                { value: "out", label: "Keluar" },
+              ]}
               className="min-w-30"
             />
           </div>
@@ -321,21 +344,41 @@ export default function TransaksiPage() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
-                Array(5).fill(0).map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    <td colSpan={5} className="px-8 py-5"><div className="h-4 bg-gray-100 rounded-lg w-full"></div></td>
-                  </tr>
-                ))
+                Array(5)
+                  .fill(0)
+                  .map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td colSpan={5} className="px-8 py-5">
+                        <div className="h-4 bg-gray-100 rounded-lg w-full"></div>
+                      </td>
+                    </tr>
+                  ))
               ) : transactions.length === 0 ? (
-                <tr><td colSpan={5} className="px-8 py-10 text-center text-gray-400 text-sm">Tidak ada transaksi</td></tr>
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-8 py-10 text-center text-gray-400 text-sm"
+                  >
+                    Tidak ada transaksi
+                  </td>
+                </tr>
               ) : (
                 transactions.map((row, index) => (
-                  <tr key={`${row.id || `${row.transaction_date}-${row.amount}`}-${index}`} className="group hover:bg-gray-50/50 transition-colors">
-                    <td className="px-8 py-4 text-xs font-medium text-gray-600">{row.transaction_date}</td>
-                    <td className="px-4 py-4 text-xs font-medium text-gray-600">{row.loading_in}</td>
-                    <td className="px-4 py-4 text-xs font-medium text-gray-600">{formatRupiah(row.amount)}</td>
+                  <tr
+                    key={`${row.id || `${row.transaction_date}-${row.amount}`}-${index}`}
+                    className="group hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="px-8 py-4 text-xs font-medium text-gray-600">
+                      {row.transaction_date}
+                    </td>
+                    <td className="px-4 py-4 text-xs font-medium text-gray-600">
+                      {row.loading_in}
+                    </td>
+                    <td className="px-4 py-4 text-xs font-medium text-gray-600">
+                      {formatRupiah(row.amount)}
+                    </td>
                     <td className="px-4 py-4">
-                      <Badge 
+                      <Badge
                         variant={row.type === "Masuk" ? "success" : "danger"}
                         className="rounded-lg px-3 py-1 text-[10px] font-bold"
                       >
@@ -343,7 +386,7 @@ export default function TransaksiPage() {
                       </Badge>
                     </td>
                     <td className="px-8 py-4 text-center">
-                      <button 
+                      <button
                         onClick={() => {
                           if (row.type === "Keluar") setIsBuktiModalOpen(true);
                           else setIsReceiptModalOpen(true);
@@ -370,9 +413,19 @@ export default function TransaksiPage() {
         )}
       </Card>
 
-      <DateFilterModal isOpen={isDateModalOpen} onClose={() => setIsDateModalOpen(false)} onApply={handleDateApply} />
-      <BuktiTransaksiModal isOpen={isBuktiModalOpen} onClose={() => setIsBuktiModalOpen(false)} />
-      <BuktiTransferReceiptModal isOpen={isReceiptModalOpen} onClose={() => setIsReceiptModalOpen(false)} />
+      <DateFilterModal
+        isOpen={isDateModalOpen}
+        onClose={() => setIsDateModalOpen(false)}
+        onApply={handleDateApply}
+      />
+      <BuktiTransaksiModal
+        isOpen={isBuktiModalOpen}
+        onClose={() => setIsBuktiModalOpen(false)}
+      />
+      <BuktiTransferReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+      />
     </div>
   );
 }
