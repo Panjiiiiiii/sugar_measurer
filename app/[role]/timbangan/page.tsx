@@ -72,6 +72,7 @@ export default function TimbanganPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [antrian, setAntrian] = useState<any[]>([]);
   const [riwayat, setRiwayat] = useState<any[]>([]);
+  const [location, setLocation] = useState<any>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -115,6 +116,25 @@ export default function TimbanganPage() {
       return () => clearTimeout(timer);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const locationResponse = await axios.get(
+          `/api/location/${searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID}`,
+        );
+        const locationData = locationResponse.data?.data;        
+        if (locationData) {
+          setLocation(locationData);
+        }
+      } catch (error) {
+        console.error("Error fetching location data:", error);
+      }
+    };
+
+    fetchData();
+  },[])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -232,7 +252,7 @@ export default function TimbanganPage() {
         <StatCard label="Today" value={`${summary.inQueue} Truk`} title="Dalam Antrian" />
         <StatCard label="Today" value={formatCurrency(summary.paid)} title="Dibayar" />
         <StatCard label="Today" value={formatCurrency(summary.unpaid)} title="Belum Dibayar" />
-        <StatCard label="Harga Patokan" value="Rp 7.500" title="Harga tebu" />
+        <StatCard label="Harga Patokan" value={location ? formatCurrency(location.sugar_price) : "Rp 0"} title="Harga tebu" />
       </div>
 
       <div className="flex flex-col gap-8">
