@@ -2,12 +2,65 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import axios from "axios";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { AntrianTable } from "@/components/dashboard/AntrianTable";
 import { RiwayatTimbanganTable } from "@/components/dashboard/RiwayatTimbanganTable";
 import { StatCard } from "@/components/ui/StatCard";
 import { DeleteModal, Toast } from "@/components/ui";
 import TimbanganFilterModal from "@/components/dashboard/TimbanganFilterModal";
+
+const DEFAULT_BRANCH_LOCATION_ID = "07bf151f-ed44-4a5d-96cb-afed7e087c7a";
+
+interface ApiAntrianItem {
+  id: string;
+  tanggal_transaksi: string;
+  loading_in: string;
+  no_pol_truck: string;
+  nama_driver: string;
+  type_ownership: string | null;
+  nama_petani: string;
+  bruto: number;
+}
+
+interface ApiRiwayatItem {
+  id: string;
+  tanggal_transaksi: string;
+  loading_in: string;
+  loading_out: string;
+  no_pol_truck: string;
+  nama_driver: string;
+  type_ownership: string | null;
+  nama_petani: string;
+  bruto: number;
+  tara: number;
+  netto: number;
+  amount: number;
+  payment_method: string;
+  status: "paid" | "unpaid";
+}
+
+interface TimbanganHistoryResponse {
+  statusCode: number;
+  kpi: {
+    paid: number;
+    unpaid: number;
+    inqueue: number;
+  };
+  data: {
+    paid: number;
+    unpaid: number;
+    inqueue: number;
+    inQueue: ApiAntrianItem[];
+    history: ApiRiwayatItem[];
+  };
+  page?: {
+    number_page: number;
+    total_page: number;
+    total_data: number;
+    per_page: number;
+  };
+}
 
 export default function TimbanganPage() {
   const params = useParams();
@@ -23,6 +76,37 @@ export default function TimbanganPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [summary, setSummary] = useState({
+    inQueue: 0,
+    paid: 0,
+    unpaid: 0,
+  });
+  const [riwayatPagination, setRiwayatPagination] = useState({
+    per_page: 1,
+    number_page: 1,
+    total_page: 1,
+    total_data: 0,
+  });
+  const riwayatLimit = 10;
+  const currentPage = Number(searchParams.get("page") || 1);
+
+  function formatCurrency(value: number) {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(value || 0);
+  }
+
+  const handlePageChange = (page: number) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (page > 1) {
+      nextParams.set("page", String(page));
+    } else {
+      nextParams.delete("page");
+    }
+    router.push(`/${role}/timbangan?${nextParams.toString()}`);
+  };
 
   useEffect(() => {
     if (searchParams.get("success") === "true") {
@@ -35,43 +119,95 @@ export default function TimbanganPage() {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const mockAntrian = [1, 2, 3].map(i => ({
-        id: i.toString(),
-        transaction_date: "01/01/2026",
-        loading_in: "15:00",
-        license_plate: `N ${1234 + i} AC`,
-        driver_name: "Budi",
-        ownership_type: i % 2 === 0 ? "private" : "farmer",
-        customer_name: "Abah",
-        bruto_weight: 100
-      }));
 
-      const mockRiwayat = [1, 2, 3, 4].map(i => ({
-        id: (i + 10).toString(),
-        transaction_date: "05/04/2026",
-        loading_in: "15:00",
-        loading_out: "16:00",
-        license_plate: `N ${5678 + i} AC`,
-        driver_name: "Budi",
-        ownership_type: i % 3 === 0 ? "private" : "farmer",
-        customer_name: "Abah",
-        bruto_weight: 100,
-        tarra_weight: 25,
-        netto_weight: 75,
-        total_price: 500000,
-        payment_method: "cash",
-        status: i % 2 === 0 ? "paid" : "unpaid"
-      }));
+      try {
+        // Fetch antrian without pagination
+        const antrianResponse = await axios.get<TimbanganHistoryResponse>(
+          "/api/history/transaction",
+          {
+            params: {
+              limit: 1000,
+              location_id: searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
+            },
+          },
+        );
 
-      setAntrian(mockAntrian);
-      setRiwayat(mockRiwayat);
-      setIsLoading(false);
+        const antrianPayload = antrianResponse.data?.data;
+
+        const nextAntrian = (antrianPayload?.inQueue ?? []).map((item) => ({
+          id: item.id,
+          transaction_date: item.tanggal_transaksi,
+          loading_in: item.loading_in,
+          license_plate: item.no_pol_truck,
+          driver_name: item.nama_driver,
+          ownership_type: item.type_ownership ?? "",
+          customer_name: item.nama_petani,
+          bruto_weight: item.bruto,
+        }));
+
+        setSummary({
+          inQueue: Number(antrianPayload?.inqueue ?? 0),
+          paid: Number(antrianPayload?.paid ?? 0),
+          unpaid: Number(antrianPayload?.unpaid ?? 0),
+        });
+        setAntrian(nextAntrian);
+
+        // Fetch riwayat with pagination (exclude queue)
+        const riwayatResponse = await axios.get<TimbanganHistoryResponse>(
+          "/api/history/transaction",
+          {
+            params: {
+              page: currentPage,
+              limit: riwayatLimit,
+              location_id: searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
+            },
+          },
+        );
+
+        const riwayatPayload = riwayatResponse.data?.data;
+
+        const nextRiwayat = (riwayatPayload?.history ?? []).map((item) => ({
+          id: item.id,
+          transaction_date: item.tanggal_transaksi,
+          loading_in: item.loading_in,
+          loading_out: item.loading_out,
+          license_plate: item.no_pol_truck,
+          driver_name: item.nama_driver,
+          ownership_type: item.type_ownership ?? "",
+          customer_name: item.nama_petani,
+          bruto_weight: item.bruto,
+          tarra_weight: item.tara,
+          netto_weight: item.netto,
+          total_price: item.amount,
+          payment_method: item.payment_method,
+          status: item.status,
+        }));
+
+        setRiwayat(nextRiwayat);
+        if (riwayatResponse.data?.page) {
+          setRiwayatPagination({
+            per_page: riwayatResponse.data.page.per_page || riwayatLimit,
+            number_page: riwayatResponse.data.page.number_page || currentPage,
+            total_page: riwayatResponse.data.page.total_page || 1,
+            total_data: riwayatResponse.data.page.total_data || 0,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching timbangan data:", error);
+        setAntrian([]);
+        setRiwayat([]);
+        setSummary({
+          inQueue: 0,
+          paid: 0,
+          unpaid: 0,
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchData();
-  }, []);
+  }, [searchParams, currentPage]);
 
   return (
     <div className="flex flex-col w-full max-w-full pb-10">
@@ -93,10 +229,10 @@ export default function TimbanganPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <StatCard label="Today" value="4 Truk" subValue="In Queue" />
-        <StatCard label="Today" value="Rp 600.000.000" subValue="Paid" />
-        <StatCard label="Today" value="Rp 20.000.000" subValue="Unpaid" />
-        <StatCard label="Harga Patokan" value="Rp 7.500" subValue="Harga tebu" />
+        <StatCard label="Today" value={`${summary.inQueue} Truk`} title="Dalam Antrian" />
+        <StatCard label="Today" value={formatCurrency(summary.paid)} title="Dibayar" />
+        <StatCard label="Today" value={formatCurrency(summary.unpaid)} title="Belum Dibayar" />
+        <StatCard label="Harga Patokan" value="Rp 7.500" title="Harga tebu" />
       </div>
 
       <div className="flex flex-col gap-8">
@@ -111,6 +247,8 @@ export default function TimbanganPage() {
             setIsDeleteOpen(true);
           }}
           onStatusChange={(id, status) => console.log("Status change", id, status)}
+          pagination={riwayatPagination}
+          onPageChange={handlePageChange}
         />
       </div>
 

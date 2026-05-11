@@ -6,6 +6,7 @@ interface PaginationMeta {
 	number_page: number;
 	total_page: number;
 	total_data: number;
+	per_page: number;
 }
 
 function parsePositiveInt(value: string | null, fallback: number) {
@@ -44,7 +45,21 @@ function parseDateParam(value: string | null) {
 }
 
 function formatDateOnly(value: Date) {
-	return value.toISOString().slice(0, 10);
+	return new Intl.DateTimeFormat("id-ID", {
+		timeZone: "Asia/Jakarta",
+		day: "numeric",
+		month: "long",
+		year: "numeric",
+	}).format(value);
+}
+
+function formatTimeOnly(value: Date) {
+	return new Intl.DateTimeFormat("en-GB", {
+		timeZone: "Asia/Jakarta",
+		hour: "2-digit",
+		minute: "2-digit",
+		hour12: false,
+	}).format(value);
 }
 
 export async function GET(request: Request) {
@@ -119,22 +134,37 @@ export async function GET(request: Request) {
 				: {}),
 		};
 
-		// compute KPI counts for statuses: paid, unpaid and inqueue (DB uses 'queue')
-		const [paidCount, unpaidCount, inqueueCount] = await Promise.all([
-			prisma.transaction.count({ where: { ...whereClause, status: "paid" } }),
-			prisma.transaction.count({ where: { ...whereClause, status: "unpaid" } }),
+		// compute KPI values for paid/unpaid and count the in-queue items
+		const [paidSummary, unpaidSummary, inqueueCount] = await Promise.all([
+			prisma.transaction.aggregate({
+				where: { ...whereClause, status: "paid" },
+				_sum: {
+					total_price: true,
+				},
+			}),
+			prisma.transaction.aggregate({
+				where: { ...whereClause, status: "unpaid" },
+				_sum: {
+					total_price: true,
+				},
+			}),
 			prisma.transaction.count({ where: { ...whereClause, status: "queue" } }),
 		]);
 
 		const kpi = {
-			paid: paidCount,
-			unpaid: unpaidCount,
+			paid: Number(paidSummary._sum.total_price ?? 0),
+			unpaid: Number(unpaidSummary._sum.total_price ?? 0),
 			inqueue: inqueueCount,
+		};
+
+		const historyWhereClause: Prisma.transactionWhereInput = {
+			...whereClause,
+			status: { not: "queue" },
 		};
 
 		const [transactions, totalData] = await Promise.all([
 			prisma.transaction.findMany({
-				where: whereClause,
+				where: historyWhereClause,
 				skip,
 				take: limit,
 				orderBy: {
@@ -143,10 +173,13 @@ export async function GET(request: Request) {
 				select: {
 					id: true,
 					transaction_date: true,
+					loading_in: true,
+					loading_out: true,
 					netto_weight: true,
 					bruto_weight: true,
 					tarra_weight: true,
 					total_price: true,
+					payment_method: true,
 					status: true,
 					driver_name: true,
 					current_price: true,
@@ -176,14 +209,38 @@ export async function GET(request: Request) {
 				},
 			}),
 			prisma.transaction.count({
-				where: whereClause,
+				where: historyWhereClause,
 			}),
 		]);
-		const inQueue = transactions
-			.filter((transaction) => transaction.status === "queue")
+
+		const inQueueTransactions = await prisma.transaction.findMany({
+			where: { ...whereClause, status: "queue" },
+			orderBy: { transaction_date: "desc" },
+			select: {
+				id: true,
+				transaction_date: true,
+				loading_in: true,
+				loading_out: true,
+				netto_weight: true,
+				bruto_weight: true,
+				tarra_weight: true,
+				total_price: true,
+				payment_method: true,
+				status: true,
+				driver_name: true,
+				current_price: true,
+				truck: { select: { license_plate: true } },
+				owner: { select: { name: true, ownership_type: true } },
+				location: { select: { id: true, name: true } },
+				user: { select: { id: true, name: true } },
+			},
+		});
+
+		const inQueue = inQueueTransactions
 			.map((transaction) => ({
 				id: transaction.id,
 				tanggal_transaksi: formatDateOnly(transaction.transaction_date),
+				loading_in: formatTimeOnly(transaction.loading_in),
 				no_pol_truck: transaction.truck.license_plate,
 				nama_petani: transaction.owner?.name ?? "",
 				nama_driver: transaction.driver_name,
@@ -195,14 +252,16 @@ export async function GET(request: Request) {
 				tara : transaction.tarra_weight ?? 0,
 				netto: transaction.netto_weight ?? 0,
 				amount: transaction.total_price ?? 0,
+				payment_method: transaction.payment_method,
 				status: transaction.status,
 			}));
 
 		const history = transactions
-			.filter((transaction) => transaction.status !== "queue")
 			.map((transaction) => ({
 				id: transaction.id,
 				tanggal_transaksi: formatDateOnly(transaction.transaction_date),
+				loading_in: formatTimeOnly(transaction.loading_in),
+				loading_out: transaction.loading_out ? formatTimeOnly(transaction.loading_out) : "",
 				no_pol_truck: transaction.truck.license_plate,
 				nama_petani: transaction.owner?.name ?? "",
 				nama_driver: transaction.driver_name,
@@ -214,6 +273,7 @@ export async function GET(request: Request) {
 				tara : transaction.tarra_weight ?? 0,
 				netto: transaction.netto_weight ?? 0,
 				amount: transaction.total_price ?? 0,
+				payment_method: transaction.payment_method,
 				status: transaction.status,
 			}));
 
@@ -222,6 +282,7 @@ export async function GET(request: Request) {
 			number_page: page,
 			total_page: totalPage,
 			total_data: totalData,
+			per_page: limit,
 		};
 
 		return Response.json(

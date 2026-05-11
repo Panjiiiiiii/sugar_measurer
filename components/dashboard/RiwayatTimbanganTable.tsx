@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { DotsThreeVertical } from "@phosphor-icons/react";
-import { Card, Badge, Pagination, ActionMenu } from "@/components/ui";
+import { Pagination } from "@/components/ui";
+import { DotsThreeVertical, CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { Card, Badge, ActionMenu } from "@/components/ui";
 
 interface RiwayatData {
   id: string;
@@ -27,9 +28,20 @@ interface RiwayatTimbanganTableProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: string) => void;
+  pagination?: {
+    per_page: number;
+    number_page: number;
+    total_page: number;
+    total_data: number;
+  };
+  onPageChange?: (page: number) => void;
 }
 
-export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onStatusChange }: RiwayatTimbanganTableProps) {
+export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onStatusChange, pagination, onPageChange }: RiwayatTimbanganTableProps) {
+  const currentPage = pagination?.number_page ?? 1;
+  const totalPages = pagination?.total_page ?? 1;
+  const totalData = pagination?.total_data ?? data.length;
+  const showingData = pagination?.per_page ?? data.length;
   return (
     <Card title="Riwayat Timbangan" noPadding>
       <div className="px-8 pb-4 flex items-center gap-2">
@@ -114,7 +126,15 @@ export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onSta
           </table>
         </div>
       </div>
-      {!isLoading && data.length > 0 && <Pagination />}
+      {!isLoading && data.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalData={totalData}
+          showingData={showingData}
+          onPageChange={onPageChange}
+        />
+      )}
     </Card>
   );
 }
