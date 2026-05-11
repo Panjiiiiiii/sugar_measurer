@@ -48,9 +48,6 @@ interface TimbanganHistoryResponse {
     inqueue: number;
   };
   data: {
-    paid: number;
-    unpaid: number;
-    inqueue: number;
     inQueue: ApiAntrianItem[];
     history: ApiRiwayatItem[];
   };
@@ -67,7 +64,7 @@ export default function TimbanganPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roleRaw = params.role as string;
-  const role = (!roleRaw || roleRaw === "undefined") ? "branch" : roleRaw;
+  const role = !roleRaw || roleRaw === "undefined" ? "branch" : roleRaw;
 
   const [isLoading, setIsLoading] = useState(true);
   const [antrian, setAntrian] = useState<any[]>([]);
@@ -82,13 +79,13 @@ export default function TimbanganPage() {
     paid: 0,
     unpaid: 0,
   });
+  const riwayatLimit = 3;
   const [riwayatPagination, setRiwayatPagination] = useState({
-    per_page: 10,
+    per_page: riwayatLimit,
     number_page: 1,
     total_page: 1,
     total_data: 0,
   });
-  const riwayatLimit = 3;
   const currentPage = Number(searchParams.get("page") || 1);
 
   function formatCurrency(value: number) {
@@ -124,7 +121,7 @@ export default function TimbanganPage() {
         const locationResponse = await axios.get(
           `/api/location/${searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID}`,
         );
-        const locationData = locationResponse.data?.data;        
+        const locationData = locationResponse.data?.data;
         if (locationData) {
           setLocation(locationData);
         }
@@ -134,79 +131,94 @@ export default function TimbanganPage() {
     };
 
     fetchData();
-  },[])
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
 
       try {
-        // Fetch antrian without pagination
+        // ✅ 1 request untuk antrian + KPI (tanpa filter, tanpa pagination)
         const antrianResponse = await axios.get<TimbanganHistoryResponse>(
           "/api/history/transaction",
           {
             params: {
               limit: 1000,
-              location_id: searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
+              location_id:
+                searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
+              // tidak kirim filter apapun supaya KPI selalu akurat
             },
           },
         );
 
-        const antrianPayload = antrianResponse.data?.data;
-
-        const nextAntrian = (antrianPayload?.inQueue ?? []).map((item) => ({
-          id: item.id,
-          transaction_date: item.tanggal_transaksi,
-          loading_in: item.loading_in,
-          license_plate: item.no_pol_truck,
-          driver_name: item.nama_driver,
-          ownership_type: item.type_ownership ?? "",
-          customer_name: item.nama_petani,
-          bruto_weight: item.bruto,
-        }));
-
         setSummary({
-          inQueue: Number(antrianPayload?.inqueue ?? 0),
-          paid: Number(antrianPayload?.paid ?? 0),
-          unpaid: Number(antrianPayload?.unpaid ?? 0),
+          inQueue: Number(antrianResponse.data?.kpi?.inqueue ?? 0),
+          paid: Number(antrianResponse.data?.kpi?.paid ?? 0),
+          unpaid: Number(antrianResponse.data?.kpi?.unpaid ?? 0),
         });
-        setAntrian(nextAntrian);
+        setAntrian(
+          (antrianResponse.data?.data?.inQueue ?? []).map((item) => ({
+            id: item.id,
+            transaction_date: item.tanggal_transaksi,
+            loading_in: item.loading_in,
+            license_plate: item.no_pol_truck,
+            driver_name: item.nama_driver,
+            ownership_type: item.type_ownership ?? "",
+            customer_name: item.nama_petani,
+            bruto_weight: item.bruto,
+          })),
+        );
 
-        // Fetch riwayat with pagination (exclude queue)
         const riwayatResponse = await axios.get<TimbanganHistoryResponse>(
           "/api/history/transaction",
           {
             params: {
               page: currentPage,
               limit: riwayatLimit,
-              location_id: searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
+              location_id:
+                searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
+              ...(searchParams.get("start_date")
+                ? { start_date: searchParams.get("start_date") }
+                : {}),
+              ...(searchParams.get("end_date")
+                ? { end_date: searchParams.get("end_date") }
+                : {}),
+              ...(searchParams.get("ownership_type")
+                ? { ownership_type: searchParams.get("ownership_type") }
+                : {}),
+              ...(searchParams.get("status")
+                ? { status: searchParams.get("status") }
+                : {}),
+              ...(searchParams.get("customer")
+                ? { customer: searchParams.get("customer") }
+                : {}),
             },
           },
         );
 
-        const riwayatPayload = riwayatResponse.data?.data;
+        setRiwayat(
+          (riwayatResponse.data?.data?.history ?? []).map((item) => ({
+            id: item.id,
+            transaction_date: item.tanggal_transaksi,
+            loading_in: item.loading_in,
+            loading_out: item.loading_out,
+            license_plate: item.no_pol_truck,
+            driver_name: item.nama_driver,
+            ownership_type: item.type_ownership ?? "",
+            customer_name: item.nama_petani,
+            bruto_weight: item.bruto,
+            tarra_weight: item.tara,
+            netto_weight: item.netto,
+            total_price: item.amount,
+            payment_method: item.payment_method,
+            status: item.status,
+          })),
+        );
 
-        const nextRiwayat = (riwayatPayload?.history ?? []).map((item) => ({
-          id: item.id,
-          transaction_date: item.tanggal_transaksi,
-          loading_in: item.loading_in,
-          loading_out: item.loading_out,
-          license_plate: item.no_pol_truck,
-          driver_name: item.nama_driver,
-          ownership_type: item.type_ownership ?? "",
-          customer_name: item.nama_petani,
-          bruto_weight: item.bruto,
-          tarra_weight: item.tara,
-          netto_weight: item.netto,
-          total_price: item.amount,
-          payment_method: item.payment_method,
-          status: item.status,
-        }));
-
-        setRiwayat(nextRiwayat);
+        // ✅ Pagination HANYA dari riwayatResponse
         if (riwayatResponse.data?.page) {
           setRiwayatPagination({
-            per_page: riwayatResponse.data.page.per_page || riwayatLimit,
+            per_page: riwayatLimit,
             number_page: riwayatResponse.data.page.number_page || currentPage,
             total_page: riwayatResponse.data.page.total_page || 1,
             total_data: riwayatResponse.data.page.total_data || 0,
@@ -216,11 +228,7 @@ export default function TimbanganPage() {
         console.error("Error fetching timbangan data:", error);
         setAntrian([]);
         setRiwayat([]);
-        setSummary({
-          inQueue: 0,
-          paid: 0,
-          unpaid: 0,
-        });
+        setSummary({ inQueue: 0, paid: 0, unpaid: 0 });
       } finally {
         setIsLoading(false);
       }
@@ -231,54 +239,98 @@ export default function TimbanganPage() {
 
   return (
     <div className="flex flex-col w-full max-w-full pb-10">
-      <Toast 
-        isVisible={showToast} 
-        message="Data Berhasil Disimpan" 
-        type="success" 
+      <Toast
+        isVisible={showToast}
+        message="Data Berhasil Disimpan"
+        type="success"
       />
-      <PageHeader 
+      <PageHeader
         title="Timbangan"
         primaryAction={{
           label: "Add",
-          onClick: () => router.push(`/${role}/timbangan/add`)
+          onClick: () => router.push(`/${role}/timbangan/add`),
         }}
         secondaryAction={{
           label: "Filter",
-          onClick: () => setIsFilterOpen(true)
+          onClick: () => setIsFilterOpen(true),
         }}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <StatCard label="Today" value={`${summary.inQueue} Truk`} title="Dalam Antrian" />
-        <StatCard label="Today" value={formatCurrency(summary.paid)} title="Dibayar" />
-        <StatCard label="Today" value={formatCurrency(summary.unpaid)} title="Belum Dibayar" />
-        <StatCard label="Harga Patokan" value={location ? formatCurrency(location.sugar_price) : "Rp 0"} title="Harga tebu" />
+        <StatCard
+          label="Today"
+          value={`${summary.inQueue} Truk`}
+          title="Dalam Antrian"
+        />
+        <StatCard
+          label="Today"
+          value={formatCurrency(summary.paid)}
+          title="Dibayar"
+        />
+        <StatCard
+          label="Today"
+          value={formatCurrency(summary.unpaid)}
+          title="Belum Dibayar"
+        />
+        <StatCard
+          label="Harga Patokan"
+          value={location ? formatCurrency(location.sugar_price) : "Rp 0"}
+          title="Harga tebu"
+        />
       </div>
 
       <div className="flex flex-col gap-8">
         <AntrianTable data={antrian} isLoading={isLoading} role={role} />
-        
-        <RiwayatTimbanganTable 
-          data={riwayat} 
-          isLoading={isLoading} 
+
+        <RiwayatTimbanganTable
+          data={riwayat}
+          isLoading={isLoading}
           onEdit={(id) => router.push(`/${role}/timbangan/edit/${id}`)}
           onDelete={(id) => {
             setSelectedId(id);
             setIsDeleteOpen(true);
           }}
-          onStatusChange={(id, status) => console.log("Status change", id, status)}
+          onStatusChange={(id, status) =>
+            console.log("Status change", id, status)
+          }
           pagination={riwayatPagination}
           onPageChange={handlePageChange}
         />
       </div>
 
-      <TimbanganFilterModal 
+      <TimbanganFilterModal
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        onApply={(f) => console.log("Filter", f)}
+        initialValues={{
+          startDate: searchParams.get("start_date") ?? "",
+          endDate: searchParams.get("end_date") ?? "",
+          customer: searchParams.get("customer") ?? "",
+          ownership_type: (searchParams.get("ownership_type") as any) ?? "",
+          status: (searchParams.get("status") as any) ?? "",
+        }}
+        onApply={(f) => {
+          const nextParams = new URLSearchParams();
+
+          // Pertahankan location_id jika ada
+          const locationId = searchParams.get("location_id");
+          if (locationId) nextParams.set("location_id", locationId);
+
+          // Reset ke page 1
+          nextParams.delete("page");
+
+          if (f.startDate) nextParams.set("start_date", f.startDate);
+          if (f.endDate) nextParams.set("end_date", f.endDate);
+          if (f.customer) nextParams.set("customer", f.customer);
+          if (f.ownership_type)
+            nextParams.set("ownership_type", f.ownership_type);
+          if (f.status) nextParams.set("status", f.status);
+
+          router.push(`/${role}/timbangan?${nextParams.toString()}`);
+          setIsFilterOpen(false);
+        }}
       />
 
-      <DeleteModal 
+      <DeleteModal
         isOpen={isDeleteOpen}
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={() => console.log("Delete", selectedId)}
