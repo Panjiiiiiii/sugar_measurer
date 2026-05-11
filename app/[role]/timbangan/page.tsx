@@ -82,12 +82,12 @@ export default function TimbanganPage() {
     unpaid: 0,
   });
   const [riwayatPagination, setRiwayatPagination] = useState({
-    per_page: 1,
+    per_page: 10,
     number_page: 1,
     total_page: 1,
     total_data: 0,
   });
-  const riwayatLimit = 10;
+  const riwayatLimit = 3;
   const currentPage = Number(searchParams.get("page") || 1);
 
   function formatCurrency(value: number) {
