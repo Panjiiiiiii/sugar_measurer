@@ -38,15 +38,33 @@ export async function GET(request: Request) {
     const pageParam = getFirstQueryParam(searchParams, ["page", "number_page", "halaman"]);
     const limitParam = getFirstQueryParam(searchParams, ["limit", "per_page", "page_size"]);
     const ownershipTypeParam = getFirstQueryParam(searchParams, ["type_ownership", "ownership_type"]);
+    const searchParam = getFirstQueryParam(searchParams, ["search", "q", "name"]);
     const page = parsePositiveInt(pageParam, 1);
     const limit = parsePositiveInt(limitParam, 10);
     const skip = (page - 1) * limit;
+    const search = searchParam?.trim();
 
-        const whereClause: Prisma.ownerWhereInput = {};
+    const whereClause: Prisma.ownerWhereInput = {};
     if (ownershipTypeParam) {
       whereClause.ownership_type = {
-            equals: ownershipTypeParam.toLowerCase() as any,
+        equals: ownershipTypeParam.toLowerCase() as any,
       };
+    }
+    if (search) {
+      whereClause.OR = [
+        {
+          name: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          phone_number: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      ];
     }
     const [owners, totalData] = await Promise.all([
       prisma.owner.findMany({

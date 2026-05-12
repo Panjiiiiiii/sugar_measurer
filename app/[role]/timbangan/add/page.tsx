@@ -20,10 +20,21 @@ interface Truck {
   license_plate: string;
 }
 
+interface Owner {
+  id: string;
+  name: string;
+  phone_number: string;
+}
+
 interface TruckOption {
   value: string;
   label: string;
   license_plate: string;
+}
+
+interface OwnerOption {
+  value: string;
+  label: string;
 }
 
 interface PaginationMeta {
@@ -39,8 +50,14 @@ interface TruckListResponse {
   page?: PaginationMeta;
 }
 
-const truckSelectStyles: StylesConfig<TruckOption, false> = {
-  control: (base, state) => ({
+interface OwnerListResponse {
+  statusCode?: number;
+  data: Owner[];
+  page?: PaginationMeta;
+}
+
+const selectStyles = {
+  control: (base: any, state: any) => ({
     ...base,
     minHeight: "48px",
     borderRadius: "12px",
@@ -52,25 +69,25 @@ const truckSelectStyles: StylesConfig<TruckOption, false> = {
       borderColor: state.isFocused ? "#3b82f6" : "#cbd5e1",
     },
   }),
-  placeholder: (base) => ({
+  placeholder: (base: any) => ({
     ...base,
     color: "#9ca3af",
   }),
-  singleValue: (base) => ({
+  singleValue: (base: any) => ({
     ...base,
     color: "#111827",
   }),
-  input: (base) => ({
+  input: (base: any) => ({
     ...base,
     color: "#111827",
   }),
-  menu: (base) => ({
+  menu: (base: any) => ({
     ...base,
     borderRadius: "12px",
     overflow: "hidden",
     zIndex: 30,
   }),
-  option: (base, state) => ({
+  option: (base: any, state: any) => ({
     ...base,
     backgroundColor: state.isSelected
       ? "#dbeafe"
@@ -80,7 +97,7 @@ const truckSelectStyles: StylesConfig<TruckOption, false> = {
     color: "#111827",
     cursor: "pointer",
   }),
-  clearIndicator: (base) => ({
+  clearIndicator: (base: any) => ({
     ...base,
     color: "#94a3b8",
     cursor: "pointer",
@@ -88,7 +105,7 @@ const truckSelectStyles: StylesConfig<TruckOption, false> = {
       color: "#64748b",
     },
   }),
-  dropdownIndicator: (base, state) => ({
+  dropdownIndicator: (base: any, state: any) => ({
     ...base,
     color: state.isFocused ? "#3b82f6" : "#94a3b8",
     "&:hover": {
@@ -121,10 +138,49 @@ export default function InputTimbanganPage() {
   const [selectedTruck, setSelectedTruck] = useState<TruckOption | null>(null);
   const [isTruckLoading, setIsTruckLoading] = useState(false);
   const [truckSearchQuery, setTruckSearchQuery] = useState("");
+  const [ownerOptions, setOwnerOptions] = useState<OwnerOption[]>([]);
+  const [selectedOwner, setSelectedOwner] = useState<OwnerOption | null>(null);
+  const [isOwnerLoading, setIsOwnerLoading] = useState(false);
+  const [ownerSearchQuery, setOwnerSearchQuery] = useState("");
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const fetchOwners = async () => {
+      setIsOwnerLoading(true);
+
+      try {
+        const response = await axios.get<OwnerListResponse>("/api/owner", {
+          params: {
+            limit: 100,
+            search: ownerSearchQuery.trim() || undefined,
+          },
+        });
+
+        const options = (response.data.data ?? []).map((owner) => ({
+          value: owner.id,
+          label: `${owner.name} (${owner.phone_number})`,
+        }));
+
+        setOwnerOptions(options);
+      } catch (error) {
+        console.error("Error fetching owner options:", error);
+        setOwnerOptions([]);
+      } finally {
+        setIsOwnerLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(() => {
+      fetchOwners();
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [isMounted, ownerSearchQuery]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -171,6 +227,14 @@ export default function InputTimbanganPage() {
     setFormData((current) => ({
       ...current,
       nopol: option?.license_plate ?? "",
+    }));
+  };
+
+  const handleOwnerChange = (option: SingleValue<OwnerOption>) => {
+    setSelectedOwner(option ?? null);
+    setFormData((current) => ({
+      ...current,
+      customer: option?.label ?? "",
     }));
   };
 
@@ -241,7 +305,7 @@ export default function InputTimbanganPage() {
                     onInputChange={setTruckSearchQuery}
                     inputValue={truckSearchQuery}
                     options={truckOptions}
-                    styles={truckSelectStyles}
+                    styles={selectStyles}
                     noOptionsMessage={() => (isTruckLoading ? "Memuat data truck..." : truckSearchQuery ? "Truck tidak ditemukan" : "Ketik untuk mencari truck")}
                   />
                 ) : (
@@ -252,14 +316,31 @@ export default function InputTimbanganPage() {
                 )}
               </div>
               
-              <Input 
-                label="Customer" 
-                required 
-                placeholder="Pilih Customer" 
-                icon={<CaretDown size={18} />}
-                value={formData.customer}
-                onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
-              />
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-xs font-bold text-gray-600">
+                  Customer <span className="text-red-500">*</span>
+                </label>
+                {isMounted ? (
+                  <ReactSelect
+                    isClearable
+                    isSearchable
+                    isLoading={isOwnerLoading}
+                    placeholder="Cari nama atau nomor customer"
+                    value={selectedOwner}
+                    onChange={handleOwnerChange}
+                    onInputChange={setOwnerSearchQuery}
+                    inputValue={ownerSearchQuery}
+                    options={ownerOptions}
+                    styles={selectStyles}
+                    noOptionsMessage={() => (isOwnerLoading ? "Memuat data customer..." : ownerSearchQuery ? "Customer tidak ditemukan" : "Ketik untuk mencari customer")}
+                  />
+                ) : (
+                  <Input
+                    placeholder="Memuat data customer..."
+                    disabled
+                  />
+                )}
+              </div>
 
               <Input 
                 label="Supir" 
