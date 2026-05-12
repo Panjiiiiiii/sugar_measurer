@@ -131,7 +131,7 @@ export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onSta
           currentPage={currentPage}
           totalPages={totalPages}
           totalData={totalData}
-          showingData={showingData}
+          showingData={data.length}
           onPageChange={onPageChange}
         />
       )}

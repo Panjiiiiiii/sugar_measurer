@@ -79,7 +79,7 @@ export default function TimbanganPage() {
     paid: 0,
     unpaid: 0,
   });
-  const riwayatLimit = 3;
+  const riwayatLimit = 10;
   const [riwayatPagination, setRiwayatPagination] = useState({
     per_page: riwayatLimit,
     number_page: 1,
@@ -143,7 +143,7 @@ export default function TimbanganPage() {
           "/api/history/transaction",
           {
             params: {
-              limit: 1000,
+              limit: 10,
               location_id:
                 searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
               // tidak kirim filter apapun supaya KPI selalu akurat

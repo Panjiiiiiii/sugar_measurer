@@ -95,6 +95,7 @@ export async function GET(request: Request) {
       "type_ownership",
     ]);
     const statusFilter = getFirstQueryParam(searchParams, ["status"]);
+    const customerFilter = getFirstQueryParam(searchParams, ["customer"]);
 
     const page = parsePositiveInt(pageParam, 1);
     const limit = parsePositiveInt(limitParam, 10);
@@ -148,15 +149,24 @@ export async function GET(request: Request) {
       dateFilter.lte = parsedEndDate;
     }
 
-    const whereClause: Prisma.transactionWhereInput = {
+    const baseWhereClause: Prisma.transactionWhereInput = {
       ...(locationId ? { location_id: locationId } : {}),
+    };
+
+    const filterWhereClause: Prisma.transactionWhereInput = {
+      ...baseWhereClause,
       ...(Object.keys(dateFilter).length > 0
         ? { transaction_date: dateFilter }
         : {}),
-      ...(ownershipType
+      ...(ownershipType || customerFilter
         ? {
             owner: {
-              ownership_type: ownershipType as "farmer" | "private" | "special",
+              ...(ownershipType
+                ? { ownership_type: ownershipType as any }
+                : {}),
+              ...(customerFilter
+                ? { name: { contains: customerFilter, mode: "insensitive" } }
+                : {}),
             },
           }
         : {}),
@@ -165,18 +175,20 @@ export async function GET(request: Request) {
     // compute KPI values for paid/unpaid and count the in-queue items
     const [paidSummary, unpaidSummary, inqueueCount] = await Promise.all([
       prisma.transaction.aggregate({
-        where: { ...whereClause, status: "paid" },
+        where: { ...baseWhereClause, status: "paid" },
         _sum: {
           total_price: true,
         },
       }),
       prisma.transaction.aggregate({
-        where: { ...whereClause, status: "unpaid" },
+        where: { ...baseWhereClause, status: "unpaid" },
         _sum: {
           total_price: true,
         },
       }),
-      prisma.transaction.count({ where: { ...whereClause, status: "queue" } }),
+      prisma.transaction.count({
+        where: { ...baseWhereClause, status: "queue" },
+      }),
     ]);
 
     const kpi = {
@@ -186,7 +198,7 @@ export async function GET(request: Request) {
     };
 
     const historyWhereClause: Prisma.transactionWhereInput = {
-      ...whereClause,
+      ...filterWhereClause,
       status:
         statusFilter && (statusFilter === "paid" || statusFilter === "unpaid")
           ? statusFilter
@@ -245,7 +257,7 @@ export async function GET(request: Request) {
     ]);
 
     const inQueueTransactions = await prisma.transaction.findMany({
-      where: { ...whereClause, status: "queue" },
+      where: { ...baseWhereClause, status: "queue" },
       orderBy: { transaction_date: "desc" },
       select: {
         id: true,
