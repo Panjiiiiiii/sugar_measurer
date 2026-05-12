@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { 
-  Clock, 
+import axios from "axios";
+import ReactSelect, { type SingleValue, type StylesConfig } from "react-select";
+import {
   CaretDown,
   ArrowLeft
 } from "@phosphor-icons/react";
@@ -12,6 +13,89 @@ import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
+
+interface Truck {
+  id: string;
+  name: string;
+  license_plate: string;
+}
+
+interface TruckOption {
+  value: string;
+  label: string;
+  license_plate: string;
+}
+
+interface PaginationMeta {
+  per_page: number;
+  number_page: number;
+  total_page: number;
+  total_data: number;
+}
+
+interface TruckListResponse {
+  statusCode?: number;
+  data: Truck[];
+  page?: PaginationMeta;
+}
+
+const truckSelectStyles: StylesConfig<TruckOption, false> = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: "48px",
+    borderRadius: "12px",
+    borderColor: state.isFocused ? "#3b82f6" : "#e2e8f0",
+    boxShadow: state.isFocused ? "0 0 0 4px rgba(59, 130, 246, 0.08)" : "none",
+    backgroundColor: state.isDisabled ? "#f9fafb" : "#ffffff",
+    cursor: "text",
+    "&:hover": {
+      borderColor: state.isFocused ? "#3b82f6" : "#cbd5e1",
+    },
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: "#9ca3af",
+  }),
+  singleValue: (base) => ({
+    ...base,
+    color: "#111827",
+  }),
+  input: (base) => ({
+    ...base,
+    color: "#111827",
+  }),
+  menu: (base) => ({
+    ...base,
+    borderRadius: "12px",
+    overflow: "hidden",
+    zIndex: 30,
+  }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isSelected
+      ? "#dbeafe"
+      : state.isFocused
+        ? "#eff6ff"
+        : "#ffffff",
+    color: "#111827",
+    cursor: "pointer",
+  }),
+  clearIndicator: (base) => ({
+    ...base,
+    color: "#94a3b8",
+    cursor: "pointer",
+    "&:hover": {
+      color: "#64748b",
+    },
+  }),
+  dropdownIndicator: (base, state) => ({
+    ...base,
+    color: state.isFocused ? "#3b82f6" : "#94a3b8",
+    "&:hover": {
+      color: "#3b82f6",
+    },
+  }),
+};
 
 export default function InputTimbanganPage() {
   const params = useParams();
@@ -32,6 +116,63 @@ export default function InputTimbanganPage() {
   });
 
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [truckOptions, setTruckOptions] = useState<TruckOption[]>([]);
+  const [selectedTruck, setSelectedTruck] = useState<TruckOption | null>(null);
+  const [isTruckLoading, setIsTruckLoading] = useState(false);
+  const [truckSearchQuery, setTruckSearchQuery] = useState("");
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const fetchTrucks = async () => {
+      setIsTruckLoading(true);
+
+      try {
+        const response = await axios.get<TruckListResponse>("/api/truck", {
+          params: {
+            limit: 100,
+            search: truckSearchQuery.trim() || undefined,
+          },
+        });
+
+        const options = (response.data.data ?? []).map((truck) => {
+          const truckName = truck.name?.trim() || "Unnamed Truck";
+
+          return {
+            value: truck.id,
+            label: `${truck.license_plate} - ${truckName}`,
+            license_plate: truck.license_plate,
+          };
+        });
+
+        setTruckOptions(options);
+      } catch (error) {
+        console.error("Error fetching truck options:", error);
+        setTruckOptions([]);
+      } finally {
+        setIsTruckLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(() => {
+      fetchTrucks();
+    }, 300);
+
+    return () => clearTimeout(debounceTimer);
+  }, [isMounted, truckSearchQuery]);
+
+  const handleTruckChange = (option: SingleValue<TruckOption>) => {
+    setSelectedTruck(option ?? null);
+    setFormData((current) => ({
+      ...current,
+      nopol: option?.license_plate ?? "",
+    }));
+  };
 
   const isFormValid = 
     formData.nopol && 
@@ -85,13 +226,31 @@ export default function InputTimbanganPage() {
         <div className="lg:col-span-7 flex flex-col gap-6">
           <Card title="Form Timbangan">
             <div className="flex flex-col gap-6">
-              <Input 
-                label="Input Nopol" 
-                required 
-                placeholder="Masukkan Nomor Polisi" 
-                value={formData.nopol}
-                onChange={(e) => setFormData({ ...formData, nopol: e.target.value })}
-              />
+              <div className="flex flex-col gap-2 w-full">
+                <label className="text-xs font-bold text-gray-600">
+                  Input Nopol <span className="text-red-500">*</span>
+                </label>
+                {isMounted ? (
+                  <ReactSelect
+                    isClearable
+                    isSearchable
+                    isLoading={isTruckLoading}
+                    placeholder="Cari nopol atau nama truck"
+                    value={selectedTruck}
+                    onChange={handleTruckChange}
+                    onInputChange={setTruckSearchQuery}
+                    inputValue={truckSearchQuery}
+                    options={truckOptions}
+                    styles={truckSelectStyles}
+                    noOptionsMessage={() => (isTruckLoading ? "Memuat data truck..." : truckSearchQuery ? "Truck tidak ditemukan" : "Ketik untuk mencari truck")}
+                  />
+                ) : (
+                  <Input
+                    placeholder="Memuat data truck..."
+                    disabled
+                  />
+                )}
+              </div>
               
               <Input 
                 label="Customer" 
@@ -172,7 +331,6 @@ export default function InputTimbanganPage() {
               <Select 
                 label="Payment Method" 
                 required 
-                placeholder="Pilih Metode Pembayaran"
                 icon={<CaretDown size={18} />}
                 value={formData.paymentMethod}
                 onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}

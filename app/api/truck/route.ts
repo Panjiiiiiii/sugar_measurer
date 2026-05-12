@@ -31,10 +31,12 @@ export async function GET(request: Request) {
         const pageParam = getFirstQueryParam(searchParams, ["page", "number_page", "halaman"]);
         const limitParam = getFirstQueryParam(searchParams, ["limit", "per_page", "page_size"]);
         const truckTypeParam = getFirstQueryParam(searchParams, ["type_truck", "truck_type"]);
+        const searchParam = getFirstQueryParam(searchParams, ["search", "q", "no_pol", "license_plate"]);
         const page = parsePositiveInt(pageParam, 1);
         const limit = parsePositiveInt(limitParam, 10);
         const skip = (page - 1) * limit;
         const truckType = truckTypeParam?.toLowerCase();
+        const search = searchParam?.trim();
         if (truckType && truckType !== "engkel" && truckType !== "double") {
             return Response.json(
                 {
@@ -48,6 +50,12 @@ export async function GET(request: Request) {
         const whereClause: Prisma.truckWhereInput = {};
         if (truckType) {
             whereClause.truck_type = truckType;
+        }
+        if (search) {
+            whereClause.license_plate = {
+                contains: search,
+                mode: "insensitive",
+            };
         }
         const [trucks, totalData] = await Promise.all([
             prisma.truck.findMany({
