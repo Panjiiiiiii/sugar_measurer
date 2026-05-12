@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import ReactSelect, { type SingleValue, type StylesConfig } from "react-select";
 import {
@@ -24,6 +24,7 @@ interface Owner {
   id: string;
   name: string;
   phone_number: string;
+  ownership_type: string;
 }
 
 interface TruckOption {
@@ -35,6 +36,8 @@ interface TruckOption {
 interface OwnerOption {
   value: string;
   label: string;
+  ownership_type?: string | null;
+  special_price?: number | null;
 }
 
 interface PaginationMeta {
@@ -117,6 +120,7 @@ const selectStyles = {
 export default function InputTimbanganPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const role = (params.role as string) || "branch";
   
   const [formData, setFormData] = useState({
@@ -142,10 +146,34 @@ export default function InputTimbanganPage() {
   const [selectedOwner, setSelectedOwner] = useState<OwnerOption | null>(null);
   const [isOwnerLoading, setIsOwnerLoading] = useState(false);
   const [ownerSearchQuery, setOwnerSearchQuery] = useState("");
+  const [locationPrice, setLocationPrice] = useState<number | null>(null);
+
+  const DEFAULT_BRANCH_LOCATION_ID = "07bf151f-ed44-4a5d-96cb-afed7e087c7a";
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    const fetchLocation = async () => {
+      try {
+        const locationId = searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID;
+        const resp = await axios.get(`/api/location/${locationId}`);
+        const data = resp.data?.data;
+        if (data && typeof data.sugar_price === "number") {
+          setLocationPrice(data.sugar_price);
+          // if no owner special selected, set harga to location price
+          setFormData((cur) => ({ ...cur, harga: String(data.sugar_price ?? cur.harga) }));
+        }
+      } catch (err) {
+        console.error("Error fetching location price:", err);
+      }
+    };
+
+    fetchLocation();
+  }, [isMounted, searchParams]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -161,10 +189,20 @@ export default function InputTimbanganPage() {
           },
         });
 
-        const options = (response.data.data ?? []).map((owner) => ({
-          value: owner.id,
-          label: `${owner.name} (${owner.phone_number})`,
-        }));
+        const options = (response.data.data ?? []).map((owner) => {
+          const ownerTypeLabel = owner.ownership_type === "farmer"
+            ? "Petani"
+            : owner.ownership_type === "private"
+              ? "Pribadi"
+              : owner.ownership_type;
+
+          return {
+            value: owner.id,
+            label: `${owner.name} (${owner.phone_number}) - ${ownerTypeLabel}`,
+            ownership_type: owner.ownership_type,
+            special_price: (owner as any).special_price ?? null,
+          } as OwnerOption;
+        });
 
         setOwnerOptions(options);
       } catch (error) {
@@ -232,10 +270,20 @@ export default function InputTimbanganPage() {
 
   const handleOwnerChange = (option: SingleValue<OwnerOption>) => {
     setSelectedOwner(option ?? null);
+    const owner = option ?? null;
     setFormData((current) => ({
       ...current,
-      customer: option?.label ?? "",
+      customer: owner?.label ?? "",
     }));
+
+    // special owner: enable special price, set harga to owner's special_price and disable editing
+    if (owner?.ownership_type === "special") {
+      const sp = owner.special_price ?? null;
+      setFormData((cur) => ({ ...cur, harga: sp !== null ? String(sp) : cur.harga, isHargaSpesial: true }));
+    } else {
+      // farmer or private: use location price and ensure harga input is editable
+      setFormData((cur) => ({ ...cur, harga: locationPrice !== null ? String(locationPrice) : cur.harga, isHargaSpesial: false }));
+    }
   };
 
   const isFormValid = 
@@ -391,9 +439,14 @@ export default function InputTimbanganPage() {
                 <label className="text-xs font-bold text-gray-600">
                   Harga Spesial <span className="text-red-500">*</span>
                 </label>
-                <button 
-                  onClick={() => setFormData({ ...formData, isHargaSpesial: !formData.isHargaSpesial })}
-                  className={`w-12 h-6 rounded-full transition-all relative ${formData.isHargaSpesial ? 'bg-[#00A3FF]' : 'bg-gray-200'}`}
+                <button
+                  onClick={() => {
+                    // prevent toggling when owner has forced special price
+                    if (selectedOwner?.ownership_type === "special") return;
+                    setFormData((cur) => ({ ...cur, isHargaSpesial: !cur.isHargaSpesial }));
+                  }}
+                  disabled={selectedOwner?.ownership_type === "special"}
+                  className={`w-12 h-6 rounded-full transition-all relative ${formData.isHargaSpesial ? 'bg-[#00A3FF]' : 'bg-gray-200'} ${selectedOwner?.ownership_type === "special" ? 'opacity-60 cursor-not-allowed' : ''}`}
                 >
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isHargaSpesial ? 'left-7' : 'left-1'}`} />
                 </button>
@@ -404,9 +457,9 @@ export default function InputTimbanganPage() {
                 required 
                 value={formData.harga}
                 onChange={(e) => setFormData({ ...formData, harga: e.target.value })}
-                disabled={!formData.isHargaSpesial}
+                disabled={formData.isHargaSpesial}
                 placeholder="0"
-                className={!formData.isHargaSpesial ? "bg-gray-50 text-gray-400 cursor-not-allowed" : ""}
+                className={formData.isHargaSpesial ? "bg-gray-50 text-gray-400 cursor-not-allowed" : ""}
               />
 
               <Select 
