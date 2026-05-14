@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     
     if (!parsedInput.success) {
       const firstErrorMessage =
-        parsedInput.error.issues[0]?.message ?? "Validation failed";
+        parsedInput.error.issues[0]?.message ?? "Validasi gagal";
 
       return Response.json(
         {
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 400,
-          message: "loading_in must be a valid datetime",
+          message: "loading_in harus berupa tanggal/waktu yang valid",
           data: null,
         },
         { status: 400 },
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         return Response.json(
           {
             statusCode: 400,
-            message: "loading_out must be a valid datetime",
+            message: "loading_out harus berupa tanggal/waktu yang valid",
             data: null,
           },
           { status: 400 },
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 400,
-          message: "tare must be less than or equal to bruto",
+          message: "Berat tara harus kurang dari atau sama dengan berat bruto",
           data: null,
         },
         { status: 400 },
@@ -168,7 +168,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         statusCode: 201,
-        message: "Transaction created successfully",
+        message: "Transaksi berhasil dibuat",
       },
       { status: 201 },
     );
@@ -177,7 +177,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 404,
-          message: "Location not found",
+          message: "Lokasi tidak ditemukan",
         },
         { status: 404 },
       );
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 404,
-          message: "Truck not found",
+          message: "Truk tidak ditemukan",
         },
         { status: 404 },
       );
@@ -197,7 +197,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 404,
-          message: "Owner not found",
+          message: "Pemilik tidak ditemukan",
         },
         { status: 404 },
       );
@@ -206,7 +206,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         statusCode: 500,
-        message: "Internal server error",
+        message: "Kesalahan server internal",
       },
       { status: 500 },
     );
