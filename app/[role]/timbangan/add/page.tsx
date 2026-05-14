@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
-import ReactSelect, { type SingleValue, type StylesConfig } from "react-select";
+import ReactSelect, { type SingleValue } from "react-select";
 import {
   CaretDown,
   ArrowLeft
@@ -13,6 +13,7 @@ import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
+import { Toast } from "@/components/ui/Toast";
 
 interface Truck {
   id: string;
@@ -57,6 +58,63 @@ interface OwnerListResponse {
   statusCode?: number;
   data: Owner[];
   page?: PaginationMeta;
+}
+
+interface LoginPayload {
+  sub?: string;
+  location_id?: string;
+}
+
+function decodeJwtPayload(token: string): LoginPayload | null {
+  const tokenParts = token.split(".");
+  if (tokenParts.length < 2) return null;
+
+  try {
+    const base64 = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const json = atob(padded);
+    return JSON.parse(json) as LoginPayload;
+  } catch {
+    return null;
+  }
+}
+
+function getStoredToken(): string | null {
+  const candidateKeys = ["token", "auth_token", "access_token", "authToken"];
+
+  for (const key of candidateKeys) {
+    const value = localStorage.getItem(key) ?? sessionStorage.getItem(key);
+    if (!value) continue;
+
+    try {
+      const parsed = JSON.parse(value) as { token?: string };
+      if (parsed?.token && typeof parsed.token === "string") {
+        return parsed.token;
+      }
+    } catch {
+      if (typeof value === "string" && value.includes(".")) {
+        return value;
+      }
+    }
+  }
+
+  return null;
+}
+
+function buildTodayIsoDateTime(time: string): string {
+  const [hour, minute] = time.split(":").map((val) => Number.parseInt(val, 10));
+  const now = new Date();
+  const composed = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    Number.isNaN(hour) ? 0 : hour,
+    Number.isNaN(minute) ? 0 : minute,
+    0,
+    0,
+  );
+
+  return composed.toISOString();
 }
 
 const selectStyles = {
@@ -131,9 +189,13 @@ export default function InputTimbanganPage() {
     jamKeluar: "",
     bruto: "",
     tara: "",
-    paymentMethod: "",
+    paymentMethod: "cash",
     harga: "7500",
-    isHargaSpesial: false
+    isHargaSpesial: false,
+    truck_id: "",
+    owner_id: "",
+    user_id: "",
+    location_id: "",
   });
 
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -147,8 +209,15 @@ export default function InputTimbanganPage() {
   const [isOwnerLoading, setIsOwnerLoading] = useState(false);
   const [ownerSearchQuery, setOwnerSearchQuery] = useState("");
   const [locationPrice, setLocationPrice] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
 
   const DEFAULT_BRANCH_LOCATION_ID = "07bf151f-ed44-4a5d-96cb-afed7e087c7a";
+  const DEFAULT_BRANCH_USER_ID = "8345ff68-0aa6-4e76-bac5-ec14d782938f";
+  const queryLocationId = searchParams.get("location_id") || "";
+  const queryUserId = searchParams.get("user_id") || "";
 
   useEffect(() => {
     setIsMounted(true);
@@ -157,9 +226,26 @@ export default function InputTimbanganPage() {
   useEffect(() => {
     if (!isMounted) return;
 
+    const token = getStoredToken();
+    const payload = token ? decodeJwtPayload(token) : null;
+
+    setFormData((current) => ({
+      ...current,
+      user_id: queryUserId || payload?.sub || current.user_id,
+      location_id:
+        queryLocationId ||
+        payload?.location_id ||
+        current.location_id ||
+        DEFAULT_BRANCH_LOCATION_ID,
+    }));
+  }, [isMounted, queryLocationId, queryUserId]);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
     const fetchLocation = async () => {
       try {
-        const locationId = searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID;
+        const locationId = queryLocationId || formData.location_id || DEFAULT_BRANCH_LOCATION_ID;
         const resp = await axios.get(`/api/location/${locationId}`);
         const data = resp.data?.data;
         if (data && typeof data.sugar_price === "number") {
@@ -172,8 +258,10 @@ export default function InputTimbanganPage() {
       }
     };
 
+    
+
     fetchLocation();
-  }, [isMounted, searchParams]);
+  }, [isMounted, queryLocationId, formData.location_id]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -235,7 +323,7 @@ export default function InputTimbanganPage() {
         });
 
         const options = (response.data.data ?? []).map((truck) => {
-          const truckName = truck.name?.trim() || "Unnamed Truck";
+          const truckName = truck.name?.trim() || "Truk tanpa nama";
 
           return {
             value: truck.id,
@@ -265,6 +353,7 @@ export default function InputTimbanganPage() {
     setFormData((current) => ({
       ...current,
       nopol: option?.license_plate ?? "",
+      truck_id: option?.value ?? "",
     }));
   };
 
@@ -274,6 +363,7 @@ export default function InputTimbanganPage() {
     setFormData((current) => ({
       ...current,
       customer: owner?.label ?? "",
+      owner_id: owner?.value ?? "",
     }));
 
     // special owner: enable special price, set harga to owner's special_price and disable editing
@@ -287,13 +377,96 @@ export default function InputTimbanganPage() {
   };
 
   const isFormValid = 
-    formData.nopol && 
-    formData.customer && 
-    formData.supir && 
-    formData.jamMasuk && 
-    formData.bruto && 
-    formData.paymentMethod && 
-    formData.harga;
+    !!formData.nopol && 
+    !!formData.customer && 
+    !!formData.supir && 
+    !!formData.jamMasuk && 
+    !!formData.bruto && 
+    !!formData.paymentMethod && 
+    !!formData.harga &&
+    !!formData.truck_id &&
+    !!formData.owner_id;
+
+  const showErrorToast = (message: string) => {
+    setToastType("error");
+    setToastMessage(message);
+    setShowToast(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.truck_id) {
+      showErrorToast("Silakan pilih truk terlebih dahulu");
+      return;
+    }
+
+    if (!formData.owner_id) {
+      showErrorToast("Silakan pilih customer terlebih dahulu");
+      return;
+    }
+
+    // if (!formData.user_id) {
+    //   showErrorToast("User tidak ditemukan. Silakan login ulang");
+    //   return;
+    // }
+
+    const brutoWeight = Number.parseInt(formData.bruto, 10);
+    const taraWeight = formData.tara ? Number.parseInt(formData.tara, 10) : undefined;
+    const sugarPrice = Number.parseInt(formData.harga.replace(/[^0-9]/g, ""), 10);
+
+    if (Number.isNaN(brutoWeight)) {
+      showErrorToast("Berat bruto harus berupa angka yang valid");
+      return;
+    }
+
+    if (taraWeight !== undefined && Number.isNaN(taraWeight)) {
+      showErrorToast("Berat tara harus berupa angka yang valid");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      const payload = {
+        bruto_weight: brutoWeight,
+        tarra_weight: taraWeight,
+        loading_in: buildTodayIsoDateTime(formData.jamMasuk),
+        loading_out: formData.jamKeluar
+          ? buildTodayIsoDateTime(formData.jamKeluar)
+          : undefined,
+        truck_id: formData.truck_id,
+        location_id: formData.location_id || queryLocationId || DEFAULT_BRANCH_LOCATION_ID,
+        user_id: formData.user_id || queryUserId || DEFAULT_BRANCH_USER_ID,
+        owner_id: formData.owner_id,
+        driver_name: formData.supir.trim() || undefined,
+        sugar_price: Number.isNaN(sugarPrice) ? undefined : sugarPrice,
+      };
+
+      const response = await axios.post("/api/branch/transaction/in", payload);
+
+      setToastType("success");
+      setToastMessage(response.data?.message || "Transaksi berhasil dibuat");
+      setShowToast(true);
+
+      const nextParams = new URLSearchParams();
+      if (formData.location_id) {
+        nextParams.set("location_id", formData.location_id);
+      }
+      nextParams.set("success", "true");
+
+      setTimeout(() => {
+        router.push(`/${role}/timbangan?${nextParams.toString()}`);
+      }, 600);
+    } catch (error) {
+      const apiMessage =
+        axios.isAxiosError(error)
+          ? (error.response?.data?.message as string | undefined)
+          : undefined;
+
+      showErrorToast(apiMessage || "Gagal menyimpan transaksi");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Derived values
   const brutoVal = parseFloat(formData.bruto) || 0;
@@ -309,6 +482,13 @@ export default function InputTimbanganPage() {
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-full pb-10">
+      <Toast
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+        type={toastType}
+        message={toastMessage}
+      />
+
       {/* Header & Breadcrumbs */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
@@ -354,11 +534,11 @@ export default function InputTimbanganPage() {
                     inputValue={truckSearchQuery}
                     options={truckOptions}
                     styles={selectStyles}
-                    noOptionsMessage={() => (isTruckLoading ? "Memuat data truck..." : truckSearchQuery ? "Truck tidak ditemukan" : "Ketik untuk mencari truck")}
+                    noOptionsMessage={() => (isTruckLoading ? "Memuat data truk..." : truckSearchQuery ? "Truk tidak ditemukan" : "Ketik untuk mencari truk")}
                   />
                 ) : (
                   <Input
-                    placeholder="Memuat data truck..."
+                    placeholder="Memuat data truk..."
                     disabled
                   />
                 )}
@@ -519,11 +699,11 @@ export default function InputTimbanganPage() {
           </Button>
           <Button 
             variant="primary" 
-            className={`w-full py-4 ${!isFormValid ? "opacity-50 cursor-not-allowed" : ""}`}
-            disabled={!isFormValid}
-            onClick={() => router.push(`/${role}/timbangan?success=true`)}
+            className={`w-full py-4 ${!isFormValid || isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={!isFormValid || isSubmitting}
+            onClick={handleSubmit}
           >
-            Simpan
+            {isSubmitting ? "Menyimpan..." : "Simpan"}
           </Button>
         </div>
       </div>
