@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
 import { Toast } from "@/components/ui/Toast";
+import { payment_method } from "@/generated/prisma/enums";
 
 interface Truck {
   id: string;
@@ -189,7 +190,7 @@ export default function InputTimbanganPage() {
     jamKeluar: "",
     bruto: "",
     tara: "",
-    paymentMethod: "cash",
+    paymentMethod: "",
     harga: "7500",
     isHargaSpesial: false,
     truck_id: "",
@@ -437,6 +438,7 @@ export default function InputTimbanganPage() {
         location_id: formData.location_id || queryLocationId || DEFAULT_BRANCH_LOCATION_ID,
         user_id: formData.user_id || queryUserId || DEFAULT_BRANCH_USER_ID,
         owner_id: formData.owner_id,
+        payment_method: formData.paymentMethod,
         driver_name: formData.supir.trim() || undefined,
         sugar_price: Number.isNaN(sugarPrice) ? undefined : sugarPrice,
       };
@@ -643,12 +645,13 @@ export default function InputTimbanganPage() {
               />
 
               <Select 
-                label="Payment Method" 
+                label="Metode Pembayaran" 
                 required 
                 icon={<CaretDown size={18} />}
                 value={formData.paymentMethod}
                 onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
                 options={[
+                  { value : "", label : "Pilih Metode"},
                   { value: "cash", label: "Cash" },
                   { value: "transfer", label: "Transfer" }
                 ]}

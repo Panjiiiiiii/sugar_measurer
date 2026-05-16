@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   try {
     const rawBody = await request.json();
     const parsedInput = validateCreateBranchTransactionInputSafe(rawBody);
-    
+
     if (!parsedInput.success) {
       const firstErrorMessage =
         parsedInput.error.issues[0]?.message ?? "Validasi gagal";
@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       owner_id,
       driver_name,
       sugar_price,
+      payment_method,
     } = parsedInput.data;
 
     const hasTare = tarra_weight !== undefined && tarra_weight > 0;
@@ -39,7 +40,9 @@ export async function POST(request: Request) {
       typeof loading_out === "string" &&
       loading_out.trim() !== "" &&
       loading_out !== "0";
-    const transactionStatus = hasTare && hasLoadingOut ? "unpaid" : "queue";
+    // const transactionStatus = hasTare && hasLoadingOut ? "unpaid" : "queue";
+
+    let transaction_status: "paid" | "unpaid" | "queue" = "queue";
 
     const loadingInDate = new Date(loading_in);
 
@@ -115,18 +118,33 @@ export async function POST(request: Request) {
       let specialOwner = await tx.owner.findFirst({
         where: {
           id: owner_id,
-          ownership_type : "special",
+          ownership_type: "special",
         },
         select: {
           special_price: true,
         },
       });
 
+      let privateOwner = await tx.owner.findFirst({
+        where : {
+          id :  owner_id,
+          ownership_type : "private",
+        },
+      })
+
       const resolvedSugarPrice =
         sugar_price ?? specialOwner?.special_price ?? location.sugar_price;
 
       const totalPrice =
         nettoWeight !== 0 ? nettoWeight * resolvedSugarPrice : 0;
+
+      if(privateOwner && hasTare && hasLoadingOut){
+        transaction_status = "paid"
+      } else if (hasTare && hasLoadingOut) {
+        transaction_status = "unpaid";
+      } else {
+        transaction_status = "queue";
+      }
 
       return tx.transaction.create({
         data: {
@@ -137,8 +155,8 @@ export async function POST(request: Request) {
           current_price: resolvedSugarPrice,
           driver_name: driver_name,
           total_price: totalPrice,
-          status: transactionStatus,
-          payment_method: "cash",
+          status: transaction_status,
+          payment_method: payment_method ?? "cash",
           loading_in: loadingInDate,
           loading_out: loadingOutDate,
           location: {
