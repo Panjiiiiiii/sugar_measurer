@@ -80,7 +80,7 @@ export async function PUT(
         return Response.json(
             {
                 statusCode: 201,
-                message: "Transaction payment recorded successfully",
+                message: "Status transaksi berhasil diperbarui",
 
             },
             { status: 201 },

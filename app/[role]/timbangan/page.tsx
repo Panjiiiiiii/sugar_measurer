@@ -74,6 +74,8 @@ export default function TimbanganPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
   const [summary, setSummary] = useState({
     inQueue: 0,
     paid: 0,
@@ -106,8 +108,61 @@ export default function TimbanganPage() {
     router.push(`/${role}/timbangan?${nextParams.toString()}`);
   };
 
+  const handleStatusChange = async (id: string, status: string) => {
+    const currentItem = riwayat.find((item) => item.id === id);
+
+    if (!currentItem) {
+      setToastType("error");
+      setToastMessage("Data transaksi tidak ditemukan");
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      const response = await axios.put(`/api/branch/transaction/payment/${id}`, {
+        status,
+        payment_method: currentItem.payment_method,
+      });
+
+      setRiwayat((current) =>
+        current.map((item) =>
+          item.id === id ? { ...item, status: status as "paid" | "unpaid" } : item,
+        ),
+      );
+
+      setSummary((current) => ({
+        ...current,
+        paid:
+          status === "paid"
+            ? current.paid + 1
+            : Math.max(0, current.paid - 1),
+        unpaid:
+          status === "unpaid"
+            ? current.unpaid + 1
+            : Math.max(0, current.unpaid - 1),
+      }));
+
+      setToastType("success");
+      setToastMessage(response.data?.message || "Status transaksi berhasil diperbarui");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      const apiMessage =
+        axios.isAxiosError(error)
+          ? (error.response?.data?.message as string | undefined)
+          : undefined;
+
+      setToastType("error");
+      setToastMessage(apiMessage || "Gagal memperbarui status transaksi");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
+  };
+
   useEffect(() => {
     if (searchParams.get("success") === "true") {
+      setToastType("success");
+      setToastMessage("Data Berhasil Disimpan");
       setShowToast(true);
       const timer = setTimeout(() => setShowToast(false), 3000);
       return () => clearTimeout(timer);
@@ -241,8 +296,8 @@ export default function TimbanganPage() {
     <div className="flex flex-col w-full max-w-full pb-10">
       <Toast
         isVisible={showToast}
-        message="Data Berhasil Disimpan"
-        type="success"
+        message={toastMessage}
+        type={toastType}
       />
       <PageHeader
         title="Timbangan"
@@ -290,9 +345,7 @@ export default function TimbanganPage() {
             setSelectedId(id);
             setIsDeleteOpen(true);
           }}
-          onStatusChange={(id, status) =>
-            console.log("Status change", id, status)
-          }
+          onStatusChange={handleStatusChange}
           pagination={riwayatPagination}
           onPageChange={handlePageChange}
         />
