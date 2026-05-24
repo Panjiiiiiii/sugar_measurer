@@ -11,8 +11,10 @@ export default function AntrianTimbanganDetailPage() {
   const params = useParams();
   const router = useRouter();
   const role = (params.role as string) || "branch";
+  const transactionId = params.id as string;
 
   const [isHargaSpesial, setIsHargaSpesial] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     nopol: "N 1234 AC",
     customer: "Abah",
@@ -51,10 +53,38 @@ export default function AntrianTimbanganDetailPage() {
       }
     }
 
-    if (params.id) {
-      fetchTransaction(params.id as string);
+    if (transactionId) {
+      fetchTransaction(transactionId);
     }
-  }, [params.id]);
+  }, [transactionId]);
+
+  const buildLoadingOutDateTime = (timeValue: string) => {
+    const [hours, minutes] = timeValue.split(":");
+    const loadingOutDate = new Date();
+
+    loadingOutDate.setHours(Number(hours) || 0, Number(minutes) || 0, 0, 0);
+
+    return loadingOutDate.toISOString();
+  };
+
+  const handleSave = async () => {
+    if (!transactionId) return;
+
+    try {
+      setIsSaving(true);
+
+      await axios.put(`/api/branch/transaction/out/${transactionId}`, {
+        tare: formData.tara,
+        loading_out: buildLoadingOutDateTime(formData.keluar),
+      });
+
+      router.push(`/${role}/timbangan?success=true`);
+    } catch (error) {
+      console.error("Error saving transaction out:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const isFormValid =
     formData.nopol &&
@@ -189,11 +219,11 @@ export default function AntrianTimbanganDetailPage() {
           </Button>
           <Button
             variant="primary"
-            className={`w-full py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52] ${!isFormValid ? "opacity-50 cursor-not-allowed" : ""}`}
-            disabled={!isFormValid}
-            onClick={() => router.push(`/${role}/timbangan?success=true`)}
+            className={`w-full py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52] ${!isFormValid || isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={!isFormValid || isSaving}
+            onClick={handleSave}
           >
-            Simpan
+            {isSaving ? "Menyimpan..." : "Simpan"}
           </Button>
         </div>
       </div>
