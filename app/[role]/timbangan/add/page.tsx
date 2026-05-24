@@ -372,8 +372,8 @@ export default function InputTimbanganPage() {
       const sp = owner.special_price ?? null;
       setFormData((cur) => ({ ...cur, harga: sp !== null ? String(sp) : cur.harga, isHargaSpesial: true }));
     } else {
-      // farmer or private: use location price and ensure harga input is editable
-      setFormData((cur) => ({ ...cur, harga: locationPrice !== null ? String(locationPrice) : cur.harga, isHargaSpesial: false }));
+      // farmer or private: default harga to zero and allow manual edit
+      setFormData((cur) => ({ ...cur, harga: "0", isHargaSpesial: false }));
     }
   };
 
@@ -384,7 +384,6 @@ export default function InputTimbanganPage() {
     !!formData.jamMasuk && 
     !!formData.bruto && 
     !!formData.paymentMethod && 
-    !!formData.harga &&
     !!formData.truck_id &&
     !!formData.owner_id;
 
