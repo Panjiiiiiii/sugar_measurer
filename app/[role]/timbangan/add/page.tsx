@@ -371,9 +371,12 @@ export default function InputTimbanganPage() {
     if (owner?.ownership_type === "special") {
       const sp = owner.special_price ?? null;
       setFormData((cur) => ({ ...cur, harga: sp !== null ? String(sp) : cur.harga, isHargaSpesial: true }));
-    } else {
+    } else if (owner?.ownership_type === "private") {
       // farmer or private: default harga to zero and allow manual edit
       setFormData((cur) => ({ ...cur, harga: "0", isHargaSpesial: false }));
+    } else {
+      // other owner types: default harga to location price and allow manual edit
+      setFormData((cur) => ({ ...cur, harga: locationPrice !== null ? String(locationPrice) : cur.harga, isHargaSpesial: false }));
     }
   };
 

@@ -100,6 +100,7 @@ export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onSta
                           item.status === "paid" ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600"
                         }`}
                         value={item.status}
+                        disabled={item.status === "paid"}
                         onChange={(e) => onStatusChange(item.id, e.target.value)}
                       >
                         <option value="paid">PAID</option>
