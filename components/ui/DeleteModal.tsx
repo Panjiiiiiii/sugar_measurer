@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface DeleteModalProps {
   isOpen: boolean;
@@ -15,13 +16,19 @@ export function DeleteModal({
   onConfirm,
   message = "Apakah anda yakin ingin menghapus data ini?"
 }: DeleteModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/40 backdrop-blur-[4px] animate-in fade-in duration-300"
+        className="fixed inset-0 bg-black/40 backdrop-blur-[4px] animate-in fade-in duration-300"
         onClick={onClose}
       />
 
@@ -53,4 +60,6 @@ export function DeleteModal({
       </div>
     </div>
   );
+
+  return mounted ? createPortal(modalContent, document.body) : null;
 }

@@ -104,8 +104,9 @@ export default function CustomerPage() {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={() => {
-          console.log("Delete customer", selectedCustomerId);
-          // Here you would call your API to delete
+          if (selectedCustomerId) {
+            setCustomers(prev => prev.filter(c => c.id !== selectedCustomerId));
+          }
           setIsDeleteModalOpen(false);
         }}
         message="Apakah anda yakin ingin menghapus data user ini?"
