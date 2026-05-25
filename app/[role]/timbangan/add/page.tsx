@@ -38,6 +38,7 @@ interface TruckOption {
 interface OwnerOption {
   value: string;
   label: string;
+  name: string;
   ownership_type?: string | null;
   special_price?: number | null;
 }
@@ -288,6 +289,7 @@ export default function InputTimbanganPage() {
           return {
             value: owner.id,
             label: `${owner.name} (${owner.phone_number}) - ${ownerTypeLabel}`,
+            name: owner.name,
             ownership_type: owner.ownership_type,
             special_price: (owner as any).special_price ?? null,
           } as OwnerOption;
@@ -483,6 +485,19 @@ export default function InputTimbanganPage() {
     currency: "IDR",
     minimumFractionDigits: 0
   }).format(totalHarga);
+
+  const receiptData = {
+    customer: selectedOwner?.name || formData.customer,
+    nopol: selectedTruck?.license_plate || formData.nopol,
+    masuk: formData.jamMasuk,
+    keluar: formData.jamKeluar,
+    bruto: formData.bruto,
+    tara: formData.tara,
+    netto: nettoKw.toFixed(2),
+    hargaPerKw: hargaVal.toLocaleString("id-ID"),
+    total: totalHargaDisplay,
+    operator: "Dadang Utama Jaya",
+  };
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-full pb-10">
@@ -716,18 +731,7 @@ export default function InputTimbanganPage() {
       <ReceiptModal 
         isOpen={isReceiptOpen}
         onClose={() => setIsReceiptOpen(false)}
-        data={{
-          customer: formData.customer,
-          nopol: formData.nopol,
-          masuk: formData.jamMasuk,
-          keluar: formData.jamKeluar,
-          bruto: formData.bruto,
-          tara: formData.tara,
-          netto: nettoKw.toFixed(2),
-          hargaPerKw: (hargaVal).toLocaleString("id-ID"),
-          total: totalHargaDisplay,
-          operator: "Dadang Utama Jaya"
-        }}
+        data={receiptData}
       />
     </div>
   );

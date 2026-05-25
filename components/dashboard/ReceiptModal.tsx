@@ -37,6 +37,12 @@ export function ReceiptModal({ isOpen, onClose, data }: ReceiptModalProps) {
     hour12: true,
   });
 
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const dd = pad(today.getDate());
+  const mm = pad(today.getMonth() + 1);
+  const yyyy = today.getFullYear();
+  const todayDashed = `${dd}-${mm}-${yyyy}`;
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Preview Struk" size="sm" centerTitle>
       <div className="bg-white flex flex-col items-center">
@@ -66,11 +72,11 @@ export function ReceiptModal({ isOpen, onClose, data }: ReceiptModalProps) {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Masuk</span>
-              <span className="font-bold tracking-tight">20-04-2026 {data.masuk || "00:00"}:00</span>
+              <span className="font-bold tracking-tight">{todayDashed} {data.masuk || "00:00"}:00</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">Keluar</span>
-              <span className="font-bold tracking-tight">{data.keluar ? `20-04-2026 ${data.keluar}:00` : "-"}</span>
+              <span className="font-bold tracking-tight">{data.keluar ? `${todayDashed} ${data.keluar}:00` : "-"}</span>
             </div>
           </div>
 
