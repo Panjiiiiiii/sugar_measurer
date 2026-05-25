@@ -42,13 +42,25 @@ export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onSta
   const totalPages = pagination?.total_page ?? 1;
   const totalData = pagination?.total_data ?? data.length;
   const showingData = pagination?.per_page ?? data.length;
+
+  const formatKw = (value: number) => `${new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format((value || 0) / 100)} kw`;
+
+  const formatRupiah = (value: number) => new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+
   return (
     <Card title="Riwayat Timbangan" noPadding>
       <div className="px-8 pb-4 flex items-center gap-2">
         <Badge variant="blue">Today</Badge>
       </div>
       <div className="overflow-x-auto custom-scrollbar max-w-full">
-        <div className="min-w-[1400px]">
+        <div className="min-w-350">
           <table className="w-full text-left">
             <thead>
               <tr className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-50">
@@ -71,7 +83,7 @@ export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onSta
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
                 Array(5).fill(0).map((_, i) => (
-                  <tr key={i} className="animate-pulse h-[60px]">
+                  <tr key={i} className="animate-pulse h-15">
                     <td colSpan={14} className="px-8 py-4"><div className="h-4 bg-gray-100 rounded-lg w-full"></div></td>
                   </tr>
                 ))
@@ -81,7 +93,7 @@ export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onSta
                 </tr>
               ) : (
                 data.map((item) => (
-                  <tr key={item.id} className="group hover:bg-gray-50/50 transition-colors h-[60px]">
+                  <tr key={item.id} className="group hover:bg-gray-50/50 transition-colors h-15">
                     <td className="px-8 py-4 text-xs font-medium text-gray-600">{item.transaction_date}</td>
                     <td className="px-4 py-4 text-xs font-medium text-gray-600">{item.loading_in}</td>
                     <td className="px-4 py-4 text-xs font-medium text-gray-600">{item.loading_out}</td>
@@ -89,10 +101,10 @@ export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onSta
                     <td className="px-4 py-4 text-xs font-medium text-gray-600">{item.driver_name}</td>
                     <td className="px-4 py-4 text-xs font-medium text-gray-600 capitalize">{item.ownership_type}</td>
                     <td className="px-4 py-4 text-xs font-medium text-gray-600">{item.customer_name}</td>
-                    <td className="px-4 py-4 text-xs font-medium text-gray-600">{item.bruto_weight} kg</td>
-                    <td className="px-4 py-4 text-xs font-medium text-gray-600">{item.tarra_weight} kg</td>
-                    <td className="px-4 py-4 text-xs font-bold text-gray-900">{item.netto_weight} kg</td>
-                    <td className="px-4 py-4 text-xs font-bold text-gray-900">Rp {item.total_price.toLocaleString()}</td>
+                    <td className="px-4 py-4 text-xs font-medium text-gray-600">{formatKw(item.bruto_weight)}</td>
+                    <td className="px-4 py-4 text-xs font-medium text-gray-600">{formatKw(item.tarra_weight)}</td>
+                    <td className="px-4 py-4 text-xs font-bold text-gray-900">{formatKw(item.netto_weight)}</td>
+                    <td className="px-4 py-4 text-xs font-bold text-gray-900">{formatRupiah(item.total_price)}</td>
                     <td className="px-4 py-4 text-xs font-medium text-gray-600 capitalize">{item.payment_method}</td>
                     <td className="px-4 py-4">
                       <select 

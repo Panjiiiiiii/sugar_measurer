@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import * as XLSX from "xlsx";
 import axios from "axios";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { AntrianTable } from "@/components/dashboard/AntrianTable";
 import { RiwayatTimbanganTable } from "@/components/dashboard/RiwayatTimbanganTable";
 import { StatCard } from "@/components/ui/StatCard";
-import { DeleteModal, Toast } from "@/components/ui";
+import { DeleteModal, Toast, Button } from "@/components/ui";
+import { Export } from "@phosphor-icons/react";
 import TimbanganFilterModal from "@/components/dashboard/TimbanganFilterModal";
 
 const DEFAULT_BRANCH_LOCATION_ID = "07bf151f-ed44-4a5d-96cb-afed7e087c7a";
@@ -98,6 +100,52 @@ export default function TimbanganPage() {
     }).format(value || 0);
   }
 
+    function formatKw(value: number) {
+      return `${new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format((value || 0) / 100)} kw`;
+    }
+
+    function formatExportDateLabel(value: string) {
+      if (!value) return "ALL";
+
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        return value;
+      }
+
+      return new Intl.DateTimeFormat("id-ID", {
+        timeZone: "Asia/Jakarta",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(parsed);
+    }
+
+    function getExportRangeLabel() {
+      const startDate = searchParams.get("start_date") || "";
+      const endDate = searchParams.get("end_date") || "";
+
+      if (startDate && endDate) {
+        if (startDate === endDate) {
+          return formatExportDateLabel(startDate);
+        }
+
+        return `${formatExportDateLabel(startDate)} s.d ${formatExportDateLabel(endDate)}`;
+      }
+
+      const ownershipType = searchParams.get("ownership_type") || "";
+      const status = searchParams.get("status") || "";
+      const customer = searchParams.get("customer") || "";
+
+      if (ownershipType || status || customer) {
+        return [ownershipType, status, customer].filter(Boolean).join(" - ");
+      }
+
+      return "ALL";
+    }
+
   const handlePageChange = (page: number) => {
     const nextParams = new URLSearchParams(searchParams.toString());
     if (page > 1) {
@@ -156,6 +204,61 @@ export default function TimbanganPage() {
       setToastMessage(apiMessage || "Gagal memperbarui status transaksi");
       setShowToast(true);
       setTimeout(() => setShowToast(false), 3000);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await axios.get<TimbanganHistoryResponse>(
+        "/api/history/transaction",
+        {
+          params: {
+            page: 1,
+            limit: riwayatPagination.total_data || 1000,
+            location_id: searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
+            ...(searchParams.get("start_date")
+              ? { start_date: searchParams.get("start_date") }
+              : {}),
+            ...(searchParams.get("end_date")
+              ? { end_date: searchParams.get("end_date") }
+              : {}),
+            ...(searchParams.get("ownership_type")
+              ? { ownership_type: searchParams.get("ownership_type") }
+              : {}),
+            ...(searchParams.get("status")
+              ? { status: searchParams.get("status") }
+              : {}),
+            ...(searchParams.get("customer")
+              ? { customer: searchParams.get("customer") }
+              : {}),
+          },
+        },
+      );
+
+      const rows = (response.data?.data?.history ?? []).map((item) => ({
+        Tanggal: item.tanggal_transaksi,
+        Masuk: item.loading_in,
+        Keluar: item.loading_out,
+        Nopol: item.no_pol_truck,
+        Supir: item.nama_driver,
+        Ownership: item.type_ownership ?? "",
+        Customer: item.nama_petani,
+        Bruto: formatKw(item.bruto),
+        Tarre: formatKw(item.tara),
+        Netto: formatKw(item.netto),
+        Amount: formatCurrency(item.amount),
+        Payment: item.payment_method,
+        Status: item.status,
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Timbangan");
+
+      const fileName = `MUSLA_TRANS_UTAMA - TIMBANGAN - (${getExportRangeLabel()}).xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    } catch (error) {
+      console.error("Error exporting timbangan data:", error);
     }
   };
 
@@ -301,6 +404,12 @@ export default function TimbanganPage() {
       />
       <PageHeader
         title="Timbangan"
+        thirdAction={{
+          label: "Export",
+          onClick: handleExport,
+          icon: <Export size={18} weight="bold" />,
+          variant: "white",
+        }}
         primaryAction={{
           label: "Add",
           onClick: () => router.push(`/${role}/timbangan/add`),
