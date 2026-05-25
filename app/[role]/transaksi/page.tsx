@@ -118,6 +118,7 @@ function normalizeRangeValue(value: string) {
   if (["daily", "harian", "day"].includes(normalized)) return "daily";
   if (["weekly", "mingguan", "week"].includes(normalized)) return "weekly";
   if (["monthly", "bulanan", "month"].includes(normalized)) return "monthly";
+  if (["today", "hari ini", "hariini"].includes(normalized)) return "today";
 
   return "";
 }
@@ -126,6 +127,7 @@ function getRangeLabel(range: string) {
   if (range === "daily") return "Harian";
   if (range === "weekly") return "Mingguan";
   if (range === "monthly") return "Bulanan";
+  if (range === "today") return "Hari Ini";
   return "Semua";
 }
 
@@ -343,6 +345,7 @@ export default function TransaksiPage() {
                 { value: "monthly", label: "Bulanan" },
                 { value: "weekly", label: "Mingguan" },
                 { value: "daily", label: "Harian" },
+                { value : "today", label: "Hari ini" },
               ]}
             />
           </div>
