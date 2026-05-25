@@ -8,13 +8,28 @@ interface DateFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onApply: (dates: { start: string; end: string }) => void;
+  initialDates?: { start: string; end: string };
 }
 
-export function DateFilterModal({ isOpen, onClose, onApply }: DateFilterModalProps) {
+export function DateFilterModal({
+  isOpen,
+  onClose,
+  onApply,
+  initialDates,
+}: DateFilterModalProps) {
   const [dates, setDates] = React.useState({
-    start: "",
-    end: ""
+    start: initialDates?.start ?? "",
+    end: initialDates?.end ?? "",
   });
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setDates({
+        start: initialDates?.start ?? "",
+        end: initialDates?.end ?? "",
+      });
+    }
+  }, [isOpen, initialDates?.start, initialDates?.end]);
 
   return (
     <Modal 

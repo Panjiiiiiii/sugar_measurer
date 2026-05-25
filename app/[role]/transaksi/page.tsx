@@ -557,6 +557,10 @@ export default function TransaksiPage() {
         isOpen={isDateModalOpen}
         onClose={() => setIsDateModalOpen(false)}
         onApply={handleDateApply}
+        initialDates={{
+          start: currentStartDate,
+          end: currentEndDate,
+        }}
       />
       <BuktiTransaksiModal
         isOpen={isBuktiModalOpen}
