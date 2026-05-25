@@ -94,8 +94,6 @@ function getSummaryDateFilter(range: string | null) {
 		return { gte: start, lte: end };
 	}
 
-
-
 	if (normalizedRange === "weekly") {
 		const day = now.getDay();
 		const diffToMonday = day === 0 ? 6 : day - 1;
@@ -186,11 +184,11 @@ export async function GET(request: Request) {
 			);
 		}
 
-		if (normalizedRange && !["daily", "weekly", "monthly", "today"].includes(normalizedRange)) {
+		if (normalizedRange && !["daily", "weekly", "monthly"].includes(normalizedRange)) {
 			return Response.json(
 				{
 					statusCode: 400,
-					message: "range must be one of: daily, weekly, monthly, today",
+					message: "range must be one of: daily, weekly, monthly",
 					data: null,
 				},
 				{ status: 400 },

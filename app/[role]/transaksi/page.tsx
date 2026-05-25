@@ -369,12 +369,12 @@ export default function TransaksiPage() {
       XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Transaksi");
       const getExportRangeLabel = () => {
         if (currentStartDate && currentEndDate) {
+          if (currentStartDate === currentEndDate) {
+            return currentStartDate;
+          }
           return `${currentStartDate} sd ${currentEndDate}`;
         }
-        if (currentRange === "daily") return "Harian";
-        if (currentRange === "weekly") return "Mingguan";
-        if (currentRange === "monthly") return "Bulanan";
-        return "Semua";
+        return "ALL";
       };
 
       const fileName = `MUSLA_TRANS_UTAMA - TRANSAKSI - ${getExportRangeLabel()}.xlsx`;
