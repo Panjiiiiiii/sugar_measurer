@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import * as XLSX from "xlsx";
 import axios from "axios";
 import { Export, CaretDown, Eye } from "@phosphor-icons/react";
 import {
@@ -118,16 +119,14 @@ function normalizeRangeValue(value: string) {
   if (["daily", "harian", "day"].includes(normalized)) return "daily";
   if (["weekly", "mingguan", "week"].includes(normalized)) return "weekly";
   if (["monthly", "bulanan", "month"].includes(normalized)) return "monthly";
-  if (["today", "hari ini", "hariini"].includes(normalized)) return "today";
 
   return "";
 }
 
 function getRangeLabel(range: string) {
-  if (range === "daily") return "Harian";
+  if (range === "daily") return "Hari ini";
   if (range === "weekly") return "Mingguan";
   if (range === "monthly") return "Bulanan";
-  if (range === "today") return "Hari Ini";
   return "Semua";
 }
 
@@ -175,8 +174,11 @@ export default function TransaksiPage() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [isBuktiModalOpen, setIsBuktiModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
-  const [selectedReceiptImage, setSelectedReceiptImage] = useState<string | null>(null);
-  const [selectedDetail, setSelectedDetail] = useState<TransactionDetail | null>(null);
+  const [selectedReceiptImage, setSelectedReceiptImage] = useState<
+    string | null
+  >(null);
+  const [selectedDetail, setSelectedDetail] =
+    useState<TransactionDetail | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   useEffect(() => {
@@ -188,7 +190,7 @@ export default function TransaksiPage() {
           {
             params: {
               page: currentPage,
-              limit: 3,
+              limit: 10,
               location_id: DEFAULT_BRANCH_LOCATION_ID,
               range: currentRange || undefined,
               status: currentStatus || undefined,
@@ -309,16 +311,19 @@ export default function TransaksiPage() {
     router.push(`/${role}/transaksi?${nextParams.toString()}`);
   };
 
-  const handleViewOutgoingTransaction = async (transactionId: string | null) => {
+  const handleViewOutgoingTransaction = async (
+    transactionId: string | null,
+  ) => {
     if (!transactionId) {
       return;
     }
 
     try {
       setIsDetailLoading(true);
-      const response = await axios.get<{ statusCode: number; data: TransactionDetail }>(
-        `/api/history/transaction/${transactionId}`,
-      );
+      const response = await axios.get<{
+        statusCode: number;
+        data: TransactionDetail;
+      }>(`/api/history/transaction/${transactionId}`);
 
       setSelectedDetail(response.data?.data ?? null);
       setIsBuktiModalOpen(true);
@@ -328,6 +333,56 @@ export default function TransaksiPage() {
       setIsBuktiModalOpen(true);
     } finally {
       setIsDetailLoading(false);
+    }
+  };
+
+  const handleExportAll = async () => {
+    try {
+      const response = await axios.get<TransferHistoryResponse>(
+        "/api/history/transfer",
+        {
+          params: {
+            page: 1,
+            limit: pagination.total_data || 1000,
+            location_id: DEFAULT_BRANCH_LOCATION_ID,
+            range: currentRange || undefined,
+            status: currentStatus || undefined,
+            start_date: currentStartDate || undefined,
+            end_date: currentEndDate || undefined,
+          },
+        },
+      );
+      const payload = response.data?.data;
+      const transferHistory = payload?.transfer_history ?? [];
+      const rows = transferHistory.map((item) => ({
+        Tanggal: item.tanggal,
+        Waktu: item.waktu,
+        "Jumlah Nominal": new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          maximumFractionDigits: 0,
+        }).format(Number(item.jumlah_nominal ?? 0)),
+        Status: item.transfer_status === "in" ? "Masuk" : "Keluar",
+      }));
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Transaksi");
+      const getExportRangeLabel = () => {
+        if (currentStartDate && currentEndDate) {
+          return `${currentStartDate} sd ${currentEndDate}`;
+        }
+        if (currentRange === "daily") return "Harian";
+        if (currentRange === "weekly") return "Mingguan";
+        if (currentRange === "monthly") return "Bulanan";
+        return "Semua";
+      };
+
+      const fileName = `MUSLA_TRANS_UTAMA - TRANSAKSI - ${getExportRangeLabel()}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    } catch (error) {
+      console.error("Error exporting transaction data:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -344,8 +399,7 @@ export default function TransaksiPage() {
                 { value: "", label: "Semua" },
                 { value: "monthly", label: "Bulanan" },
                 { value: "weekly", label: "Mingguan" },
-                { value: "daily", label: "Harian" },
-                { value : "today", label: "Hari ini" },
+                { value: "daily", label: "Hari ini" },
               ]}
             />
           </div>
@@ -384,6 +438,7 @@ export default function TransaksiPage() {
               variant="white"
               className="px-6 py-2 text-xs font-bold h-10 border-gray-100 min-w-30"
               icon={<Export size={18} weight="bold" />}
+              onClick={handleExportAll}
             >
               Export
             </Button>
@@ -471,7 +526,9 @@ export default function TransaksiPage() {
                             return;
                           }
 
-                          setSelectedReceiptImage(buildReceiptImageSrc(row.bukti_tf));
+                          setSelectedReceiptImage(
+                            buildReceiptImageSrc(row.bukti_tf),
+                          );
                           setIsReceiptModalOpen(true);
                         }}
                         className="p-2 text-gray-400 hover:text-gray-900 border border-gray-100 rounded-xl hover:bg-white transition-all inline-flex items-center justify-center"

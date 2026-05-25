@@ -12,8 +12,8 @@ interface DateFilterModalProps {
 
 export function DateFilterModal({ isOpen, onClose, onApply }: DateFilterModalProps) {
   const [dates, setDates] = React.useState({
-    start: "11/03/2026",
-    end: "11/04/2026"
+    start: "",
+    end: ""
   });
 
   return (
@@ -40,16 +40,30 @@ export function DateFilterModal({ isOpen, onClose, onApply }: DateFilterModalPro
           />
         </div>
 
-        <Button 
-          variant="primary" 
-          className="w-full py-4 bg-[#009262] hover:bg-[#007a52]"
-          onClick={() => {
-            onApply(dates);
-            onClose();
-          }}
-        >
-          Terapkan
-        </Button>
+        <div className="flex gap-3">
+          <Button 
+            variant="white"
+            className="flex-1 py-4"
+            onClick={() => {
+              const cleared = { start: "", end: "" };
+              setDates(cleared);
+              onApply(cleared);
+              onClose();
+            }}
+          >
+            Clear
+          </Button>
+          <Button 
+            variant="primary" 
+            className="flex-1 py-4 bg-[#009262] hover:bg-[#007a52]"
+            onClick={() => {
+              onApply(dates);
+              onClose();
+            }}
+          >
+            Terapkan
+          </Button>
+        </div>
       </div>
     </Modal>
   );

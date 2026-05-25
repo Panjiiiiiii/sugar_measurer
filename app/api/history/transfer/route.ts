@@ -42,6 +42,17 @@ function parseDateParam(value: string | null) {
 	return parsedDate;
 }
 
+function getTodayDateRange() {
+	const now = new Date(Date.now());
+	const start = new Date(now);
+	const end = new Date(now);
+
+	start.setHours(0, 0, 0, 0);
+	end.setHours(23, 59, 59, 999);
+
+	return { gte: start, lte: end };
+}
+
 function formatDateOnly(value: Date) {
 	const parts = new Intl.DateTimeFormat("en-GB", {
 		timeZone: "Asia/Jakarta",
@@ -83,11 +94,7 @@ function getSummaryDateFilter(range: string | null) {
 		return { gte: start, lte: end };
 	}
 
-	if (normalizedRange === "today") {
-		start.setHours(0, 0, 0, 0);
-		end.setHours(23, 59, 59, 999);
-		return { gte: start, lte: end };
-	}
+
 
 	if (normalizedRange === "weekly") {
 		const day = now.getDay();
