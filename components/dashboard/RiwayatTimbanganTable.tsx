@@ -127,7 +127,7 @@ export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onSta
                           </button>
                         }
                         items={[
-                          { label: "Edit", onClick: () => onEdit(item.id) },
+                          { label: "Detail", onClick: () => onEdit(item.id) },
                           { label: "Hapus", onClick: () => onDelete(item.id), variant: "danger" }
                         ]}
                       />

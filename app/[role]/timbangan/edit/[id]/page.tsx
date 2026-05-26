@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import axios from "axios";
 import { 
   ArrowLeft, 
   Clock, 
@@ -12,30 +13,105 @@ import {
   Input, 
   Select, 
   Button, 
-  Breadcrumbs, 
-  Switch 
+  Breadcrumbs
 } from "@/components/ui";
+import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
+
+interface TransactionDetailResponse {
+  statusCode: number;
+  data?: {
+    id: string;
+    loading_in: string;
+    loading_out: string | null;
+    bruto: number;
+    tare: number;
+    netto: number;
+    current_price: number;
+    total_price: number;
+    payment_method: string;
+    driver_name: string;
+    license_plate: string;
+    owner_name: string | null;
+    ownership_type: string | null;
+  };
+}
+
+function formatRupiah(value: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+}
+
+function normalizeTime(value: string | null | undefined) {
+  if (!value) return "";
+  return value.length >= 5 ? value.slice(0, 5) : value;
+}
 
 export default function EditTimbanganPage() {
   const params = useParams();
   const router = useRouter();
   const role = (params.role as string) || "branch";
-  const id = params.id;
+  const transactionId = params.id as string;
 
-  const [isHargaSpesial, setIsHargaSpesial] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [formData, setFormData] = useState({
-    nopol: "N 1234 AC",
-    customer: "Abah",
-    supir: "Budi",
-    masuk: "15:00",
-    keluar: "16:00",
-    bruto: "100",
-    tara: "50",
-    harga: "7.900",
-    paymentMethod: "Cash",
-    netto: "10",
-    outputHarga: "500.000"
+    nopol: "",
+    customer: "",
+    supir: "",
+    masuk: "",
+    keluar: "",
+    bruto: "",
+    tara: "",
+    harga: "",
+    paymentMethod: "cash",
+    netto: "",
+    outputHarga: "",
+    isHargaSpesial: false,
   });
+
+  useEffect(() => {
+    async function fetchTransaction(id: string) {
+      try {
+        setIsLoading(true);
+
+        const response = await axios.get<TransactionDetailResponse>(`/api/history/transaction/${id}`);
+        const transaction = response.data?.data;
+
+        if (!transaction) {
+          return;
+        }
+
+        setFormData({
+          nopol: transaction.license_plate ?? "",
+          customer: transaction.owner_name ?? "",
+          supir: transaction.driver_name ?? "",
+          masuk: normalizeTime(transaction.loading_in),
+          keluar: normalizeTime(transaction.loading_out),
+          bruto: String(transaction.bruto ?? ""),
+          tara: String(transaction.tare ?? ""),
+          harga: String(transaction.current_price ?? ""),
+          paymentMethod: (transaction.payment_method || "cash").toLowerCase(),
+          netto: ((transaction.netto || 0) / 100).toFixed(2),
+          outputHarga: formatRupiah(transaction.total_price || 0),
+          isHargaSpesial: transaction.ownership_type === "special",
+        });
+      } catch (error) {
+        console.error("Error fetching transaction detail:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (transactionId) {
+      fetchTransaction(transactionId);
+    }
+  }, [transactionId]);
+
+  const hargaPerKw = Number(formData.harga || 0).toLocaleString("id-ID");
 
   return (
     <div className="flex flex-col gap-6 w-full max-w-full pb-10">
@@ -51,13 +127,13 @@ export default function EditTimbanganPage() {
               icon={<ArrowLeft size={18} weight="bold" className="text-gray-600" />}
             />
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-              Edit Timbangan
+              Detail Timbangan
             </h1>
           </div>
           <Breadcrumbs 
             items={[
               { label: "Timbangan", href: `/${role}/timbangan` },
-              { label: "Edit Timbangan", active: true }
+              { label: "Detail Timbangan", active: true }
             ]} 
           />
         </div>
@@ -73,21 +149,21 @@ export default function EditTimbanganPage() {
                 label="Input Nopol" 
                 required 
                 value={formData.nopol}
-                onChange={(e) => setFormData({ ...formData, nopol: e.target.value })}
+                disabled
               />
               
               <Input 
                 label="Customer" 
                 required 
                 value={formData.customer}
-                onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
+                disabled
               />
 
               <Input 
                 label="Supir" 
                 required 
                 value={formData.supir}
-                onChange={(e) => setFormData({ ...formData, supir: e.target.value })}
+                disabled
               />
 
               <div className="grid grid-cols-2 gap-4">
@@ -95,13 +171,13 @@ export default function EditTimbanganPage() {
                   label="Masuk" 
                   required 
                   value={formData.masuk}
-                  onChange={(e) => setFormData({ ...formData, masuk: e.target.value })}
+                  disabled
                   icon={<Clock size={20} className="text-gray-400" />}
                 />
                 <Input 
                   label="Keluar" 
                   value={formData.keluar}
-                  onChange={(e) => setFormData({ ...formData, keluar: e.target.value })}
+                  disabled
                   icon={<Clock size={20} className="text-gray-400" />}
                 />
               </div>
@@ -111,38 +187,46 @@ export default function EditTimbanganPage() {
                   label="Bruto(Kg)" 
                   required 
                   value={formData.bruto}
-                  onChange={(e) => setFormData({ ...formData, bruto: e.target.value })}
+                  disabled
                 />
                 <Input 
                   label="Tara(Kg)" 
                   value={formData.tara}
-                  onChange={(e) => setFormData({ ...formData, tara: e.target.value })}
+                  disabled
                 />
               </div>
 
-              <Switch 
-                label="Harga Spesial" 
-                checked={isHargaSpesial} 
-                onChange={setIsHargaSpesial} 
-              />
+              <div className="flex items-center justify-between py-2">
+                <label className="text-xs font-bold text-gray-600">
+                  Harga Spesial
+                </label>
+                <button
+                  type="button"
+                  disabled
+                  className={`w-12 h-6 rounded-full transition-all relative cursor-not-allowed ${formData.isHargaSpesial ? "bg-[#00A3FF]" : "bg-gray-200"}`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isHargaSpesial ? "left-7" : "left-1"}`}
+                  />
+                </button>
+              </div>
 
               <Input 
                 label="Harga" 
                 required 
-                disabled={!isHargaSpesial}
+                disabled
                 value={formData.harga}
-                onChange={(e) => setFormData({ ...formData, harga: e.target.value })}
               />
 
               <Select 
                 label="Payment Method" 
                 required 
+                disabled
                 value={formData.paymentMethod}
-                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
                 icon={<CaretDown size={18} weight="bold" />}
                 options={[
-                  { value: "Cash", label: "Cash" },
-                  { value: "Transfer", label: "Transfer" }
+                  { value: "cash", label: "Cash" },
+                  { value: "transfer", label: "Transfer" }
                 ]}
               />
             </div>
@@ -156,12 +240,12 @@ export default function EditTimbanganPage() {
               <Input 
                 label="Output Netto(kw)" 
                 value={formData.netto}
-                onChange={(e) => setFormData({ ...formData, netto: e.target.value })}
+                disabled
               />
               <Input 
                 label="Output Harga" 
                 value={formData.outputHarga}
-                onChange={(e) => setFormData({ ...formData, outputHarga: e.target.value })}
+                disabled
               />
             </div>
           </Card>
@@ -183,19 +267,37 @@ export default function EditTimbanganPage() {
           <Button 
             variant="white" 
             className="w-full py-4 text-sm font-bold"
-            onClick={() => console.log("Print Struk")}
+            onClick={() => setIsReceiptOpen(true)}
+            disabled={isLoading}
           >
             Print Struk
           </Button>
           <Button 
             variant="primary" 
             className="w-full py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52]"
-            onClick={() => console.log("Simpan", formData)}
+            disabled
           >
-            Simpan
+            Mode Detail
           </Button>
         </div>
       </div>
+
+      <ReceiptModal
+        isOpen={isReceiptOpen}
+        onClose={() => setIsReceiptOpen(false)}
+        data={{
+          customer: formData.customer,
+          nopol: formData.nopol,
+          masuk: formData.masuk,
+          keluar: formData.keluar,
+          bruto: formData.bruto,
+          tara: formData.tara,
+          netto: formData.netto,
+          hargaPerKw,
+          total: formData.outputHarga,
+          operator: "SYSTEM",
+        }}
+      />
     </div>
   );
 }
