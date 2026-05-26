@@ -1,8 +1,10 @@
+import { Prisma } from "@/generated/prisma/browser";
 import { prisma } from "@/lib/prisma";
 import { validateCreateOwnerInput } from "@/schema/owner";
 import { z } from "zod";
 
 interface PaginationMeta {
+  per_page: number;
   number_page: number;
   total_page: number;
   total_data: number;
@@ -35,23 +37,50 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const pageParam = getFirstQueryParam(searchParams, ["page", "number_page", "halaman"]);
     const limitParam = getFirstQueryParam(searchParams, ["limit", "per_page", "page_size"]);
+    const ownershipTypeParam = getFirstQueryParam(searchParams, ["type_ownership", "ownership_type"]);
+    const searchParam = getFirstQueryParam(searchParams, ["search", "q", "name"]);
     const page = parsePositiveInt(pageParam, 1);
     const limit = parsePositiveInt(limitParam, 10);
     const skip = (page - 1) * limit;
+    const search = searchParam?.trim();
 
+    const whereClause: Prisma.ownerWhereInput = {};
+    if (ownershipTypeParam) {
+      whereClause.ownership_type = {
+        equals: ownershipTypeParam.toLowerCase() as any,
+      };
+    }
+    if (search) {
+      whereClause.OR = [
+        {
+          name: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          phone_number: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
     const [owners, totalData] = await Promise.all([
       prisma.owner.findMany({
+        where: whereClause,
         skip,
         take: limit,
         orderBy: {
           created_at: "desc",
         },
       }),
-      prisma.owner.count(),
+      prisma.owner.count({ where: whereClause }),
     ]);
 
     const totalPage = Math.max(1, Math.ceil(totalData / limit));
     const pagination: PaginationMeta = {
+      per_page: owners.length,
       number_page: page,
       total_page: totalPage,
       total_data: totalData,
@@ -88,7 +117,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 400,
-          message: "Phone number is required",
+          message: "Nomor telepon wajib diisi",
         },
         { status: 400 },
       );
@@ -103,7 +132,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 409,
-          message: "Phone number already exists",
+          message: "Nomor telepon sudah digunakan",
         },
         { status: 409 },
       );
@@ -113,7 +142,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 400,
-          message: "Special price is required for special ownership type",
+          message: "Harga khusus wajib diisi untuk tipe kepemilikan khusus",
         },
         { status: 400 },
       );
@@ -123,7 +152,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 400,
-          message: "Special price should only be provided for special ownership type",
+          message: "Harga khusus hanya boleh diisi untuk tipe kepemilikan khusus",
         },
         { status: 400 },
       );
@@ -149,7 +178,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         statusCode: 201,
-        message: "Owner created successfully",
+        message: "Customer berhasil dibuat",
       },
       { status: 201 },
     );

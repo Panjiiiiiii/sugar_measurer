@@ -28,6 +28,7 @@ export const CreateBranchTransactionSchema = z.object({
   sugar_price: z.number().int().min(0).optional(),
   driver_name: z.string().optional(),
   tarra_weight: z.number().int().min(0).optional(),
+  payment_method : z.enum(['cash', 'transfer']).optional(),
   loading_out: z.string().optional(),
 });
 

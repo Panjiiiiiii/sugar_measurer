@@ -7,6 +7,45 @@ const UpdateTruckSchema = z.object({
   truck_type: z.enum(["engkel", "double"]).nullable().optional(),
 });
 
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+
+    const truck = await prisma.truck.findUnique({
+      where: { id },
+    });
+
+    if (!truck) {
+      return Response.json(
+        {
+          statusCode: 404,
+          message: "Truck not found",
+          data: null,
+        },
+        { status: 404 },
+      );
+    }
+
+    return Response.json(
+      {
+        statusCode: 200,
+        message: "Truck found",
+        data: truck,
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    return Response.json(
+      {
+        statusCode: 500,
+        message: "Error fetching truck",
+        data: null,
+      },
+      { status: 500 },
+    );
+  }
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -43,7 +82,7 @@ export async function PUT(
     return Response.json(
       {
         statusCode: 200,
-        message: "Truck updated successfully",
+        message: "Truk berhasil diupdate",
       },
       { status: 200 },
     );
@@ -63,7 +102,7 @@ export async function PUT(
     return Response.json(
       {
         statusCode: 500,
-        message: "Error updating truck",
+        message: "Error dalam update truck",
         data: null,
       },
       { status: 500 },
@@ -99,7 +138,7 @@ export async function DELETE(
     return Response.json(
       {
         statusCode: 200,
-        message: "Truck deleted successfully",
+        message: "Truk berhasil dihapus",
       },
       { status: 200 },
     );

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { CheckCircle, XCircle, Info, Warning } from "@phosphor-icons/react";
 
 interface ToastProps {
@@ -6,10 +6,30 @@ interface ToastProps {
   type?: "success" | "error" | "info" | "warning";
   isVisible: boolean;
   onClose?: () => void;
+  duration?: number; // ms, default 3000
 }
 
-export function Toast({ message, type = "success", isVisible, onClose }: ToastProps) {
-  if (!isVisible) return null;
+export function Toast({ message, type = "success", isVisible, onClose, duration = 3000 }: ToastProps) {
+  const [hasTimedOut, setHasTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (!isVisible) {
+      setHasTimedOut(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setHasTimedOut(true);
+
+      if (onClose) {
+        onClose();
+      }
+    }, duration);
+
+    return () => clearTimeout(timer);
+  }, [isVisible, onClose, duration, message, type]);
+
+  if (!isVisible || hasTimedOut) return null;
 
   const styles = {
     success: "bg-[#009262] text-white",

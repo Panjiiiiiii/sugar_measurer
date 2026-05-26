@@ -16,9 +16,28 @@ interface TrukTableProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   isLoading?: boolean;
+  pagination?: {
+    per_page: number;
+    number_page: number;
+    total_page: number;
+    total_data: number;
+  };
+  onPageChange?: (page: number) => void;
 }
 
-export default function TrukTable({ data, onEdit, onDelete, isLoading }: TrukTableProps) {
+export default function TrukTable({
+  data,
+  onEdit,
+  onDelete,
+  isLoading,
+  pagination,
+  onPageChange,
+}: TrukTableProps) {
+  const currentPage = pagination?.number_page ?? 1;
+  const totalPages = pagination?.total_page ?? 1;
+  const totalData = pagination?.total_data ?? data.length;
+  const showingData = pagination?.per_page ?? data.length;
+
   return (
     <Card title="Data Truk" noPadding>
       <div className="overflow-x-auto">
@@ -82,7 +101,15 @@ export default function TrukTable({ data, onEdit, onDelete, isLoading }: TrukTab
           </tbody>
         </table>
       </div>
-      {!isLoading && data.length > 0 && <Pagination />}
+      {!isLoading && data.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalData={totalData}
+          showingData={showingData}
+          onPageChange={onPageChange}
+        />
+      )}
     </Card>
   );
 }
