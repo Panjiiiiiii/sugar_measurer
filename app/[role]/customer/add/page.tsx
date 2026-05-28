@@ -96,6 +96,7 @@ export default function InputCustomerPage() {
             {form.typeOwner === "special" && (
               <Input
                 label="Harga Khusus"
+                type="number"
                 required
                 placeholder="Masukkan harga khusus"
                 value={form.specialPrice}
@@ -107,6 +108,7 @@ export default function InputCustomerPage() {
 
             <Input
               label="Nomor Telepon"
+              type="number"
               required
               placeholder="Masukkan nomor telepon"
               value={form.phoneNumber}
