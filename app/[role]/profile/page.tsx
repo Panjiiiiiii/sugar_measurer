@@ -26,31 +26,36 @@ export default function DynamicProfilePage() {
     }
   }, []);
 
+  const breadcrumbItems = role === "finance"
+    ? [
+        { label: "Dashboard", href: "/finance/dashboard" },
+        { label: "Profile" }
+      ]
+    : [
+        { label: lastPage.label, href: lastPage.href },
+        { label: "Profile" }
+      ];
+
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto">
+    <div className="flex flex-col gap-8 max-w-5xl mx-auto w-full">
       {/* Header & Breadcrumb */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Profile</h1>
-        <Breadcrumb 
-          items={[
-            { label: lastPage.label, href: lastPage.href },
-            { label: "Profile" }
-          ]} 
-        />
+        <Breadcrumb items={breadcrumbItems} />
       </div>
 
       {/* Profile Card */}
-      <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden transition-all">
+      <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden transition-all w-full">
         {/* Card Header */}
-        <div className="px-8 py-6 border-b border-gray-50">
-          <h2 className="text-lg font-bold text-gray-900 tracking-tight">Pengaturan Profil</h2>
+        <div className="px-8 py-5 border-b border-gray-100 bg-white">
+          <h2 className="text-base font-bold text-gray-900">Profile</h2>
         </div>
 
         {/* Card Body */}
-        <div className="p-10 flex flex-col md:flex-row items-start gap-12 max-w-4xl mx-auto">
+        <div className="p-8 flex flex-col md:flex-row items-start gap-12 max-w-4xl w-full">
           {/* Avatar Section */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative w-40 h-40 rounded-full overflow-hidden border-4 border-gray-50 shadow-sm bg-gray-100">
+          <div className="flex flex-col items-center shrink-0">
+            <div className="relative w-32 h-32 rounded-full overflow-hidden border border-gray-100 shadow-sm bg-gray-50">
               <Image 
                 src="https://avatar.iran.liara.run/public/boy?username=Dadang"
                 alt="Profile Avatar"
@@ -61,62 +66,62 @@ export default function DynamicProfilePage() {
           </div>
 
           {/* Form Section */}
-          <div className="flex-1 w-full flex flex-col gap-8">
+          <div className="flex-1 w-full flex flex-col gap-6">
             {/* Nama */}
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-bold text-gray-900 ml-1">Nama</label>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-gray-950 block">Nama</label>
               <input 
                 type="text"
-                className="w-full px-5 py-4 rounded-2xl border border-gray-100 bg-gray-50/30 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold text-sm text-gray-900 shadow-sm"
+                className="w-full px-5 py-3.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-green-600 transition-all font-medium text-sm text-gray-800 shadow-sm"
                 value={formData.nama}
                 onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
               />
             </div>
 
             {/* Username */}
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-bold text-gray-900 ml-1">Username</label>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-gray-950 block">Username</label>
               <input 
                 type="text"
-                className="w-full px-5 py-4 rounded-2xl border border-gray-100 bg-gray-50/30 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold text-sm text-gray-900 shadow-sm"
+                className="w-full px-5 py-3.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-green-600 transition-all font-medium text-sm text-gray-800 shadow-sm"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               />
             </div>
 
             {/* Password */}
-            <div className="flex flex-col gap-3">
-              <label className="text-sm font-bold text-gray-900 ml-1">Password</label>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-gray-950 block">Password</label>
               <div className="relative group">
                 <input 
                   type={showPassword ? "text" : "password"}
-                  className="w-full px-5 py-4 rounded-2xl border border-gray-100 bg-gray-50/30 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-semibold text-sm text-gray-900 shadow-sm"
+                  className="w-full px-5 py-3.5 pr-12 rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-green-600 transition-all font-medium text-sm text-gray-800 shadow-sm"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
                 <button 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900 transition-colors"
                 >
-                  {showPassword ? <EyeSlash size={20} weight="bold" /> : <Eye size={20} weight="bold" />}
+                  {showPassword ? <EyeSlash size={18} weight="bold" /> : <Eye size={18} weight="bold" />}
                 </button>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-4 mt-4">
+            <div className="grid grid-cols-2 gap-4 pt-4">
               <button 
                 type="button"
-                className="flex-1 py-4.5 bg-white border border-gray-100 text-gray-900 rounded-2xl font-bold hover:bg-gray-50 transition-all shadow-sm text-sm tracking-tight text-center"
+                className="w-full py-3.5 bg-white border border-gray-200 text-gray-800 rounded-xl font-bold hover:bg-gray-50 active:scale-[0.98] transition-all text-sm cursor-pointer text-center"
                 onClick={() => router.back()}
               >
                 Cancel
               </button>
               <button 
                 type="button"
-                className="flex-1 py-4.5 bg-[#009253] text-white rounded-2xl font-bold hover:bg-[#007a45] transition-all shadow-lg shadow-green-100 text-sm tracking-tight text-center"
-                onClick={() => router.push(`/${role}/timbangan?success=true`)}
+                className="w-full py-3.5 bg-[#009253] text-white rounded-xl font-bold hover:bg-[#007d47] active:scale-[0.98] transition-all text-sm cursor-pointer text-center"
+                onClick={() => router.push(role === "finance" ? "/finance/dashboard?success=true" : `/${role}/timbangan?success=true`)}
               >
                 Simpan
               </button>

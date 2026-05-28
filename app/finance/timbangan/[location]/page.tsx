@@ -199,6 +199,7 @@ export default function TimbanganLocationPage() {
                     className="w-full px-4 py-2.5 bg-white border border-gray-100 rounded-xl text-[12px] font-medium text-gray-900 focus:outline-none focus:border-[#00A859] transition-colors appearance-none shadow-sm cursor-pointer"
                   >
                     <option value="Paid">Paid</option>
+                    <option value="Unpaid">Unpaid</option>
                     <option value="In Queue">In Queue</option>
                   </select>
                   <CaretDown size={14} weight="bold" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />

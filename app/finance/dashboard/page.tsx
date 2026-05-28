@@ -332,8 +332,10 @@ function CustomBar(props: any) {
 
 function SummaryCard({ label, value, trend, trendType, tag }: { label: string; value: string; trend: string; trendType: 'up' | 'down'; tag: string }) {
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm space-y-4 min-w-0">
-      <span className="px-3 py-1 bg-blue-50 text-[#0095FF] text-[10px] font-bold rounded-lg w-fit">{tag}</span>
+    <div className="bg-white border border-gray-100 rounded-[32px] p-6 shadow-sm space-y-4 min-w-0">
+      <div className="flex items-center justify-between gap-2">
+        <span className="px-3 py-1 bg-blue-50 text-[#0095FF] text-[10px] font-bold rounded-lg w-fit">{tag}</span>
+      </div>
       <div className="space-y-1 min-w-0">
         <h3 className="text-xl font-bold text-gray-900 truncate" title={value}>{value}</h3>
         <div className="flex items-center justify-between gap-2">

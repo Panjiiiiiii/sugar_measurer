@@ -2,7 +2,6 @@
 
 import React from "react";
 import {
-  MagnifyingGlass,
   Bell,
   CaretDown
 } from "@phosphor-icons/react";
@@ -42,17 +41,8 @@ export default function Header() {
   return (
     <>
       <header className="h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 fixed top-0 right-0 left-64 z-40 transition-all">
-        {/* Search Bar */}
-        <div className="relative w-[440px]">
-          <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-            <MagnifyingGlass size={16} className="text-gray-400" />
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl bg-gray-50/50 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-            placeholder="Search..."
-          />
-        </div>
+        {/* Empty spacer replacing search bar */}
+        <div />
 
         {/* Right Actions */}
         <div className="flex items-center gap-4">
@@ -101,11 +91,11 @@ export default function Header() {
                   onClick={() => setIsDropdownOpen(false)}
                 />
 
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-gray-200/50 z-20 py-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-lg z-20 py-1.5">
                   <Link
                     href={`/${role}/profile`}
                     onClick={() => setIsDropdownOpen(false)}
-                    className="flex items-center px-6 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Profile
                   </Link>
@@ -114,7 +104,7 @@ export default function Header() {
                       setIsDropdownOpen(false);
                       setIsLogoutModalOpen(true);
                     }}
-                    className="w-full flex items-center px-6 py-3 text-sm font-bold text-red-500 hover:bg-red-50/50 transition-colors border-t border-gray-50"
+                    className="w-full flex items-center px-4 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50/50 transition-colors"
                   >
                     Log Out
                   </button>

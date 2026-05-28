@@ -37,6 +37,8 @@ export default function TransaksiLocationPage() {
   const [selectedDate, setSelectedDate] = React.useState("Month");
   const [isDateDropdownOpen, setIsDateDropdownOpen] = React.useState(false);
   const [isTanggalDropdownOpen, setIsTanggalDropdownOpen] = React.useState(false);
+  const [startDate, setStartDate] = React.useState("2026-03-11");
+  const [endDate, setEndDate] = React.useState("2026-04-11");
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = React.useState(false);
   const [isBuktiModalOpen, setIsBuktiModalOpen] = React.useState(false);
   const [selectedRow, setSelectedRow] = React.useState<any>(null);
@@ -91,7 +93,9 @@ export default function TransaksiLocationPage() {
             className="fixed inset-0 bg-black/40 backdrop-blur-[2px]"
             onClick={() => setIsBuktiModalOpen(false)}
           ></div>
-          <div className="relative bg-white w-full max-w-[400px] rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className={`relative bg-white w-full rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 transition-all ${
+            selectedRow?.status === "Masuk" ? "max-w-[480px]" : "max-w-6xl"
+          }`}>
             <div className="py-6 px-8 flex items-center justify-between border-b border-gray-50">
               <div className="w-6"></div>
               <h2 className="text-xl font-bold text-gray-900">Bukti Transaksi</h2>
@@ -246,17 +250,29 @@ export default function TransaksiLocationPage() {
               {isTanggalDropdownOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setIsTanggalDropdownOpen(false)}></div>
-                  <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-100 rounded-2xl shadow-xl z-20 py-2 animate-in fade-in zoom-in-95 duration-200">
-                    {tanggalOptions.map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => setIsTanggalDropdownOpen(false)}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 font-medium transition-colors"
-                        suppressHydrationWarning
-                      >
-                        {option}
-                      </button>
-                    ))}
+                  <div className="absolute right-0 mt-2 w-[340px] bg-white border border-gray-100 rounded-2xl shadow-xl z-20 p-4 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 space-y-1.5">
+                        <label className="text-[11px] font-bold text-gray-900 ml-1">Awal tanggal</label>
+                        <input 
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          onClick={(e) => e.currentTarget.showPicker?.()}
+                          className="w-full px-3 py-2 bg-white border border-gray-100 rounded-xl text-[12px] font-medium text-gray-900 focus:outline-none shadow-sm cursor-pointer block"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        <label className="text-[11px] font-bold text-gray-900 ml-1">Akhir tanggal</label>
+                        <input 
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          onClick={(e) => e.currentTarget.showPicker?.()}
+                          className="w-full px-3 py-2 bg-white border border-gray-100 rounded-xl text-[12px] font-medium text-gray-900 focus:outline-none shadow-sm cursor-pointer block"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </>
               )}

@@ -5,7 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   UploadSimple,
-  Calendar
+  Calendar,
+  Trash
 } from "@phosphor-icons/react";
 
 export default function InputTransaksiPage() {
@@ -13,6 +14,30 @@ export default function InputTransaksiPage() {
   const router = useRouter();
   const location = (params?.location as string) || "";
   const locationName = location.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  
+  const [nominal, setNominal] = React.useState("");
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+
+  const handleNominalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const cleanValue = value.replace(/\D/g, "");
+    setNominal(cleanValue);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
+  };
 
   return (
     <div className="p-8 space-y-8">
@@ -47,6 +72,7 @@ export default function InputTransaksiPage() {
               <div className="relative group">
                 <input 
                   type="date"
+                  onClick={(e) => e.currentTarget.showPicker?.()}
                   className="w-full px-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   style={{ colorScheme: 'light' }}
                 />
@@ -65,6 +91,8 @@ export default function InputTransaksiPage() {
               </label>
               <input 
                 type="text"
+                value={nominal || ""}
+                onChange={handleNominalChange}
                 placeholder="Masukkan nominal"
                 className="w-full px-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               />
@@ -75,17 +103,36 @@ export default function InputTransaksiPage() {
               <label className="text-sm font-bold text-gray-900 block">
                 Upload Bukti Transfer <span className="text-red-500">*</span>
               </label>
-              <div className="border-2 border-dashed border-gray-100 rounded-[32px] p-20 flex flex-col items-center justify-center gap-4 hover:bg-gray-50 transition-all cursor-pointer group relative overflow-hidden">
-                <div className="p-4 bg-gray-50 rounded-2xl group-hover:bg-white transition-colors">
-                  <UploadSimple size={48} weight="bold" className="text-gray-400 group-hover:text-gray-900 transition-colors" />
+              {previewUrl ? (
+                <div className="relative w-fit">
+                  <div className="w-[200px] h-[200px] rounded-[32px] overflow-hidden border border-gray-100 shadow-md bg-white">
+                    <img 
+                      src={previewUrl} 
+                      alt="Bukti Transfer Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <button 
+                    onClick={handleRemoveFile}
+                    className="absolute -top-2 -right-2 p-2 bg-red-500 text-white rounded-xl shadow-lg hover:bg-red-600 transition-colors cursor-pointer"
+                  >
+                    <Trash size={18} weight="bold" />
+                  </button>
                 </div>
-                <span className="text-sm font-bold text-gray-400 group-hover:text-gray-900 transition-colors">Upload Bukti Transfer</span>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer" 
-                />
-              </div>
+              ) : (
+                <div className="border-2 border-dashed border-gray-100 rounded-[32px] p-20 flex flex-col items-center justify-center gap-4 hover:bg-gray-50 transition-all cursor-pointer group relative overflow-hidden">
+                  <div className="p-4 bg-gray-50 rounded-2xl group-hover:bg-white transition-colors">
+                    <UploadSimple size={48} weight="bold" className="text-gray-400 group-hover:text-gray-900 transition-colors" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-400 group-hover:text-gray-900 transition-colors">Upload Bukti Transfer</span>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 opacity-0 cursor-pointer" 
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -15,6 +15,14 @@ export default function EditTransaksiPage() {
   const id = params?.id as string;
   const locationName = location.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
+  const [nominal, setNominal] = React.useState("100000000");
+
+  const handleNominalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const cleanValue = value.replace(/\D/g, "");
+    setNominal(cleanValue);
+  };
+
   return (
     <div className="p-8 space-y-8">
       {/* Header & Breadcrumbs */}
@@ -49,6 +57,7 @@ export default function EditTransaksiPage() {
                 <input 
                   type="date"
                   defaultValue="2026-04-16"
+                  onClick={(e) => e.currentTarget.showPicker?.()}
                   className="w-full px-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   style={{ colorScheme: 'light' }}
                 />
@@ -67,7 +76,8 @@ export default function EditTransaksiPage() {
               </label>
               <input 
                 type="text"
-                defaultValue="Rp 100.000.000"
+                value={nominal || ""}
+                onChange={handleNominalChange}
                 className="w-full px-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
               />
             </div>
