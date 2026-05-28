@@ -116,11 +116,20 @@ function formatDisplayDate(value: string) {
 function normalizeRangeValue(value: string) {
   const normalized = value.toLowerCase();
 
+  if (normalized === "all") return "all";
   if (["daily", "harian", "day"].includes(normalized)) return "daily";
   if (["weekly", "mingguan", "week"].includes(normalized)) return "weekly";
   if (["monthly", "bulanan", "month"].includes(normalized)) return "monthly";
 
   return "";
+}
+
+function buildRangeRequestValue(value: string) {
+  if (!value || value === "all") {
+    return undefined;
+  }
+
+  return value;
 }
 
 function getRangeLabel(range: string) {
@@ -192,7 +201,7 @@ export default function TransaksiPage() {
               page: currentPage,
               limit: 10,
               location_id: DEFAULT_BRANCH_LOCATION_ID,
-              range: currentRange || undefined,
+              range: buildRangeRequestValue(currentRange),
               status: currentStatus || undefined,
               start_date: currentStartDate || undefined,
               end_date: currentEndDate || undefined,
@@ -345,7 +354,7 @@ export default function TransaksiPage() {
             page: 1,
             limit: pagination.total_data || 1000,
             location_id: DEFAULT_BRANCH_LOCATION_ID,
-            range: currentRange || undefined,
+            range: buildRangeRequestValue(currentRange),
             status: currentStatus || undefined,
             start_date: currentStartDate || undefined,
             end_date: currentEndDate || undefined,
@@ -396,7 +405,7 @@ export default function TransaksiPage() {
               value={currentRange}
               onChange={(e) => handleRangeChange(e.target.value)}
               options={[
-                { value: "", label: "Semua" },
+                { value: "all", label: "Semua" },
                 { value: "monthly", label: "Bulanan" },
                 { value: "weekly", label: "Mingguan" },
                 { value: "daily", label: "Hari ini" },

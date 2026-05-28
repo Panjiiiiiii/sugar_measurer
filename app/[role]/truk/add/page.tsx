@@ -37,7 +37,7 @@ export default function InputTrukPage() {
     try {
       setIsSaving(true);
       const response = await axios.post("/api/truck", {
-        license_plate: form.nopol.trim(),
+        license_plate: form.nopol.trim().toUpperCase(),
         name: form.namaTruk.trim(),
         truck_type: form.type.toLowerCase(),
       });

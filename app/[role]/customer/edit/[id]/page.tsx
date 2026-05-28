@@ -192,6 +192,7 @@ export default function EditCustomerPage() {
             <Input 
               label="Nomor Telepon" 
               required
+              type="number"
               placeholder="Masukkan nomor telepon"
               value={formData.phoneNumber}
               onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
@@ -201,6 +202,7 @@ export default function EditCustomerPage() {
               <Input
                 label="Harga Khusus"
                 required
+                type="number"
                 placeholder="Masukkan harga khusus"
                 value={formData.specialPrice}
                 onChange={(e) =>

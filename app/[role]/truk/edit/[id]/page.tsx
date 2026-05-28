@@ -49,7 +49,7 @@ export default function EditTrukPage() {
 
         const truck = response.data.data;
         setForm({
-          nopol: truck.license_plate,
+          nopol: truck.license_plate ? truck.license_plate.toUpperCase() : "",
           namaTruk: truck.name,
           type: truck.truck_type
             ? truck.truck_type.charAt(0).toUpperCase() + truck.truck_type.slice(1).toLowerCase()
@@ -82,7 +82,7 @@ export default function EditTrukPage() {
         statusCode: number;
         message: string;
       }>(`/api/truck/${id}`, {
-        license_plate: form.nopol.trim(),
+        license_plate: form.nopol.trim().toUpperCase(),
         name: form.namaTruk.trim(),
         truck_type: form.type.toLowerCase(),
       });
