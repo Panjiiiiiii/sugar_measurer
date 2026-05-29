@@ -1,120 +1,284 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Toast, DeleteModal } from "@/components/ui";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { DeleteModal, Pagination, Toast } from "@/components/ui";
 import {
   Plus,
   CaretDown,
   Export,
-  DotsThreeVertical
+  DotsThreeVertical,
 } from "@phosphor-icons/react";
+import axios from "axios";
 
-const customerData = [
-  { nama: "Budi", type: "Petani", phone: "087459687412", price: "Rp 8.000 /kg" },
-  { nama: "Dadang", type: "Private", phone: "087459687412", price: "Rp 8.000 /kg" },
-  { nama: "Julpan", type: "Petani", phone: "087459687412", price: "Rp 8.000 /kg" },
-  { nama: "Jaedin", type: "Private", phone: "087459687412", price: "Rp 8.000 /kg" },
-];
+interface Customer {
+  id: string;
+  name: string;
+  ownership_type: "farmer" | "private" | "special";
+  phone_number: string;
+  special_price: number | null;
+}
+
+interface PaginationMeta {
+  per_page: number;
+  number_page: number;
+  total_page: number;
+  total_data: number;
+}
+
+interface OwnerListResponse {
+  statusCode: number;
+  data: Customer[];
+  page: PaginationMeta;
+}
+
+const PAGE_SIZE = 10;
+
+function parsePageParam(value: string | null) {
+  const parsed = Number.parseInt(value ?? "1", 10);
+
+  if (Number.isNaN(parsed) || parsed < 1) {
+    return 1;
+  }
+
+  return parsed;
+}
+
+function formatCurrency(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return "-";
+  }
+
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
 export default function CustomerPage() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [customers, setCustomers] = useState(customerData);
+  const currentPage = parsePageParam(searchParams.get("page"));
+  const currentOwnershipType =
+    searchParams.get("ownership_type") ||
+    searchParams.get("type_ownership") ||
+    "";
+
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    per_page: 0,
+    number_page: currentPage,
+    total_page: 1,
+    total_data: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedCustomerName, setSelectedCustomerName] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [filterType, setFilterType] = useState<string>("All");
-  const [activeRowMenu, setActiveRowMenu] = useState<number | null>(null);
+  const [activeRowMenu, setActiveRowMenu] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Data Berhasil Disimpan");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
 
-  // Close dropdowns on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
+
       if (activeRowMenu !== null && tableRef.current && !tableRef.current.contains(event.target as Node)) {
         setActiveRowMenu(null);
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [activeRowMenu]);
 
-  // Show toast when success parameter is present
   useEffect(() => {
-    if (searchParams && searchParams.get("success") === "true") {
+    if (searchParams.get("success") === "true") {
+      const storedMessage = sessionStorage.getItem("customer-toast-message");
+      if (storedMessage) {
+        setToastMessage(storedMessage);
+        sessionStorage.removeItem("customer-toast-message");
+      } else {
+        setToastMessage("Data Berhasil Disimpan");
+      }
+
       setShowToast(true);
+
       const timer = setTimeout(() => setShowToast(false), 3000);
+      const cleanParams = new URLSearchParams(searchParams.toString());
+      cleanParams.delete("success");
+
+      const nextUrl = cleanParams.toString()
+        ? `${pathname}?${cleanParams.toString()}`
+        : pathname;
+
+      router.replace(nextUrl);
+
       return () => clearTimeout(timer);
     }
-  }, [searchParams]);
+  }, [pathname, router, searchParams]);
 
-  const filteredCustomerData = filterType === "All"
-    ? customers
-    : customers.filter(customer => customer.type === filterType);
+  useEffect(() => {
+    let isMounted = true;
 
-  const handleDeleteConfirm = () => {
-    if (selectedCustomerName) {
-      setCustomers(prev => prev.filter(c => c.nama !== selectedCustomerName));
+    async function fetchCustomers() {
+      setIsLoading(true);
+
+      try {
+        const response = await axios.get<OwnerListResponse>("/api/owner", {
+          params: {
+            page: currentPage,
+            limit: PAGE_SIZE,
+            ownership_type: currentOwnershipType || undefined,
+          },
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCustomers(response.data.data ?? []);
+        setPagination(
+          response.data.page ?? {
+            per_page: response.data.data?.length ?? 0,
+            number_page: currentPage,
+            total_page: 1,
+            total_data: response.data.data?.length ?? 0,
+          },
+        );
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        console.error("Error fetching customers:", error);
+        setCustomers([]);
+        setPagination({
+          per_page: 0,
+          number_page: currentPage,
+          total_page: 1,
+          total_data: 0,
+        });
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
     }
-    setIsDeleteModalOpen(false);
+
+    fetchCustomers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentPage, currentOwnershipType]);
+
+  const handlePageChange = (page: number) => {
+    if (page < 1 || page > pagination.total_page) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams();
+    nextParams.set("page", String(page));
+
+    if (currentOwnershipType) {
+      nextParams.set("ownership_type", currentOwnershipType);
+    }
+
+    router.push(`${pathname}?${nextParams.toString()}`);
+  };
+
+  const handleFilterChange = (type: string) => {
+    const nextParams = new URLSearchParams();
+    nextParams.set("page", "1");
+
+    if (type) {
+      nextParams.set("ownership_type", type.toLowerCase());
+    }
+
+    router.push(`${pathname}?${nextParams.toString()}`);
+    setDropdownOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedCustomerId) {
+      setIsDeleteModalOpen(false);
+      return;
+    }
+
+    try {
+      const response = await axios.delete<{ statusCode: number; message: string }>(
+        `/api/owner/${selectedCustomerId}`,
+      );
+
+      setToastMessage(response.data?.message || "Customer berhasil dihapus");
+      setShowToast(true);
+
+      setCustomers((prev) => prev.filter((customer) => customer.id !== selectedCustomerId));
+
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      void timer;
+    } catch (error) {
+      console.error("Error deleting customer:", error);
+      setToastMessage("Gagal menghapus customer");
+      setShowToast(true);
+    } finally {
+      setIsDeleteModalOpen(false);
+      setSelectedCustomerId(null);
+      setSelectedCustomerName(null);
+    }
   };
 
   return (
     <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)]">
-      <Toast isVisible={showToast} message="Data Berhasil Disimpan" type="success" />
+      <Toast isVisible={showToast} message={toastMessage} type="success" />
       <DeleteModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirm}
-        message="Apakah anda yakin ingin menghapus data user ini?"
+        message={`Apakah anda yakin ingin menghapus data customer ${selectedCustomerName || ""} ini?`}
       />
+
       {/* Page Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Data Customer</h1>
         <div className="flex items-center gap-3 flex-wrap">
           {/* Filter Dropdown */}
           <div className="relative" ref={dropdownRef}>
-            <button 
+            <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               suppressHydrationWarning
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all cursor-pointer shadow-sm"
             >
-              <span>Type Owner{filterType !== "All" ? `: ${filterType}` : ""}</span>
+              <span>Type Owner{currentOwnershipType ? `: ${currentOwnershipType}` : ""}</span>
               <CaretDown size={14} weight="bold" className={`transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
             </button>
 
             {dropdownOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                 <button
-                  onClick={() => {
-                    setFilterType("All");
-                    setDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 ${filterType === "All" ? "text-blue-600 bg-blue-50/30" : "text-gray-700"}`}
+                  onClick={() => handleFilterChange("")}
+                  className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 ${!currentOwnershipType ? "text-blue-600 bg-blue-50/30" : "text-gray-700"}`}
                 >
                   All
                 </button>
                 <button
-                  onClick={() => {
-                    setFilterType("Petani");
-                    setDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 ${filterType === "Petani" ? "text-blue-600 bg-blue-50/30" : "text-gray-700"}`}
+                  onClick={() => handleFilterChange("farmer")}
+                  className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 ${currentOwnershipType === "farmer" ? "text-blue-600 bg-blue-50/30" : "text-gray-700"}`}
                 >
                   Petani
                 </button>
                 <button
-                  onClick={() => {
-                    setFilterType("Private");
-                    setDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 ${filterType === "Private" ? "text-blue-600 bg-blue-50/30" : "text-gray-700"}`}
+                  onClick={() => handleFilterChange("private")}
+                  className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 ${currentOwnershipType === "private" ? "text-blue-600 bg-blue-50/30" : "text-gray-700"}`}
                 >
                   Private
                 </button>
@@ -123,7 +287,7 @@ export default function CustomerPage() {
           </div>
 
           <Link href="/finance/customer/add">
-            <button 
+            <button
               suppressHydrationWarning
               className="flex items-center gap-2 px-6 py-2 bg-[#0095FF] text-white rounded-xl text-sm font-bold hover:bg-[#0084FF] transition-all shadow-sm cursor-pointer"
             >
@@ -138,7 +302,7 @@ export default function CustomerPage() {
       <section className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
         <div className="p-6 flex items-center justify-between flex-wrap gap-4">
           <h2 className="text-lg font-bold text-gray-900">Data Customer</h2>
-          <button 
+          <button
             suppressHydrationWarning
             className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer transition-all"
           >
@@ -159,31 +323,47 @@ export default function CustomerPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredCustomerData.length > 0 ? (
-                filteredCustomerData.map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-50/30 transition-colors">
-                    <td className="px-8 py-5 text-sm font-medium text-gray-600">{row.nama}</td>
-                    <td className="px-8 py-5 text-sm font-medium text-gray-600">{row.type}</td>
-                    <td className="px-8 py-5 text-sm font-medium text-gray-600">{row.phone}</td>
-                    <td className="px-8 py-5 text-sm font-medium text-gray-600">{row.price}</td>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="px-8 py-10 text-center text-sm font-medium text-gray-400">
+                    Memuat data customer...
+                  </td>
+                </tr>
+              ) : customers.length > 0 ? (
+                customers.map((row) => (
+                  <tr key={row.id} className="hover:bg-gray-50/30 transition-colors">
+                    <td className="px-8 py-5 text-sm font-medium text-gray-600">{row.name}</td>
+                    <td className="px-8 py-5 text-sm font-medium text-gray-600">
+                      {row.ownership_type === "farmer" ? "Petani" : row.ownership_type === "private" ? "Private" : "Special"}
+                    </td>
+                    <td className="px-8 py-5 text-sm font-medium text-gray-600">{row.phone_number}</td>
+                    <td className="px-8 py-5 text-sm font-medium text-gray-600">{formatCurrency(row.special_price)}</td>
                     <td className="px-8 py-5 flex justify-center">
                       <div className="relative">
-                        <button 
+                        <button
+                          disabled={row.ownership_type === "special"}
                           onClick={(e) => {
+                            if (row.ownership_type === "special") {
+                              return;
+                            }
                             e.stopPropagation();
-                            setActiveRowMenu(activeRowMenu === i ? null : i);
+                            setActiveRowMenu(activeRowMenu === row.id ? null : row.id);
                           }}
                           suppressHydrationWarning
-                          className="p-2 text-gray-400 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100 cursor-pointer flex items-center justify-center"
+                          className={`p-2 text-gray-400 rounded-lg transition-colors border border-gray-100 flex items-center justify-center ${
+                            row.ownership_type === "special"
+                              ? "cursor-not-allowed opacity-50"
+                              : "hover:bg-gray-50 cursor-pointer"
+                          }`}
                         >
                           <DotsThreeVertical size={20} weight="bold" />
                         </button>
 
-                        {activeRowMenu === i && (
+                        {activeRowMenu === row.id && (
                           <div className="absolute right-6 top-10 w-36 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-40 text-left animate-in fade-in slide-in-from-top-2 duration-150">
                             <button
                               onClick={() => {
-                                router.push(`/finance/customer/edit/${row.nama.toLowerCase()}`);
+                                router.push(`/finance/customer/edit/${row.id}`);
                                 setActiveRowMenu(null);
                               }}
                               className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer"
@@ -193,7 +373,8 @@ export default function CustomerPage() {
                             <div className="border-t border-gray-100" />
                             <button
                               onClick={() => {
-                                setSelectedCustomerName(row.nama);
+                                setSelectedCustomerId(row.id);
+                                setSelectedCustomerName(row.name);
                                 setIsDeleteModalOpen(true);
                                 setActiveRowMenu(null);
                               }}
@@ -210,14 +391,21 @@ export default function CustomerPage() {
               ) : (
                 <tr>
                   <td colSpan={5} className="px-8 py-10 text-center text-sm font-medium text-gray-400">
-                    Tidak ada data customer untuk filter ini
+                    Tidak ada data customer
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-        <div className="h-4" /> {/* Bottom Padding */}
+
+        <Pagination
+          currentPage={pagination.number_page}
+          totalPages={pagination.total_page}
+          totalData={pagination.total_data}
+          showingData={customers.length}
+          onPageChange={handlePageChange}
+        />
       </section>
     </div>
   );

@@ -6,20 +6,53 @@ import { CaretDown, CaretRight } from "@phosphor-icons/react";
 
 export default function InputCustomerPage() {
   const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     nama: "",
     typeOwner: "",
     phoneNumber: "",
-    specialPrice: ""
+    specialPrice: "",
   });
 
-  const isFormValid = formData.nama.trim() !== "" && formData.typeOwner !== "" && formData.phoneNumber.trim() !== "";
+  const isSpecialOwner = formData.typeOwner === "special";
+  const isFormValid =
+    formData.nama.trim() !== "" &&
+    formData.typeOwner !== "" &&
+    formData.phoneNumber.trim() !== "" &&
+    (!isSpecialOwner || formData.specialPrice.trim() !== "");
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isFormValid) return;
-    // Simulate save by routing back to data customer page with success query
-    router.push("/finance/customer?success=true");
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/owner", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nama_owner: formData.nama.trim(),
+          type_ownership: formData.typeOwner,
+          phone_number: formData.phoneNumber.trim(),
+          ...(isSpecialOwner
+            ? { special_price: Number(formData.specialPrice) }
+            : {}),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create customer");
+      }
+
+      router.push("/finance/customer?success=true");
+    } catch (error) {
+      console.error("Error creating customer:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -63,7 +96,7 @@ export default function InputCustomerPage() {
             {/* Type Owner */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-950 block">
-                Type Owner <span className="text-red-500 font-bold">*</span>
+                Tipe pemilik <span className="text-red-500 font-bold">*</span>
               </label>
               <div className="relative group">
                 <select 
@@ -72,8 +105,9 @@ export default function InputCustomerPage() {
                   className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer"
                 >
                   <option value="" disabled hidden></option>
-                  <option value="Petani">Petani</option>
-                  <option value="Private">Private</option>
+                  <option value="farmer">Petani</option>
+                  <option value="private">Pribadi</option>
+                  {/* <option value="special">Special</option> */}
                 </select>
                 <CaretDown 
                   size={16} 
@@ -86,28 +120,31 @@ export default function InputCustomerPage() {
             {/* Phone Number */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-950 block">
-                Phone Number <span className="text-red-500 font-bold">*</span>
+                Nomor Telepon <span className="text-red-500 font-bold">*</span>
               </label>
               <input 
-                type="text"
+                type="number"
                 value={formData.phoneNumber || ""}
                 onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value.replace(/\D/g, "") })}
                 className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
               />
             </div>
 
-            {/* Special Price */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-950 block">
-                Special Price
-              </label>
-              <input 
-                type="text"
-                value={formData.specialPrice || ""}
-                onChange={(e) => setFormData({ ...formData, specialPrice: e.target.value.replace(/\D/g, "") })}
-                className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
-              />
-            </div>
+            {isSpecialOwner && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-950 block">
+                  Harga Khusus <span className="text-red-500 font-bold">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.specialPrice}
+                  onChange={(e) => setFormData({ ...formData, specialPrice: e.target.value.replace(/\D/g, "") })}
+                  className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
+                  placeholder="Masukkan special price"
+                />
+              </div>
+            )}
+
           </div>
         </div>
 
@@ -122,15 +159,15 @@ export default function InputCustomerPage() {
           </button>
           <button 
             onClick={handleSave}
-            disabled={!isFormValid}
+            disabled={!isFormValid || isSaving}
             className={`w-full py-4 text-white rounded-2xl text-sm font-bold transition-all shadow-md ${
-              isFormValid 
+              isFormValid && !isSaving
                 ? "bg-[#009262] hover:bg-[#007a52] active:bg-[#006342] cursor-pointer" 
                 : "bg-gray-300 cursor-not-allowed shadow-none"
             }`}
             suppressHydrationWarning
           >
-            Simpan
+            {isSaving ? "Menyimpan..." : "Simpan"}
           </button>
         </div>
       </div>
