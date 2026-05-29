@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { 
-  CaretDown 
+  CaretDown, 
+  CaretRight
 } from "@phosphor-icons/react";
 import { 
   Card, 
@@ -215,7 +216,8 @@ export default function EditCustomerPage() {
               />
             )}
           </div>
-        </div>
+        </Card>
+
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-4">
@@ -224,7 +226,7 @@ export default function EditCustomerPage() {
             disabled={isSaving}
           >
             Cancel
-          </Button>
+          </button>
           <Button 
             variant="primary" 
             className={`flex-1 py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52] ${!isFormValid || isSaving ? "opacity-50 cursor-not-allowed" : ""}`}

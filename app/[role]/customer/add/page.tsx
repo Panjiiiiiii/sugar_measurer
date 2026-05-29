@@ -117,13 +117,12 @@ export default function InputCustomerPage() {
               }
             />
           </div>
-        </div>
+        </Card>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-4">
           <Button
             variant="white"
-            className="flex-1 py-4 text-sm font-bold shadow-none border-gray-100"
             onClick={() => router.back()}
             className="w-full py-4 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-gray-900 hover:bg-gray-50 active:bg-gray-100/80 transition-all shadow-sm cursor-pointer"
             suppressHydrationWarning
@@ -137,7 +136,7 @@ export default function InputCustomerPage() {
             onClick={handleSave}
           >
             Simpan
-          </button>
+          </Button>
         </div>
       </div>
     </div>
