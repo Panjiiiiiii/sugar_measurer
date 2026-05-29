@@ -19,7 +19,8 @@ export const CreateLocationSchema = z.object({
     account_number: z
         .string()
         .min(1, "Account number is required")
-        .max(255, "Account number must not exceed 255 characters"),
+        .max(255, "Account number must not exceed 255 characters")
+        .trim(),
 });
 
 export type CreateLocationInput = z.infer<typeof CreateLocationSchema>;

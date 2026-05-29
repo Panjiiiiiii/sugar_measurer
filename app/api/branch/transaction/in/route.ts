@@ -8,7 +8,7 @@ export async function POST(request: Request) {
 
     if (!parsedInput.success) {
       const firstErrorMessage =
-        parsedInput.error.issues[0]?.message ?? "Validation failed";
+        parsedInput.error.issues[0]?.message ?? "Validasi gagal";
 
       return Response.json(
         {
@@ -20,28 +20,29 @@ export async function POST(request: Request) {
       );
     }
 
-    const {
-      bruto,
-      tare,
+    let {
+      bruto_weight,
+      tarra_weight,
       loading_in,
       loading_out,
       truck_id,
       location_id,
+      user_id,
+      owner_id,
+      driver_name,
+      sugar_price,
+      payment_method,
     } = parsedInput.data;
 
-    const hasTare = tare !== undefined && tare > 0;
-    const tareWeight = tare ?? 0;
+    const hasTare = tarra_weight !== undefined && tarra_weight > 0;
+    const tareWeight = tarra_weight ?? 0;
+    const hasLoadingOut =
+      typeof loading_out === "string" &&
+      loading_out.trim() !== "" &&
+      loading_out !== "0";
+    // const transactionStatus = hasTare && hasLoadingOut ? "unpaid" : "queue";
 
-    if (tareWeight > 0 && !loading_out) {
-      return Response.json(
-        {
-          statusCode: 400,
-          message: "loading_out is required when tare is provided",
-          data: null,
-        },
-        { status: 400 },
-      );
-    }
+    let transaction_status: "paid" | "unpaid" | "queue" = "queue";
 
     const loadingInDate = new Date(loading_in);
 
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 400,
-          message: "loading_in must be a valid datetime",
+          message: "loading_in harus berupa tanggal/waktu yang valid",
           data: null,
         },
         { status: 400 },
@@ -58,14 +59,14 @@ export async function POST(request: Request) {
 
     let loadingOutDate = loadingInDate;
 
-    if (loading_out) {
+    if (hasLoadingOut) {
       loadingOutDate = new Date(loading_out);
 
       if (Number.isNaN(loadingOutDate.getTime())) {
         return Response.json(
           {
             statusCode: 400,
-            message: "loading_out must be a valid datetime",
+            message: "loading_out harus berupa tanggal/waktu yang valid",
             data: null,
           },
           { status: 400 },
@@ -73,11 +74,11 @@ export async function POST(request: Request) {
       }
     }
 
-    if (tareWeight > bruto) {
+    if (tareWeight > bruto_weight) {
       return Response.json(
         {
           statusCode: 400,
-          message: "tare must be less than or equal to bruto",
+          message: "Berat tara harus kurang dari atau sama dengan berat bruto",
           data: null,
         },
         { status: 400 },
@@ -85,13 +86,17 @@ export async function POST(request: Request) {
     }
 
     const transaction = await prisma.$transaction(async (tx) => {
-      const [location, truck] = await Promise.all([
+      const [location, truck, owner] = await Promise.all([
         tx.location.findUnique({
           where: { id: location_id },
           select: { id: true, sugar_price: true },
         }),
         tx.truck.findUnique({
           where: { id: truck_id },
+          select: { id: true },
+        }),
+        tx.owner.findUnique({
+          where: { id: owner_id },
           select: { id: true },
         }),
       ]);
@@ -104,19 +109,54 @@ export async function POST(request: Request) {
         throw new Error("TRUCK_NOT_FOUND");
       }
 
-      const nettoWeight = hasTare ? bruto - tareWeight : 0;
+      if (!owner) {
+        throw new Error("OWNER_NOT_FOUND");
+      }
+
+      const nettoWeight = hasTare ? bruto_weight - tareWeight : 0;
+
+      let specialOwner = await tx.owner.findFirst({
+        where: {
+          id: owner_id,
+          ownership_type: "special",
+        },
+        select: {
+          special_price: true,
+        },
+      });
+
+      let privateOwner = await tx.owner.findFirst({
+        where : {
+          id :  owner_id,
+          ownership_type : "private",
+        },
+      })
+
+      const resolvedSugarPrice =
+        sugar_price ?? specialOwner?.special_price ?? location.sugar_price;
+
       const totalPrice =
-        nettoWeight !== 0 ? nettoWeight * location.sugar_price : 0;
+        nettoWeight !== 0 ? nettoWeight * resolvedSugarPrice : 0;
+
+      if(privateOwner && hasTare && hasLoadingOut){
+        transaction_status = "paid"
+      } else if (hasTare && hasLoadingOut) {
+        transaction_status = "unpaid";
+      } else {
+        transaction_status = "queue";
+      }
 
       return tx.transaction.create({
         data: {
           transaction_date: new Date(),
-          bruto_weight: bruto,
+          bruto_weight: bruto_weight,
           tarra_weight: tareWeight,
           netto_weight: nettoWeight,
+          current_price: resolvedSugarPrice,
+          driver_name: driver_name,
           total_price: totalPrice,
-          status: "unpaid",
-          bukti_transfer: "",
+          status: transaction_status,
+          payment_method: payment_method ?? "cash",
           loading_in: loadingInDate,
           loading_out: loadingOutDate,
           location: {
@@ -129,6 +169,16 @@ export async function POST(request: Request) {
               id: truck_id,
             },
           },
+          owner: {
+            connect: {
+              id: owner_id,
+            },
+          },
+          user: {
+            connect: {
+              id: user_id,
+            },
+          },
         },
       });
     });
@@ -136,7 +186,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         statusCode: 201,
-        message: "Transaction created successfully",
+        message: "Transaksi berhasil dibuat",
       },
       { status: 201 },
     );
@@ -145,7 +195,7 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 404,
-          message: "Location not found",
+          message: "Lokasi tidak ditemukan",
         },
         { status: 404 },
       );
@@ -155,7 +205,17 @@ export async function POST(request: Request) {
       return Response.json(
         {
           statusCode: 404,
-          message: "Truck not found",
+          message: "Truk tidak ditemukan",
+        },
+        { status: 404 },
+      );
+    }
+
+    if (error instanceof Error && error.message === "OWNER_NOT_FOUND") {
+      return Response.json(
+        {
+          statusCode: 404,
+          message: "Pemilik tidak ditemukan",
         },
         { status: 404 },
       );
@@ -164,7 +224,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         statusCode: 500,
-        message: "Internal server error",
+        message: "Kesalahan server internal",
       },
       { status: 500 },
     );

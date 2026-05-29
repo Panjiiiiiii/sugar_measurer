@@ -1,5 +1,21 @@
 import { prisma } from "@/lib/prisma";
 
+export async function GET(
+    _request: Request,
+    { params }: { params: Promise<{ id: string }> },
+) {
+    const { id } = await params;
+
+    return Response.json(
+        {
+            statusCode: 200,
+            message: "Route is available. Use PUT with tare and loading_out in request body.",
+            data: { id },
+        },
+        { status: 200 },
+    );
+}
+
 export async function PUT(
     request: Request,
     { params }: { params: Promise<{ id: string }> },
@@ -73,11 +89,9 @@ export async function PUT(
         const updatedTransaction = await prisma.$transaction(async (tx) => {
             const existingTransaction = await tx.transaction.findUnique({
                 where: { id },
-                select: {
-                    id: true,
-                    bruto_weight: true,
-                    location_id: true,
-                },
+                include: {
+                    owner: true,
+                }
             });
 
             if (!existingTransaction) {
@@ -98,7 +112,7 @@ export async function PUT(
             }
 
             const nettoWeight = existingTransaction.bruto_weight - tareWeight;
-            const totalPrice = nettoWeight * location.sugar_price;
+            const totalPrice = nettoWeight * existingTransaction.current_price;
 
             return tx.transaction.update({
                 where: { id },
@@ -107,6 +121,7 @@ export async function PUT(
                     netto_weight: nettoWeight,
                     total_price: totalPrice,
                     loading_out: loadingOutDate,
+                    status: existingTransaction.owner?.ownership_type === "private" ? "paid" : "unpaid",
                 },
             });
         });

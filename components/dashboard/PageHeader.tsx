@@ -16,6 +16,7 @@ interface PageHeaderProps {
   breadcrumbs?: { label: string; href?: string; active?: boolean }[];
   primaryAction?: ActionConfig;
   secondaryAction?: ActionConfig;
+  thirdAction?: ActionConfig;
   extraActions?: React.ReactNode;
 }
 
@@ -24,6 +25,7 @@ export function PageHeader({
   breadcrumbs, 
   primaryAction, 
   secondaryAction,
+  thirdAction,
   extraActions 
 }: PageHeaderProps) {
   return (
@@ -41,6 +43,17 @@ export function PageHeader({
               className="text-xs font-bold py-3 px-6"
             >
               {secondaryAction.label}
+            </Button>
+          )}
+
+          {thirdAction && (
+            <Button
+              variant={thirdAction.variant || "white"}
+              icon={thirdAction.icon}
+              onClick={thirdAction.onClick}
+              className="text-xs font-bold py-3 px-6"
+            >
+              {thirdAction.label}
             </Button>
           )}
 

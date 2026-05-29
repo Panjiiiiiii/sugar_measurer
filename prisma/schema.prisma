@@ -5,29 +5,31 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model user {
-  id          String        @id @default(uuid())
-  name        String
-  password    String
-  role        role
-  created_at  DateTime      @default(now())
-  updated_at  DateTime      @updatedAt
-  location_id String
-  email       String        @unique
-  location    location      @relation(fields: [location_id], references: [id])
+  id           String        @id @default(uuid())
+  name         String
+  password     String
+  role         role
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  location_id  String
+  email        String        @unique
+  location     location      @relation(fields: [location_id], references: [id])
+  logTransfers logTransfer[]
+  transactions  transaction[]
 }
 
 model owner {
   id             String         @id @default(uuid())
   name           String
-  account_number String         @unique
+  phone_number   String         @unique
   ownership_type ownership_type
+  special_price  Int?
   created_at     DateTime       @default(now())
   updated_at     DateTime       @updatedAt
-  trucks         truck[]
+  transactions   transaction[]
 }
 
 model location {
@@ -36,55 +38,66 @@ model location {
   sugar_price     Int
   created_at      DateTime      @default(now())
   updated_at      DateTime      @updatedAt
-  account_balance Int           @default(0)
-  account_number  String        @default("0000000000")
+  account_balance Int?          @default(0)
+  account_number  String?
   logTransfer     logTransfer[]
   transactions    transaction[]
   users           user[]
 }
 
 model truck {
-  id            String        @id @default(uuid())
-  name          String        @default("Unnamed Truck")
-  license_plate String        @unique
-  owner_id      String
-  created_at    DateTime      @default(now())
-  updated_at    DateTime      @updatedAt
+  id            String   @id @default(uuid())
+  name          String   @default("Unnamed Truck")
+  license_plate String   @unique
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
   truck_type    String?
-  transactions  transaction[]
-  owner         owner         @relation(fields: [owner_id], references: [id], onDelete: Cascade)
+
+  transactions transaction[]
 }
 
 model transaction {
-  id               String      @id @default(uuid())
+  id               String         @id @default(uuid())
   transaction_date DateTime
+  driver_name      String?
   truck_id         String
+  owner_id         String?
+  user_id          String
   location_id      String
   bruto_weight     Int
   tarra_weight     Int
   netto_weight     Int?
+  current_price    Int
   total_price      Int?
-  bukti_transfer   String
-  status           status_paid @default(unpaid)
+  status           status_paid    @default(unpaid)
+  payment_method   payment_method
   loading_in       DateTime
-  loading_out      DateTime
-  created_at       DateTime    @default(now())
-  updated_at       DateTime    @updatedAt
-  location         location    @relation(fields: [location_id], references: [id])
-  truck            truck       @relation(fields: [truck_id], references: [id], onDelete: Cascade)
+  loading_out      DateTime?
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
+  location         location       @relation(fields: [location_id], references: [id])
+  truck            truck          @relation(fields: [truck_id], references: [id], onDelete: Cascade)
+  owner            owner?         @relation(fields: [owner_id], references: [id])
+  user             user?          @relation(fields: [user_id], references: [id])
+  logTransfers     logTransfer[]
 }
 
 model logTransfer {
-  id              String   @id @default(uuid())
-  location_id     String
+  id              String          @id @default(uuid())
+  location_id     String?
+  user_id         String
+  transfer_status transfer_status @default(in)
   bukti_transfer  String
   transfer_amount Int
-  created_at      DateTime @default(now())
-  location        location @relation(fields: [location_id], references: [id])
+  transaction_id  String?
+  created_at      DateTime        @default(now())
+  transaction     transaction?    @relation(fields: [transaction_id], references: [id])
+  location        location?       @relation(fields: [location_id], references: [id])
+  user            user            @relation(fields: [user_id], references: [id])
 }
 
 enum role {
-  branch
+  operator
   master
   finance
 }
@@ -92,14 +105,27 @@ enum role {
 enum ownership_type {
   farmer
   private
+  special
 }
 
 enum status_paid {
   paid
+  queue
   unpaid
+}
+
+enum payment_method {
+  cash
+  transfer
+  private
 }
 
 enum truck_type {
   engkel
   double
+}
+
+enum transfer_status {
+  in
+  out
 }

@@ -2,54 +2,156 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CaretDown, CaretRight } from "@phosphor-icons/react";
+import axios from "axios";
+import { 
+  CaretDown 
+} from "@phosphor-icons/react";
+import { 
+  Card, 
+  Input, 
+  Select, 
+  Button, 
+  Breadcrumbs,
+  Toast,
+  DeleteModal 
+} from "@/components/ui";
 
-// Mock customer data lookup to pre-populate dynamically
-const mockCustomers: Record<string, { name: string; type: string; phone: string }> = {
-  "1": { name: "Budi", type: "Petani", phone: "087459687412" },
-  "2": { name: "Dadang", type: "Private", phone: "087459687412" },
-  "3": { name: "Julpan", type: "Petani", phone: "087459687412" },
-  "4": { name: "Jaedin", type: "Private", phone: "087459687412" },
-  "budi": { name: "Budi", type: "Petani", phone: "087459687412" },
-  "dadang": { name: "Dadang", type: "Private", phone: "087459687412" },
-  "julpan": { name: "Julpan", type: "Petani", phone: "087459687412" },
-  "jaedin": { name: "Jaedin", type: "Private", phone: "087459687412" },
-};
+interface CustomerData {
+  id: string;
+  name: string;
+  ownership_type: "farmer" | "private" | "special";
+  phone_number: string;
+  special_price?: number;
+}
 
 export default function EditCustomerPage() {
   const params = useParams();
   const router = useRouter();
   const role = (params.role as string) || "branch";
-  const idRaw = (params.id as string) || "budi";
-  const id = idRaw.toLowerCase();
+  const customerId = params.id as string;
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   const [formData, setFormData] = useState({
-    nama: "Budi",
-    typeOwner: "Petani",
-    phoneNumber: "087459687412"
+    nama: "",
+    typeOwner: "",
+    phoneNumber: "",
+    specialPrice: ""
   });
 
-  // Pre-populate data based on the dynamic route ID parameter
+  // Fetch customer data on mount
   useEffect(() => {
-    if (id && mockCustomers[id]) {
-      setFormData({
-        nama: mockCustomers[id].name,
-        typeOwner: mockCustomers[id].type,
-        phoneNumber: mockCustomers[id].phone
-      });
+    const fetchCustomer = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axios.get<{ statusCode: number; data: CustomerData }>(
+          `/api/owner/${customerId}`
+        );
+        
+        const customer = response.data.data;
+        setFormData({
+          nama: customer.name || "",
+          typeOwner: customer.ownership_type || "",
+          phoneNumber: customer.phone_number || "",
+          specialPrice: customer.special_price?.toString() || ""
+        });
+      } catch (error) {
+        console.error("Error fetching customer:", error);
+        setToastMessage("Gagal memuat data customer");
+        setShowToast(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (customerId) {
+      fetchCustomer();
     }
-  }, [id]);
+  }, [customerId]);
 
-  const isFormValid = formData.nama.trim() !== "" && formData.typeOwner !== "" && formData.phoneNumber.trim() !== "";
+  const isFormValid = formData.nama && formData.typeOwner && formData.phoneNumber &&
+    (formData.typeOwner !== "special" || formData.specialPrice);
 
-  const handleSave = () => {
-    if (!isFormValid) return;
-    // Simulate save by routing back to data customer page with success query
-    router.push(`/${role}/customer?success=true`);
+  const handleSave = async () => {
+    if (!isFormValid || isSaving) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const response = await axios.put<{ statusCode: number; message: string }>(
+        `/api/owner/${customerId}`,
+        {
+          nama_owner: formData.nama.trim(),
+          type_ownership: formData.typeOwner.trim(),
+          special_price: formData.specialPrice ? parseFloat(formData.specialPrice) : undefined,
+          phone_number: formData.phoneNumber.trim(),
+        }
+      );
+
+      sessionStorage.setItem(
+        "customer-toast-message",
+        response.data?.message || "Customer berhasil diupdate",
+      );
+      router.push(`/${role}/customer?success=true`);
+    } catch (error) {
+      console.error("Error saving customer:", error);
+      setToastMessage("Gagal menyimpan customer");
+      setShowToast(true);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
+  const handleDelete = async () => {
+    try {
+      setIsSaving(true);
+      const response = await axios.delete<{ statusCode: number; message: string }>(
+        `/api/owner/${customerId}`
+      );
+
+      sessionStorage.setItem(
+        "customer-toast-message",
+        response.data?.message || "Customer berhasil dihapus",
+      );
+      router.push(`/${role}/customer?success=true`);
+    } catch (error) {
+      console.error("Error deleting customer:", error);
+      setToastMessage("Gagal menghapus customer");
+      setShowToast(true);
+    } finally {
+      setIsSaving(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-6 w-full max-w-full pb-10">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-100 rounded w-1/4 mb-4"></div>
+          <div className="space-y-4">
+            <div className="h-16 bg-gray-100 rounded"></div>
+            <div className="h-16 bg-gray-100 rounded"></div>
+            <div className="h-16 bg-gray-100 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)] w-full">
+    <div className="flex flex-col gap-6 w-full max-w-full pb-10">
+      <Toast
+        isVisible={showToast}
+        message={toastMessage}
+        type="error"
+      />
+
       {/* Header & Breadcrumbs */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Edit Customer</h1>
@@ -65,62 +167,53 @@ export default function EditCustomerPage() {
         </div>
       </div>
 
-      {/* Form Card */}
-      <div className="max-w-5xl mx-auto space-y-6 w-full">
-        <div className="bg-white border border-gray-100 rounded-[20px] shadow-sm overflow-hidden">
-          <div className="px-8 py-5 border-b border-gray-100 bg-white">
-            <h2 className="text-base font-bold text-gray-900">Form Customer</h2>
-          </div>
-          
-          <div className="p-8 space-y-6">
-            {/* Nama */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-950 block">
-                Nama
-              </label>
-              <input 
-                type="text"
-                value={formData.nama}
-                onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
-                className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
-              />
-            </div>
+      {/* Form Section */}
+      <div className="max-w-4xl mx-auto w-full flex flex-col gap-6">
+        <Card title="Form Customer">
+          <div className="flex flex-col gap-6 py-2">
+            <Input 
+              label="Nama" 
+              required
+              placeholder="Masukkan nama customer"
+              value={formData.nama}
+              onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+            />
+            
+            <Select 
+              label="Tipe Customer" 
+              required
+              value={formData.typeOwner}
+              onChange={(e) => setFormData({ ...formData, typeOwner: e.target.value })}
+              icon={<CaretDown size={18} weight="bold" />}
+              options={[
+                { value: "", label: "Pilih tipe kepemilikan" },
+                { value: "farmer", label: "Petani" },
+                { value: "private", label: "Private" },
+                { value: "special", label: "Special" }
+              ]}
+            />
 
-            {/* Type Owner */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-950 block">
-                Type Owner
-              </label>
-              <div className="relative group">
-                <select 
-                  value={formData.typeOwner}
-                  onChange={(e) => setFormData({ ...formData, typeOwner: e.target.value })}
-                  className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                >
-                  <option value="" disabled hidden></option>
-                  <option value="Petani">Petani</option>
-                  <option value="Private">Private</option>
-                </select>
-                <CaretDown 
-                  size={16} 
-                  weight="bold" 
-                  className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-gray-600 transition-colors"
-                />
-              </div>
-            </div>
+            <Input 
+              label="Nomor Telepon" 
+              required
+              type="number"
+              placeholder="Masukkan nomor telepon"
+              value={formData.phoneNumber}
+              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+            />
 
-            {/* Phone Number */}
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-gray-950 block">
-                Phone Number
-              </label>
-              <input 
-                type="text"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
+            {formData.typeOwner === "special" && (
+              <Input
+                label="Harga Khusus"
+                required
+                type="number"
+                placeholder="Masukkan harga khusus"
+                value={formData.specialPrice}
+                onChange={(e) =>
+                  setFormData({ ...formData, specialPrice: e.target.value })
+                }
               />
-            </div>
+            )}
           </div>
         </div>
 
@@ -128,23 +221,18 @@ export default function EditCustomerPage() {
         <div className="grid grid-cols-2 gap-4">
           <button 
             onClick={() => router.back()}
-            className="w-full py-4 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-gray-900 hover:bg-gray-50 active:bg-gray-100/80 transition-all shadow-sm cursor-pointer"
-            suppressHydrationWarning
+            disabled={isSaving}
           >
             Cancel
-          </button>
-          <button 
+          </Button>
+          <Button 
+            variant="primary" 
+            className={`flex-1 py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52] ${!isFormValid || isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
+            disabled={!isFormValid || isSaving}
             onClick={handleSave}
-            disabled={!isFormValid}
-            className={`w-full py-4 text-white rounded-2xl text-sm font-bold transition-all shadow-md ${
-              isFormValid 
-                ? "bg-[#009262] hover:bg-[#007a52] active:bg-[#006342] cursor-pointer" 
-                : "bg-gray-300 cursor-not-allowed shadow-none"
-            }`}
-            suppressHydrationWarning
           >
-            Simpan
-          </button>
+            {isSaving ? "Menyimpan..." : "Simpan"}
+          </Button>
         </div>
       </div>
     </div>

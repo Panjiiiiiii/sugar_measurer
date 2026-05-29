@@ -8,6 +8,10 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Pagination } from "@/components/ui/Pagination";
+import FinanceTransferFilterModal from "./FinanceTransferFilterModal";
+import FinanceBuktiTransferModal from "./FinanceBuktiTransferModal";
+import FinanceDeleteModal from "./FinanceDeleteModal";
+import FinanceActionMenu from "./FinanceActionMenu";
 
 const transferData = [
   ...Array(5).fill({ tanggal: "01/01/2026", bukti: "tf212493.png", cabang: "Malang", nominal: "100.000.000" }),

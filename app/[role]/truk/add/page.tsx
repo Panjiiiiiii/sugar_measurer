@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import axios from "axios";
 import { CaretDown } from "@phosphor-icons/react";
 import { 
   Card, 
@@ -15,6 +16,7 @@ export default function InputTrukPage() {
   const router = useRouter();
   const params = useParams();
   const role = (params.role as string) || "branch";
+  const [isSaving, setIsSaving] = useState(false);
 
   const [form, setForm] = useState({
     nopol: "",
@@ -27,9 +29,28 @@ export default function InputTrukPage() {
     form.namaTruk.trim() !== "" && 
     form.type !== "";
 
-  const handleSave = () => {
-    if (isFormValid) {
+  const handleSave = async () => {
+    if (!isFormValid || isSaving) {
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      const response = await axios.post("/api/truck", {
+        license_plate: form.nopol.trim().toUpperCase(),
+        name: form.namaTruk.trim(),
+        truck_type: form.type.toLowerCase(),
+      });
+
+      sessionStorage.setItem(
+        "truck-toast-message",
+        response.data?.message || "Truck berhasil disimpan",
+      );
       router.push(`/${role}/truk?success=true`);
+    } catch (error) {
+      console.error("Error saving truck:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -69,12 +90,12 @@ export default function InputTrukPage() {
 
           <Select 
             label="Type" 
-            placeholder="Select type"
             value={form.type}
             onChange={(e) => setForm({ ...form, type: e.target.value })}
             required
             icon={<CaretDown size={18} weight="bold" />}
             options={[
+              { value: "", label: "Pilih Type" },
               { value: "Engkel", label: "Engkel" },
               { value: "Double", label: "Double" }
             ]}
@@ -95,9 +116,9 @@ export default function InputTrukPage() {
           variant="primary" 
           className="w-full py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52]"
           onClick={handleSave}
-          disabled={!isFormValid}
+          disabled={!isFormValid || isSaving}
         >
-          Simpan
+          {isSaving ? "Menyimpan..." : "Simpan"}
         </Button>
       </div>
     </div>
