@@ -86,7 +86,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         statusCode: 201,
-        message: "Location created successfully",
+        message: "Lokasi berhasil dibuat",
       },
       { status: 201 },
     );

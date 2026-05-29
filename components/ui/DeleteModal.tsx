@@ -18,7 +18,16 @@ export function DeleteModal({
   message = "Apakah anda yakin ingin menghapus data ini?",
   isLoading = false,
 }: DeleteModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [localLoading, setLocalLoading] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+
+    return () => {
+      setMounted(false);
+    };
+  }, []);
 
   const handleConfirm = async () => {
     try {
@@ -33,17 +42,17 @@ export function DeleteModal({
   if (!isOpen) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-99999 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/40 backdrop-blur-[4px] animate-in fade-in duration-300"
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs animate-in fade-in duration-300"
         onClick={onClose}
       />
 
       {/* Modal Card */}
-      <div className="relative bg-white w-full max-w-[500px] rounded-[40px] shadow-2xl overflow-hidden p-12 flex flex-col items-center gap-10 animate-in fade-in zoom-in-95 duration-300">
+      <div className="relative bg-white w-full max-w-125 rounded-[40px] shadow-2xl overflow-hidden p-12 flex flex-col items-center gap-10 animate-in fade-in zoom-in-95 duration-300">
         {/* Message */}
-        <h2 className="text-[22px] font-bold text-gray-900 text-center leading-[1.4] max-w-[340px] tracking-tight">
+        <h2 className="text-[22px] font-bold text-gray-900 text-center leading-[1.4] max-w-85 tracking-tight">
           {message}
         </h2>
 
@@ -51,14 +60,14 @@ export function DeleteModal({
         <div className="flex items-center gap-4 w-full">
           <button 
             onClick={onClose}
-            className="flex-1 py-4.5 px-6 bg-white border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 hover:bg-gray-50 transition-all transform active:scale-[0.98] shadow-sm h-[60px] flex items-center justify-center"
+            className="flex-1 py-4.5 px-6 bg-white border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 hover:bg-gray-50 transition-all transform active:scale-[0.98] h-15 flex items-center justify-center shadow-sm"
           >
             Batal
           </button>
           <button 
             onClick={handleConfirm}
             disabled={localLoading || isLoading}
-            className="flex-1 py-4.5 px-6 bg-[#FF0000] rounded-2xl text-sm font-bold text-white hover:bg-red-700 shadow-lg shadow-red-100 transition-all transform active:scale-[0.98] h-[60px] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-4.5 px-6 bg-[#FF0000] rounded-2xl text-sm font-bold text-white hover:bg-red-700 shadow-lg shadow-red-100 transition-all transform active:scale-[0.98] h-15 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {localLoading || isLoading ? "Menghapus..." : "Hapus"}
           </button>

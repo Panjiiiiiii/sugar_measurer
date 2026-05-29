@@ -1,54 +1,133 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CaretRight } from "@phosphor-icons/react";
 
-// Mock locations data lookup
-const mockLocations: Record<string, { nama: string; accountNumber: string; balance: string }> = {
-  "1": { nama: "Malang", accountNumber: "5221068236989225", balance: "100000000" },
-  "2": { nama: "Blitar", accountNumber: "5221068236989225", balance: "100000000" },
-  "3": { nama: "Kediri 1", accountNumber: "5221068236989225", balance: "100000000" },
-  "4": { nama: "Kediri 2", accountNumber: "5221068236989225", balance: "100000000" },
-};
+interface LocationDetailResponse {
+  statusCode: number;
+  data: {
+    id: string;
+    name: string;
+    sugar_price: number;
+    account_balance: number | null;
+    account_number: string | null;
+  };
+}
 
 export default function EditLokasiPage() {
   const params = useParams();
   const router = useRouter();
-  const idRaw = (params.id as string) || "1";
-  const id = idRaw.toLowerCase();
+  const id = (params.id as string) || "";
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
-    nama: "",
-    accountNumber: "",
-    balance: ""
+    name: "",
+    sugar_price: "",
+    account_number: "",
+    account_balance: "",
   });
 
-  // Pre-populate data based on the dynamic route ID parameter
   useEffect(() => {
-    if (id && mockLocations[id]) {
-      setFormData({
-        nama: mockLocations[id].nama,
-        accountNumber: mockLocations[id].accountNumber,
-        balance: mockLocations[id].balance
-      });
-    } else {
-      // Fallback
-      setFormData({
-        nama: "Lokasi Baru",
-        accountNumber: "5221068236989225",
-        balance: "100000000"
-      });
+    let isMounted = true;
+
+    async function fetchLocation() {
+      if (!id) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        const response = await fetch(`/api/location/${id}`, {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch location detail");
+        }
+
+        const result = (await response.json()) as LocationDetailResponse;
+
+        if (!isMounted || !result.data) {
+          return;
+        }
+
+        setFormData({
+          name: result.data.name ?? "",
+          sugar_price: String(result.data.sugar_price ?? ""),
+          account_number: result.data.account_number ?? "",
+          account_balance: String(result.data.account_balance ?? 0),
+        });
+      } catch (error) {
+        console.error("Error fetching location detail:", error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
     }
+
+    fetchLocation();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
-  const isFormValid = formData.nama.trim() !== "" && formData.accountNumber.trim() !== "" && formData.balance.trim() !== "";
+  const isFormValid =
+    formData.name.trim() !== "" &&
+    formData.sugar_price.trim() !== "" &&
+    formData.account_number.trim() !== "";
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isFormValid) return;
-    // Simulate save by routing back to data lokasi page with success query
-    router.push("/finance/lokasi?success=true");
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch(`/api/location/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          sugar_price: Number(formData.sugar_price),
+          account_number: formData.account_number.trim(),
+          account_balance: formData.account_balance.trim()
+            ? Number(formData.account_balance)
+            : 0,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update location");
+      }
+
+      router.push("/finance/lokasi?success=true");
+    } catch (error) {
+      console.error("Error updating location:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)] w-full">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Edit Lokasi</h1>
+        </div>
+        <div className="max-w-5xl mx-auto w-full rounded-[20px] bg-white border border-gray-100 shadow-sm px-8 py-10 text-sm font-medium text-gray-400">
+          Memuat detail lokasi...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)] w-full">
@@ -78,39 +157,56 @@ export default function EditLokasiPage() {
             {/* Nama Lokasi */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-950 block">
-                Nama Lokasi
+                Name <span className="text-red-500 font-bold">*</span>
               </label>
               <input 
                 type="text"
-                value={formData.nama}
-                onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
+                placeholder="Masukkan nama lokasi"
+              />
+            </div>
+
+            {/* Sugar Price */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-950 block">
+                Harga Tebu <span className="text-red-500 font-bold">*</span>
+              </label>
+              <input 
+                type="number"
+                value={formData.sugar_price}
+                onChange={(e) => setFormData({ ...formData, sugar_price: e.target.value })}
+                className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
+                placeholder="Masukkan harga gula"
               />
             </div>
 
             {/* Account Number */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-950 block">
-                Account Number
+                Nomor Rekening <span className="text-red-500 font-bold">*</span>
               </label>
               <input 
                 type="text"
-                value={formData.accountNumber || ""}
-                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value.replace(/\D/g, "") })}
+                value={formData.account_number}
+                onChange={(e) => setFormData({ ...formData, account_number: e.target.value.replace(/\D/g, "") })}
                 className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
+                placeholder="Masukkan nomor rekening lokasi"
               />
             </div>
 
-            {/* Balance */}
+            {/* Account Balance */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-950 block">
-                Balance (IDR)
+                Saldo Awal (IDR)
               </label>
               <input 
                 type="number"
-                value={formData.balance}
-                onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
+                value={formData.account_balance}
+                onChange={(e) => setFormData({ ...formData, account_balance: e.target.value })}
                 className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
+                placeholder="Masukkan saldo awal lokasi"
               />
             </div>
           </div>
@@ -127,15 +223,15 @@ export default function EditLokasiPage() {
           </button>
           <button 
             onClick={handleSave}
-            disabled={!isFormValid}
+            disabled={!isFormValid || isSaving}
             className={`w-full py-4 text-white rounded-2xl text-sm font-bold transition-all shadow-md ${
-              isFormValid 
+              isFormValid && !isSaving
                 ? "bg-[#009262] hover:bg-[#007a52] active:bg-[#006342] cursor-pointer" 
                 : "bg-gray-300 cursor-not-allowed shadow-none"
             }`}
             suppressHydrationWarning
           >
-            Simpan
+            {isSaving ? "Menyimpan..." : "Simpan"}
           </button>
         </div>
       </div>
