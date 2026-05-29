@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CaretDown } from "@phosphor-icons/react";
+import { CaretDown, CaretRight } from "@phosphor-icons/react";
 import { Card, Input, Select, Button, Breadcrumbs } from "@/components/ui";
 import axios from "axios";
 
@@ -16,7 +16,7 @@ export default function InputCustomerPage() {
     nama: "",
     typeOwner: "",
     phoneNumber: "",
-    specialPrice: "",
+    specialPrice: ""
   });
 
   const isFormValid =
@@ -54,7 +54,7 @@ export default function InputCustomerPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-full pb-10">
+    <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)] w-full">
       {/* Header & Breadcrumbs */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
@@ -123,8 +123,9 @@ export default function InputCustomerPage() {
         <div className="flex items-center gap-4">
           <Button
             variant="white"
-            className="flex-1 py-4 text-sm font-bold shadow-none border-gray-100"
             onClick={() => router.back()}
+            className="w-full py-4 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-gray-900 hover:bg-gray-50 active:bg-gray-100/80 transition-all shadow-sm cursor-pointer"
+            suppressHydrationWarning
           >
             Cancel
           </Button>

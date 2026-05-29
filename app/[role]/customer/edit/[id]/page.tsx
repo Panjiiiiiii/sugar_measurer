@@ -4,7 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios from "axios";
 import { 
-  CaretDown 
+  CaretDown, 
+  CaretRight
 } from "@phosphor-icons/react";
 import { 
   Card, 
@@ -155,12 +156,16 @@ export default function EditCustomerPage() {
       {/* Header & Breadcrumbs */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Edit Customer</h1>
-        <Breadcrumbs 
-          items={[
-            { label: "Data Customer", href: `/${role}/customer` },
-            { label: "Edit Customer", active: true }
-          ]} 
-        />
+        <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+          <span 
+            onClick={() => router.push(`/${role}/customer`)}
+            className="hover:text-gray-900 cursor-pointer transition-colors"
+          >
+            Data Customer
+          </span>
+          <CaretRight size={10} weight="bold" className="text-gray-300" />
+          <span className="text-gray-900">Edit Customer</span>
+        </div>
       </div>
 
       {/* Form Section */}
@@ -213,16 +218,15 @@ export default function EditCustomerPage() {
           </div>
         </Card>
 
+
         {/* Action Buttons */}
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="white" 
-            className="flex-1 py-4 text-sm font-bold shadow-none border-gray-100"
+        <div className="grid grid-cols-2 gap-4">
+          <button 
             onClick={() => router.back()}
             disabled={isSaving}
           >
             Cancel
-          </Button>
+          </button>
           <Button 
             variant="primary" 
             className={`flex-1 py-4 text-sm font-bold bg-[#009262] hover:bg-[#007a52] ${!isFormValid || isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
