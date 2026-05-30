@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -12,6 +12,7 @@ import {
   CaretDown,
   Lightning
 } from "@phosphor-icons/react";
+import axios from "axios";
 
 interface MenuItem {
   name: string;
@@ -23,6 +24,28 @@ interface MenuItem {
 export default function FinanceSidebar() {
   const pathname = usePathname();
   const [openMenus, setOpenMenus] = useState<string[]>(["Data Timbangan", "Data Transaksi"]);
+  const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    (async function fetchLocations() {
+      try {
+        const res = await axios.get("/api/location", { params: { page: 1, limit: 100 } });
+        if (!isMounted) return;
+        const data = res.data?.data ?? [];
+        // normalize to expected shape
+        const mapped = data.map((l: any) => ({ id: l.id, name: l.name }));
+        setLocations(mapped);
+      } catch (err) {
+        console.error("Failed to fetch locations for sidebar:", err);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const toggleMenu = (name: string) => {
     setOpenMenus(prev =>
@@ -39,22 +62,16 @@ export default function FinanceSidebar() {
     {
       name: "Data Timbangan",
       icon: Scales,
-      subItems: [
-        { name: "Malang", href: "/finance/timbangan/malang" },
-        { name: "Blitar", href: "/finance/timbangan/blitar" },
-        { name: "Kediri 1", href: "/finance/timbangan/kediri-1" },
-        { name: "Kediri 2", href: "/finance/timbangan/kediri-2" },
-      ],
+      subItems: locations.length
+        ? locations.map((loc) => ({ name: loc.name, href: `/finance/timbangan/${loc.id}` }))
+        : undefined,
     },
     {
       name: "Data Transaksi",
       icon: ArrowsLeftRight,
-      subItems: [
-        { name: "Malang", href: "/finance/transaksi/malang" },
-        { name: "Blitar", href: "/finance/transaksi/blitar" },
-        { name: "Kediri 1", href: "/finance/transaksi/kediri-1" },
-        { name: "Kediri 2", href: "/finance/transaksi/kediri-2" },
-      ],
+      subItems: locations.length
+        ? locations.map((loc) => ({ name: loc.name, href: `/finance/transaksi/${loc.id}` }))
+        : undefined,
     },
     {
       name: "Data Customer",

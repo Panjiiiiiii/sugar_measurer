@@ -7,7 +7,7 @@ import {
   ArrowDown,
   PencilSimple,
   CaretRight,
-  X
+  X,
 } from "@phosphor-icons/react";
 import {
   BarChart,
@@ -17,73 +17,184 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell
 } from "recharts";
 import Link from "next/link";
+import axios from "axios";
 
-const chartData = [
-  { time: "07:00", value: 500 },
-  { time: "08:00", value: 700 },
-  { time: "09:00", value: 450 },
-  { time: "10:00", value: 350 },
-  { time: "11:00", value: 600 },
-  { time: "12:00", value: 580 },
-  { time: "13:00", value: 620 },
-  { time: "14:00", value: 550 },
-  { time: "15:00", value: 850 },
-  { time: "16:00", value: 680 },
-  { time: "18:00", value: 480, highlight: true },
-  { time: "19:00", value: 650 },
-  { time: "20:00", value: 420 },
-  { time: "21:00", value: 720 },
-  { time: "22:00", value: 530 },
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+type FilterType = "today" | "week" | "month" | "year" | "all";
+
+interface LocationCard {
+  id: string;
+  name: string;
+  sugar_price: number;
+  account_balance: number;
+  paid_tonase: number;
+  queue_tonase: number;
+  transaction_in: number;
+  transaction_out: number;
+}
+
+interface DashboardData {
+  filter: FilterType;
+  kpi: {
+    total_kas: number;
+    total_tonase: number;
+    total_transaksi_keluar: number;
+  };
+  chart: {
+    location_id: string | null;
+    data: { label: string; tonase: number }[];
+  };
+  locations: LocationCard[];
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function formatRupiah(value: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatKw(value: number) {
+  return new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(value / 100) + " Kw";
+}
+
+const FILTER_OPTIONS: { label: string; value: FilterType }[] = [
+  { label: "Today", value: "today" },
+  { label: "Week", value: "week" },
+  { label: "Month", value: "month" },
+  { label: "Year", value: "year" },
+  { label: "All", value: "all" },
 ];
 
-const locations = [
-  { name: "Malang", available: "Rp 100.000.000", price: "Rp 7.800/kg", paid: "25 Ton", queue: "50 Ton", in: "Rp 250.000", out: "Rp 50.000" },
-  { name: "Blitar", available: "Rp 100.000.000", price: "Rp 7.800/kg", paid: "25 Ton", queue: "50 Ton", in: "Rp 250.000", out: "Rp 50.000" },
-  { name: "Kediri 1", available: "Rp 100.000.000", price: "Rp 7.800/kg", paid: "25 Ton", queue: "50 Ton", in: "Rp 250.000", out: "Rp 50.000" },
-  { name: "Kediri 2", available: "Rp 100.000.000", price: "Rp 7.800/kg", paid: "25 Ton", queue: "50 Ton", in: "Rp 250.000", out: "Rp 50.000" },
-];
+// ── Main Component ─────────────────────────────────────────────────────────────
 
 export default function FinanceDashboard() {
-  const [dateFilter, setDateFilter] = React.useState("Today");
+  const [filter, setFilter] = React.useState<FilterType>("today");
   const [isDateDropdownOpen, setIsDateDropdownOpen] = React.useState(false);
-  const [selectedLocation, setSelectedLocation] = React.useState("Malang");
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = React.useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-  const [priceInput, setPriceInput] = React.useState("");
 
-  const dateOptions = ["Today", "Week", "Month", "Year", "All"];
+  // Chart location selector — driven by data from API
+  const [selectedChartLocId, setSelectedChartLocId] = React.useState<string | null>(null);
+
+  // Edit harga modal state
+  const [editingLoc, setEditingLoc] = React.useState<LocationCard | null>(null);
+  const [priceInput, setPriceInput] = React.useState("");
+  const [isSavingPrice, setIsSavingPrice] = React.useState(false);
+
+  // Dashboard data
+  const [data, setData] = React.useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  // ── Fetch dashboard data ───────────────────────────────────────────────────
+
+  const fetchDashboard = React.useCallback(async (f: FilterType, locId: string | null) => {
+    setIsLoading(true);
+    try {
+      const params: Record<string, string> = { filter: f };
+      if (locId) params.location_id = locId;
+
+      const res = await axios.get("/api/finance/dashboard", { params });
+      const result: DashboardData = res.data.data;
+      setData(result);
+
+      // Set default chart location ke lokasi pertama kalau belum dipilih
+      if (!locId && result.locations.length > 0) {
+        setSelectedChartLocId(result.locations[0].id);
+      }
+    } catch (err) {
+      console.error("Failed to fetch dashboard:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Fetch saat filter berubah
+  React.useEffect(() => {
+    fetchDashboard(filter, selectedChartLocId);
+  }, [filter]);
+
+  // Fetch ulang saat chart location berubah
+  React.useEffect(() => {
+    if (selectedChartLocId) {
+      fetchDashboard(filter, selectedChartLocId);
+    }
+  }, [selectedChartLocId]);
+
+  // ── Edit harga tebu ────────────────────────────────────────────────────────
+
+  const handleOpenEdit = (loc: LocationCard) => {
+    setEditingLoc(loc);
+    setPriceInput(String(loc.sugar_price));
+  };
+
+  const handleSavePrice = async () => {
+    if (!editingLoc || !priceInput) return;
+    setIsSavingPrice(true);
+    try {
+      await axios.put(`/api/finance/sugar/${editingLoc.id}`, {
+        price: Number(priceInput),
+      });
+      setEditingLoc(null);
+      // Refresh data
+      fetchDashboard(filter, selectedChartLocId);
+    } catch (err) {
+      console.error("Failed to update price:", err);
+    } finally {
+      setIsSavingPrice(false);
+    }
+  };
+
+  // ── Derived values ─────────────────────────────────────────────────────────
+
+  const selectedChartLocName =
+    data?.locations.find((l) => l.id === selectedChartLocId)?.name ?? "Semua";
+
+  const filterLabel = FILTER_OPTIONS.find((o) => o.value === filter)?.label ?? "Today";
+
+  const chartData = data?.chart.data ?? [];
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <>
       {/* Edit Harga Tebu Modal */}
-      {isEditModalOpen && (
+      {editingLoc && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-          <div 
-            className="fixed inset-0 bg-black/40 backdrop-blur-[2px]" 
-            onClick={() => setIsEditModalOpen(false)}
-          ></div>
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-[2px]"
+            onClick={() => setEditingLoc(null)}
+          />
           <div className="relative bg-white w-full max-w-sm rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Modal Header */}
             <div className="pt-8 px-8 flex items-center justify-between">
-              <div className="w-6"></div> {/* Spacer */}
+              <div className="w-6" />
               <h2 className="text-xl font-bold text-gray-900">Edit Harga Tebu</h2>
-              <button 
-                onClick={() => setIsEditModalOpen(false)}
+              <button
+                onClick={() => setEditingLoc(null)}
                 className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-400 hover:text-gray-900"
               >
                 <X size={20} weight="bold" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-8 space-y-8">
+            <div className="p-8 space-y-2 pb-4">
+              <p className="text-xs font-semibold text-gray-400">{editingLoc.name}</p>
+              <p className="text-sm font-bold text-gray-700">
+                Harga saat ini: {formatRupiah(editingLoc.sugar_price)}/kg
+              </p>
+            </div>
+
+            <div className="px-8 pb-8 space-y-8">
               <div className="space-y-3">
-                <label className="text-sm font-bold text-gray-900 ml-1">Input Harga</label>
-                <input 
-                  type="text"
+                <label className="text-sm font-bold text-gray-900 ml-1">Harga Baru</label>
+                <input
+                  type="number"
                   value={priceInput}
                   onChange={(e) => setPriceInput(e.target.value)}
                   placeholder="Masukkan harga baru..."
@@ -92,20 +203,18 @@ export default function FinanceDashboard() {
               </div>
 
               <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => setIsEditModalOpen(false)}
+                <button
+                  onClick={() => setEditingLoc(null)}
                   className="flex-1 px-6 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 hover:bg-gray-50 transition-all shadow-sm"
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={() => {
-                    // Logic to save price
-                    setIsEditModalOpen(false);
-                  }}
-                  className="flex-1 px-6 py-4 bg-[#00A859] text-white rounded-2xl text-sm font-bold hover:bg-[#008F4C] shadow-lg shadow-green-500/20 transition-all"
+                <button
+                  onClick={handleSavePrice}
+                  disabled={isSavingPrice}
+                  className="flex-1 px-6 py-4 bg-[#00A859] text-white rounded-2xl text-sm font-bold hover:bg-[#008F4C] shadow-lg shadow-green-500/20 transition-all disabled:opacity-60"
                 >
-                  Simpan
+                  {isSavingPrice ? "Menyimpan..." : "Simpan"}
                 </button>
               </div>
             </div>
@@ -116,40 +225,37 @@ export default function FinanceDashboard() {
       <div className="p-8 space-y-8">
         {/* Date Filter */}
         <div className="relative z-20">
-          <button 
+          <button
             onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
             suppressHydrationWarning
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-bold text-gray-900 hover:bg-gray-50 transition-all min-w-[120px] justify-between"
           >
-            {dateFilter}
-            <CaretDown 
-              size={16} 
-              weight="bold" 
-              className={`transition-transform duration-200 ${isDateDropdownOpen ? "rotate-180" : ""}`} 
+            {filterLabel}
+            <CaretDown
+              size={16}
+              weight="bold"
+              className={`transition-transform duration-200 ${isDateDropdownOpen ? "rotate-180" : ""}`}
             />
           </button>
 
           {isDateDropdownOpen && (
             <>
-              <div 
-                className="fixed inset-0 z-10" 
-                onClick={() => setIsDateDropdownOpen(false)}
-              ></div>
+              <div className="fixed inset-0 z-10" onClick={() => setIsDateDropdownOpen(false)} />
               <div className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-20 py-2 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
-                {dateOptions.map((option) => (
+                {FILTER_OPTIONS.map((opt) => (
                   <button
-                    key={option}
+                    key={opt.value}
                     onClick={() => {
-                      setDateFilter(option);
+                      setFilter(opt.value);
                       setIsDateDropdownOpen(false);
                     }}
                     className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                      dateFilter === option 
-                        ? "bg-blue-50 text-[#0095FF] font-bold" 
+                      filter === opt.value
+                        ? "bg-blue-50 text-[#0095FF] font-bold"
                         : "text-gray-600 hover:bg-gray-50 font-semibold"
                     }`}
                   >
-                    {option}
+                    {opt.label}
                   </button>
                 ))}
               </div>
@@ -161,24 +267,21 @@ export default function FinanceDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <SummaryCard
             label="Total Kas"
-            value="Rp 1.000.000.000"
-            trend="+ 8%"
-            trendType="up"
-            tag={dateFilter}
+            value={isLoading ? "—" : formatRupiah(data?.kpi.total_kas ?? 0)}
+            tag={filterLabel}
+            isLoading={isLoading}
           />
           <SummaryCard
             label="Total Tonase"
-            value="1.000 Kg"
-            trend="+ 12%"
-            trendType="up"
-            tag={dateFilter}
+            value={isLoading ? "—" : formatKw(data?.kpi.total_tonase ?? 0)}
+            tag={filterLabel}
+            isLoading={isLoading}
           />
           <SummaryCard
             label="Total Transaksi Keluar"
-            value="5.000"
-            trend="- 4%"
-            trendType="down"
-            tag={dateFilter}
+            value={isLoading ? "—" : formatRupiah(data?.kpi.total_transaksi_keluar ?? 0)}
+            tag={filterLabel}
+            isLoading={isLoading}
           />
         </div>
 
@@ -187,44 +290,44 @@ export default function FinanceDashboard() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-bold text-gray-900">Total Tonase</h2>
-              <span className="px-3 py-1 bg-blue-50 text-[#0095FF] text-xs font-bold rounded-lg">{dateFilter}</span>
+              <span className="px-3 py-1 bg-blue-50 text-[#0095FF] text-xs font-bold rounded-lg">
+                {filterLabel}
+              </span>
             </div>
-            
+
+            {/* Location dropdown for chart */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
                 suppressHydrationWarning
                 className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-bold text-gray-900 hover:bg-gray-50 transition-all min-w-[120px] justify-between"
               >
-                {selectedLocation}
-                <CaretDown 
-                  size={14} 
-                  weight="bold" 
+                {selectedChartLocName}
+                <CaretDown
+                  size={14}
+                  weight="bold"
                   className={`transition-transform duration-200 ${isLocationDropdownOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
               {isLocationDropdownOpen && (
                 <>
-                  <div 
-                    className="fixed inset-0 z-10" 
-                    onClick={() => setIsLocationDropdownOpen(false)}
-                  ></div>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsLocationDropdownOpen(false)} />
                   <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-20 py-2 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
-                    {["Malang", "Blitar", "Kediri 1", "Kediri 2"].map((loc) => (
+                    {(data?.locations ?? []).map((loc) => (
                       <button
-                        key={loc}
+                        key={loc.id}
                         onClick={() => {
-                          setSelectedLocation(loc);
+                          setSelectedChartLocId(loc.id);
                           setIsLocationDropdownOpen(false);
                         }}
                         className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                          selectedLocation === loc 
-                            ? "bg-blue-50 text-[#0095FF] font-bold" 
+                          selectedChartLocId === loc.id
+                            ? "bg-blue-50 text-[#0095FF] font-bold"
                             : "text-gray-600 hover:bg-gray-50 font-semibold"
                         }`}
                       >
-                        {loc}
+                        {loc.name}
                       </button>
                     ))}
                   </div>
@@ -234,89 +337,70 @@ export default function FinanceDashboard() {
           </div>
 
           <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                data={chartData} 
-                margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                <XAxis 
-                  dataKey="time" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#9CA3AF', fontSize: 12 }} 
-                  dy={10}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#9CA3AF', fontSize: 12 }} 
-                />
-                <Tooltip 
-                  shared={false}
-                  cursor={false}
-                  contentStyle={{ 
-                    borderRadius: '16px', 
-                    border: 'none', 
-                    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-                    padding: '12px 16px'
-                  }}
-                  labelStyle={{
-                    color: '#111827',
-                    fontWeight: '800',
-                    marginBottom: '4px',
-                    fontSize: '12px',
-                    display: 'block'
-                  }}
-                  itemStyle={{
-                    color: '#0095FF',
-                    fontWeight: '800',
-                    fontSize: '14px',
-                    padding: '0'
-                  }}
-                />
-                <Bar 
-                  dataKey="value" 
-                  barSize={24}
-                  isAnimationActive={false}
-                  shape={<CustomBar />}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            {isLoading ? (
+              <div className="h-full flex items-center justify-center text-gray-300 text-sm font-semibold">
+                Memuat data...
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                  <XAxis
+                    dataKey="label"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                    dy={10}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                  />
+                  <Tooltip
+                    cursor={false}
+                    contentStyle={{
+                      borderRadius: "16px",
+                      border: "none",
+                      boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+                      padding: "12px 16px",
+                    }}
+                    labelStyle={{ color: "#111827", fontWeight: "800", fontSize: "12px", display: "block", marginBottom: "4px" }}
+                    itemStyle={{ color: "#0095FF", fontWeight: "800", fontSize: "14px", padding: "0" }}
+                    formatter={(value: number) => [`${(value / 100).toLocaleString("id-ID", { maximumFractionDigits: 2 })} Kw`, "Tonase"]}
+                  />
+                  <Bar dataKey="tonase" barSize={24} isAnimationActive={false} shape={<CustomBar />} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
         {/* Location Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {locations.map((loc) => (
-            <LocationCard 
-              key={loc.name} 
-              {...loc} 
-              tag={dateFilter} 
-              onEdit={() => setIsEditModalOpen(true)}
-            />
-          ))}
+          {isLoading
+            ? Array.from({ length: 4 }).map((_, i) => <LocationCardSkeleton key={i} />)
+            : (data?.locations ?? []).map((loc) => (
+                <LocationCard
+                  key={loc.id}
+                  loc={loc}
+                  tag={filterLabel}
+                  onEdit={() => handleOpenEdit(loc)}
+                />
+              ))}
         </div>
       </div>
     </>
   );
 }
 
+// ── Custom Bar ─────────────────────────────────────────────────────────────────
+
 function CustomBar(props: any) {
   const { x, y, width, height } = props;
-
   return (
     <g className="group cursor-pointer">
-      {/* Gray Base Bar */}
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill="#F3F4F6"
-        rx={6}
-      />
-      {/* Blue Rising Overlay */}
+      <rect x={x} y={y} width={width} height={height} fill="#F3F4F6" rx={6} />
       <rect
         x={x}
         y={y}
@@ -330,49 +414,73 @@ function CustomBar(props: any) {
   );
 }
 
-function SummaryCard({ label, value, trend, trendType, tag }: { label: string; value: string; trend: string; trendType: 'up' | 'down'; tag: string }) {
+// ── Summary Card ───────────────────────────────────────────────────────────────
+
+function SummaryCard({
+  label,
+  value,
+  tag,
+  isLoading,
+}: {
+  label: string;
+  value: string;
+  tag: string;
+  isLoading: boolean;
+}) {
   return (
     <div className="bg-white border border-gray-100 rounded-[32px] p-6 shadow-sm space-y-4 min-w-0">
-      <div className="flex items-center justify-between gap-2">
-        <span className="px-3 py-1 bg-blue-50 text-[#0095FF] text-[10px] font-bold rounded-lg w-fit">{tag}</span>
-      </div>
+      <span className="px-3 py-1 bg-blue-50 text-[#0095FF] text-[10px] font-bold rounded-lg w-fit block">
+        {tag}
+      </span>
       <div className="space-y-1 min-w-0">
-        <h3 className="text-xl font-bold text-gray-900 truncate" title={value}>{value}</h3>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-gray-400 truncate">{label}</span>
-          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-            trendType === 'up' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-          }`}>
-            {trendType === 'up' ? <ArrowUp size={10} weight="bold" /> : <ArrowDown size={10} weight="bold" />}
-            {trend}
-          </div>
-        </div>
+        {isLoading ? (
+          <div className="h-7 w-40 bg-gray-100 rounded-lg animate-pulse" />
+        ) : (
+          <h3 className="text-xl font-bold text-gray-900 truncate" title={value}>
+            {value}
+          </h3>
+        )}
+        <span className="text-sm font-medium text-gray-400">{label}</span>
       </div>
     </div>
   );
 }
 
-function LocationCard({ name, available, price, paid, queue, in: txIn, out: txOut, tag, onEdit }: any) {
-  const slug = name.toLowerCase().replace(/\s+/g, "-");
+// ── Location Card ──────────────────────────────────────────────────────────────
 
+function LocationCard({
+  loc,
+  tag,
+  onEdit,
+}: {
+  loc: LocationCard;
+  tag: string;
+  onEdit: () => void;
+}) {
   return (
     <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex flex-col min-w-0">
       <div className="p-6 space-y-6 flex-1 min-w-0">
         <div className="flex items-center justify-between gap-4">
-          <h3 className="text-xl font-bold text-gray-900 truncate">{name}</h3>
-          <span className="px-3 py-1 bg-gray-50 text-gray-400 text-[10px] font-bold rounded-lg shrink-0">{tag}</span>
+          <h3 className="text-xl font-bold text-gray-900 truncate">{loc.name}</h3>
+          <span className="px-3 py-1 bg-gray-50 text-gray-400 text-[10px] font-bold rounded-lg shrink-0">
+            {tag}
+          </span>
         </div>
 
         <div className="grid grid-cols-2 gap-y-6">
           <div className="space-y-1">
             <span className="text-xs font-medium text-gray-400">Available Balance</span>
-            <p className="text-base font-bold text-gray-900">{available}</p>
+            <p className="text-base font-bold text-gray-900">
+              {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(loc.account_balance)}
+            </p>
           </div>
           <div className="space-y-1">
             <span className="text-xs font-medium text-gray-400">Harga Tebu</span>
-            <div className="flex items-center gap-2">
-              <p className="text-base font-bold text-gray-900">{price}</p>
-              <button 
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-base font-bold text-gray-900">
+                {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(loc.sugar_price)}/kg
+              </p>
+              <button
                 onClick={onEdit}
                 suppressHydrationWarning
                 className="flex items-center gap-1 text-[#0095FF] text-xs font-bold hover:underline"
@@ -384,30 +492,64 @@ function LocationCard({ name, available, price, paid, queue, in: txIn, out: txOu
           </div>
           <div className="space-y-1">
             <span className="text-xs font-medium text-gray-400">Paid Tonase</span>
-            <p className="text-base font-bold text-gray-900">{paid}</p>
+            <p className="text-base font-bold text-gray-900">
+              {new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(loc.paid_tonase / 100)} Kw
+            </p>
           </div>
           <div className="space-y-1">
             <span className="text-xs font-medium text-gray-400">Queue Tonase</span>
-            <p className="text-base font-bold text-gray-900">{queue}</p>
+            <p className="text-base font-bold text-gray-900">
+              {new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(loc.queue_tonase / 100)} Kw
+            </p>
           </div>
           <div className="space-y-1">
-            <span className="text-xs font-medium text-gray-400">Transaction in</span>
-            <p className="text-base font-bold text-gray-900">{txIn}</p>
+            <span className="text-xs font-medium text-gray-400">Transaction In</span>
+            <p className="text-base font-bold text-gray-900">
+              {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(loc.transaction_in)}
+            </p>
           </div>
           <div className="space-y-1">
-            <span className="text-xs font-medium text-gray-400">Transaction out</span>
-            <p className="text-base font-bold text-gray-900">{txOut}</p>
+            <span className="text-xs font-medium text-gray-400">Transaction Out</span>
+            <p className="text-base font-bold text-gray-900">
+              {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(loc.transaction_out)}
+            </p>
           </div>
         </div>
       </div>
 
-      <Link 
-        href={`/finance/timbangan/${slug}`}
+      <Link
+        href={`/finance/transaksi/${loc.id}`}
         className="w-full px-6 py-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between group hover:bg-gray-50 transition-colors"
       >
         <span className="text-sm font-bold text-gray-900">Lihat detail transaksi</span>
         <CaretRight size={16} weight="bold" className="text-gray-400 group-hover:translate-x-1 transition-transform" />
       </Link>
+    </div>
+  );
+}
+
+// ── Location Card Skeleton ─────────────────────────────────────────────────────
+
+function LocationCardSkeleton() {
+  return (
+    <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm animate-pulse">
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="h-6 w-32 bg-gray-100 rounded-lg" />
+          <div className="h-5 w-16 bg-gray-100 rounded-lg" />
+        </div>
+        <div className="grid grid-cols-2 gap-y-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-3 w-24 bg-gray-100 rounded" />
+              <div className="h-5 w-32 bg-gray-100 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="px-6 py-4 bg-gray-50/50 border-t border-gray-100">
+        <div className="h-4 w-40 bg-gray-100 rounded" />
+      </div>
     </div>
   );
 }

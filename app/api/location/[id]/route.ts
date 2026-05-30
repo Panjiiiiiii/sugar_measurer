@@ -49,17 +49,21 @@ export async function PUT(
         { status: 404 },
       );
     }
-    const updatedLocation = await prisma.location.update({
+    await prisma.location.update({
       where: { id },
       data: {
         name: locationData.name ?? existingLocation.name,
         sugar_price: locationData.sugar_price ?? existingLocation.sugar_price,
+        account_number:
+          locationData.account_number ?? existingLocation.account_number,
+        account_balance:
+          locationData.account_balance ?? existingLocation.account_balance,
       },
     });
     return Response.json(
       {
         statusCode: 201,
-        message: "Location updated successfully",
+        message: "Lokasi berhasil diperbarui",
       },
       { status: 201 },
     );
@@ -97,7 +101,7 @@ export async function DELETE(
   return Response.json(
     {
       statusCode: 201,
-      message: "Location deleted successfully",
+      message: "Lokasi berhasil dihapus",
     },
     { status: 201 },
   );

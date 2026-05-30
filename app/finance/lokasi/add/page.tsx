@@ -6,19 +6,51 @@ import { CaretRight } from "@phosphor-icons/react";
 
 export default function InputLokasiPage() {
   const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
-    nama: "",
-    accountNumber: "",
-    balance: ""
+    name: "",
+    sugar_price: "",
+    account_balance: "",
+    account_number: "",
   });
 
-  const isFormValid = formData.nama.trim() !== "" && formData.accountNumber.trim() !== "" && formData.balance.trim() !== "";
+  const isFormValid =
+    formData.name.trim() !== "" &&
+    formData.sugar_price.trim() !== "" &&
+    formData.account_number.trim() !== "";
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isFormValid) return;
-    // Simulate save by routing back to data lokasi page with success query
-    router.push("/finance/lokasi?success=true");
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/location", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          sugar_price: Number(formData.sugar_price),
+          account_balance: formData.account_balance.trim()
+            ? Number(formData.account_balance)
+            : 0,
+          account_number: formData.account_number.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save location");
+      }
+
+      router.push("/finance/lokasi?success=true");
+    } catch (error) {
+      console.error("Error saving location:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -53,36 +85,50 @@ export default function InputLokasiPage() {
               </label>
               <input 
                 type="text"
-                value={formData.nama}
-                onChange={(e) => setFormData({ ...formData, nama: e.target.value })}
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
                 placeholder="Masukkan nama lokasi (e.g. Malang)"
+              />
+            </div>
+
+            {/* Sugar Price */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-950 block">
+                Harga Tebu <span className="text-red-500 font-bold">*</span>
+              </label>
+              <input 
+                type="number"
+                value={formData.sugar_price}
+                onChange={(e) => setFormData({ ...formData, sugar_price: e.target.value })}
+                className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
+                placeholder="Masukkan harga gula"
               />
             </div>
 
             {/* Account Number */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-950 block">
-                Account Number <span className="text-red-500 font-bold">*</span>
+                Nomor Rekening <span className="text-red-500 font-bold">*</span>
               </label>
               <input 
-                type="text"
-                value={formData.accountNumber || ""}
-                onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value.replace(/\D/g, "") })}
+                type="number"
+                value={formData.account_number}
+                onChange={(e) => setFormData({ ...formData, account_number: e.target.value.replace(/\D/g, "") })}
                 className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
                 placeholder="Masukkan nomor rekening lokasi"
               />
             </div>
 
-            {/* Balance */}
+            {/* Account Balance */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-950 block">
-                Balance (IDR) <span className="text-red-500 font-bold">*</span>
+                Saldo Awal (IDR)
               </label>
               <input 
                 type="number"
-                value={formData.balance}
-                onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
+                value={formData.account_balance}
+                onChange={(e) => setFormData({ ...formData, account_balance: e.target.value })}
                 className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
                 placeholder="Masukkan saldo awal lokasi"
               />
@@ -97,19 +143,19 @@ export default function InputLokasiPage() {
             className="w-full py-4 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-gray-900 hover:bg-gray-50 active:bg-gray-100/80 transition-all shadow-sm cursor-pointer"
             suppressHydrationWarning
           >
-            Cancel
+            Batal
           </button>
           <button 
             onClick={handleSave}
-            disabled={!isFormValid}
+            disabled={!isFormValid || isSaving}
             className={`w-full py-4 text-white rounded-2xl text-sm font-bold transition-all shadow-md ${
-              isFormValid 
+              isFormValid && !isSaving
                 ? "bg-[#009262] hover:bg-[#007a52] active:bg-[#006342] cursor-pointer" 
                 : "bg-gray-300 cursor-not-allowed shadow-none"
             }`}
             suppressHydrationWarning
           >
-            Simpan
+            {isSaving ? "Menyimpan..." : "Simpan"}
           </button>
         </div>
       </div>
