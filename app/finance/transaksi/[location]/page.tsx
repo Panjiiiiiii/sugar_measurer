@@ -381,7 +381,6 @@ export default function TransaksiLocationPage() {
       const rows = transferHistory.map((item) => ({
         Tanggal: item.tanggal,
         Waktu: item.waktu,
-        Bukti: item.bukti_tf || "",
         "Jumlah Nominal": new Intl.NumberFormat("id-ID", {
           style: "currency",
           currency: "IDR",
