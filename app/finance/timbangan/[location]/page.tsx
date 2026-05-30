@@ -164,6 +164,7 @@ export default function TimbanganLocationPage() {
   const [locationName, setLocationName] = React.useState("");
   const [sugarPrice, setSugarPrice] = React.useState(0);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isSavingPrice, setIsSavingPrice] = React.useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = React.useState(false);
   const [priceInput, setPriceInput] = React.useState("");
   const [startDate, setStartDate] = React.useState(currentStartDate);
@@ -302,6 +303,22 @@ export default function TimbanganLocationPage() {
     };
   }, [currentPage, currentStartDate, currentEndDate, currentCustomer, currentOwnershipType, currentStatus, location]);
 
+  const handleSavePrice = async () => {
+    if (!priceInput || !location) return;
+    setIsSavingPrice(true);
+    try {
+      await axios.put(`/api/finance/sugar/${location}`, {
+        price: Number(priceInput),
+      });
+      setSugarPrice(Number(priceInput));
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error("Failed to update price:", err);
+    } finally {
+      setIsSavingPrice(false);
+    }
+  };
+
   const handlePageChange = (page: number) => {
     if (page < 1 || page > pagination.total_page) {
       return;
@@ -438,10 +455,11 @@ export default function TimbanganLocationPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 px-6 py-4 bg-[#00A859] text-white rounded-2xl text-sm font-bold hover:bg-[#008F4C] shadow-lg shadow-green-500/20 transition-all"
+                  onClick={handleSavePrice}
+                  disabled={isSavingPrice}
+                  className="flex-1 px-6 py-4 bg-[#00A859] text-white rounded-2xl text-sm font-bold hover:bg-[#008F4C] shadow-lg shadow-green-500/20 transition-all disabled:opacity-60"
                 >
-                  Simpan
+                  {isSavingPrice ? "Menyimpan..." : "Simpan"}
                 </button>
               </div>
             </div>
