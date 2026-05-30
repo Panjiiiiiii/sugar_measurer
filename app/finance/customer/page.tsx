@@ -57,6 +57,15 @@ function formatCurrency(value: number | null | undefined) {
   }).format(value);
 }
 
+function ownershipLabel(value: string | null | undefined) {
+  if (!value) return "";
+
+  if (value === "farmer") return "Petani";
+  if (value === "private") return "Pribadi";
+  if (value === "special") return "Spesial";
+
+  return value;
+}
 export default function CustomerPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -258,7 +267,7 @@ export default function CustomerPage() {
               suppressHydrationWarning
               className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all cursor-pointer shadow-sm"
             >
-              <span>Type Owner{currentOwnershipType ? `: ${currentOwnershipType}` : ""}</span>
+              <span>Tipe Kepemilikan {currentOwnershipType ? `: ${ownershipLabel(currentOwnershipType)}` : ""}</span>
               <CaretDown size={14} weight="bold" className={`transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
             </button>
 
@@ -268,7 +277,7 @@ export default function CustomerPage() {
                   onClick={() => handleFilterChange("")}
                   className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 ${!currentOwnershipType ? "text-blue-600 bg-blue-50/30" : "text-gray-700"}`}
                 >
-                  All
+                  Semua
                 </button>
                 <button
                   onClick={() => handleFilterChange("farmer")}
@@ -280,7 +289,13 @@ export default function CustomerPage() {
                   onClick={() => handleFilterChange("private")}
                   className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 ${currentOwnershipType === "private" ? "text-blue-600 bg-blue-50/30" : "text-gray-700"}`}
                 >
-                  Private
+                  Pribadi
+                </button>
+                <button
+                  onClick={() => handleFilterChange("special")}
+                  className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-50 ${currentOwnershipType === "special" ? "text-blue-600 bg-blue-50/30" : "text-gray-700"}`}
+                >
+                  Khusus
                 </button>
               </div>
             )}
