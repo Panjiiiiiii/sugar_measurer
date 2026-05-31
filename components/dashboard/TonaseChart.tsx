@@ -181,10 +181,3 @@ export default function TonaseChart() {
     </div>
   );
 }
-            />
-          </BarChart >
-        </ResponsiveContainer >
-      </div >
-    </div >
-  );
-}

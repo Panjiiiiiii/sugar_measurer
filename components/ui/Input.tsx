@@ -38,6 +38,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   required?: boolean;
   options: { value: string; label: string }[];
   icon?: React.ReactNode;
+  placeholder?: string;
 }
 
 export function Select({ label, required, options, icon, className = "", ...props }: SelectProps) {
