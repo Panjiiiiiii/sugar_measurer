@@ -14,9 +14,10 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
   icon?: React.ReactNode;
   variant?: "default" | "compact";
+  placeholder?: string;
 }
 
-export function Select({ label, options, error, icon, variant = "default", className = "", ...props }: SelectProps) {
+export function Select({ label, options, error, icon, variant = "default", className = "", placeholder, ...props }: SelectProps) {
   const isCompact = variant === "compact";
 
   return (
@@ -35,6 +36,11 @@ export function Select({ label, options, error, icon, variant = "default", class
           } ${error ? "border-red-500" : ""} ${className}`}
           {...props}
         >
+          {placeholder && (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          )}
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
