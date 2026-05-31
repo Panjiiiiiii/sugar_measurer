@@ -1,15 +1,35 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import * as XLSX from "xlsx";
 import axios from "axios";
-import { CaretDown, DotsThreeVertical, Export, Eye } from "@phosphor-icons/react";
-import { Badge, Button, Card, Pagination, Select, StatCard } from "@/components/ui";
+import {
+  CaretDown,
+  DotsThreeVertical,
+  Export,
+  Eye,
+  Plus,
+} from "@phosphor-icons/react";
+import {
+  Badge,
+  Button,
+  Card,
+  Pagination,
+  Select,
+  StatCard,
+  Toast,
+} from "@/components/ui";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { DateFilterModal } from "@/components/dashboard/DateFilterModal";
 import { BuktiTransaksiModal } from "@/components/dashboard/BuktiTransaksiModal";
 import { BuktiTransferReceiptModal } from "@/components/dashboard/BuktiTransferReceiptModal";
+import { FinanceTopUpModal } from "@/components/finance/FinanceTopUpModal";
 
 interface TransferHistoryItem {
   tanggal: string;
@@ -77,7 +97,75 @@ interface SummaryData {
   accountBalance: number;
 }
 
+interface LoginPayload {
+  sub?: string;
+  location_id?: string;
+}
+
 const PAGE_SIZE = 10;
+const DEFAULT_TOP_UP_USER_ID = "29e7c366-5081-4841-801d-f2c7fd673574";
+
+function decodeJwtPayload(token: string): LoginPayload | null {
+  const tokenParts = token.split(".");
+
+  if (tokenParts.length < 2) {
+    return null;
+  }
+
+  try {
+    const base64 = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    const json = atob(padded);
+
+    return JSON.parse(json) as LoginPayload;
+  } catch {
+    return null;
+  }
+}
+
+function getStoredToken(): string | null {
+  const candidateKeys = ["token", "auth_token", "access_token", "authToken"];
+
+  for (const key of candidateKeys) {
+    const value = localStorage.getItem(key) ?? sessionStorage.getItem(key);
+
+    if (!value) {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(value) as { token?: string };
+
+      if (parsed?.token && typeof parsed.token === "string") {
+        return parsed.token;
+      }
+    } catch {
+      if (typeof value === "string" && value.includes(".")) {
+        return value;
+      }
+    }
+  }
+
+  return null;
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("Failed to read file"));
+    };
+
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
 
 function formatRupiah(value: number) {
   return new Intl.NumberFormat("id-ID", {
@@ -159,7 +247,9 @@ export default function TransaksiLocationPage() {
   const locationId = locationParam || "";
 
   const currentPage = Number(searchParams.get("page") || 1);
-  const currentRange = normalizeRangeValue(searchParams.get("range") || "monthly");
+  const currentRange = normalizeRangeValue(
+    searchParams.get("range") || "monthly",
+  );
   const currentStatus = searchParams.get("status") || "";
   const currentStartDate = searchParams.get("start_date") || "";
   const currentEndDate = searchParams.get("end_date") || "";
@@ -181,14 +271,25 @@ export default function TransaksiLocationPage() {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
-  const [selectedDetail, setSelectedDetail] = useState<TransactionDetail | null>(null);
+  const [selectedDetail, setSelectedDetail] =
+    useState<TransactionDetail | null>(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
-  const [selectedReceiptImage, setSelectedReceiptImage] = useState<string | null>(null);
+  const [selectedReceiptImage, setSelectedReceiptImage] = useState<
+    string | null
+  >(null);
   const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
+  const [isTopUpSubmitting, setIsTopUpSubmitting] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setOpenRowMenuId(null);
       }
     };
@@ -206,7 +307,9 @@ export default function TransaksiLocationPage() {
       }
 
       try {
-        const response = await axios.get<LocationResponse>(`/api/location/${locationId}`);
+        const response = await axios.get<LocationResponse>(
+          `/api/location/${locationId}`,
+        );
 
         if (!isMounted) {
           return;
@@ -241,17 +344,20 @@ export default function TransaksiLocationPage() {
       setIsLoading(true);
 
       try {
-        const response = await axios.get<TransferHistoryResponse>("/api/history/transfer", {
-          params: {
-            page: currentPage,
-            limit: PAGE_SIZE,
-            location_id: locationId,
-            range: buildRangeRequestValue(currentRange),
-            status: currentStatus || undefined,
-            start_date: currentStartDate || undefined,
-            end_date: currentEndDate || undefined,
+        const response = await axios.get<TransferHistoryResponse>(
+          "/api/history/transfer",
+          {
+            params: {
+              page: currentPage,
+              limit: PAGE_SIZE,
+              location_id: locationId,
+              range: buildRangeRequestValue(currentRange),
+              status: currentStatus || undefined,
+              start_date: currentStartDate || undefined,
+              end_date: currentEndDate || undefined,
+            },
           },
-        });
+        );
 
         if (!isMounted) {
           return;
@@ -304,7 +410,73 @@ export default function TransaksiLocationPage() {
     return () => {
       isMounted = false;
     };
-  }, [currentPage, currentRange, currentStatus, currentStartDate, currentEndDate, locationId]);
+  }, [
+    currentPage,
+    currentRange,
+    currentStatus,
+    currentStartDate,
+    currentEndDate,
+    locationId,
+  ]);
+
+  const refreshTransfers = async () => {
+    if (!locationId) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await axios.get<TransferHistoryResponse>(
+        "/api/history/transfer",
+        {
+          params: {
+            page: currentPage,
+            limit: PAGE_SIZE,
+            location_id: locationId,
+            range: buildRangeRequestValue(currentRange),
+            status: currentStatus || undefined,
+            start_date: currentStartDate || undefined,
+            end_date: currentEndDate || undefined,
+          },
+        },
+      );
+
+      const payload = response.data?.data;
+      const transferHistory = payload?.transfer_history ?? [];
+
+      setTransactions(transferHistory);
+      setSummary({
+        transactionIn: Number(payload?.transaction_in ?? 0),
+        transactionOut: Number(payload?.transaction_out ?? 0),
+        countOutTransaction: Number(payload?.count_out_transaction ?? 0),
+        accountBalance: Number(payload?.account_balance ?? 0),
+      });
+      setPagination(
+        payload?.page ?? {
+          number_page: currentPage,
+          total_page: 1,
+          total_data: transferHistory.length,
+        },
+      );
+    } catch (error) {
+      console.error("Error fetching transfer history:", error);
+      setTransactions([]);
+      setSummary({
+        transactionIn: 0,
+        transactionOut: 0,
+        countOutTransaction: 0,
+        accountBalance: 0,
+      });
+      setPagination({
+        number_page: currentPage,
+        total_page: 1,
+        total_data: 0,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > pagination.total_page) {
@@ -363,17 +535,20 @@ export default function TransaksiLocationPage() {
 
   const handleExportAll = async () => {
     try {
-      const response = await axios.get<TransferHistoryResponse>("/api/history/transfer", {
-        params: {
-          page: 1,
-          limit: pagination.total_data || 1000,
-          location_id: locationId,
-          range: buildRangeRequestValue(currentRange),
-          status: currentStatus || undefined,
-          start_date: currentStartDate || undefined,
-          end_date: currentEndDate || undefined,
+      const response = await axios.get<TransferHistoryResponse>(
+        "/api/history/transfer",
+        {
+          params: {
+            page: 1,
+            limit: pagination.total_data || 1000,
+            location_id: locationId,
+            range: buildRangeRequestValue(currentRange),
+            status: currentStatus || undefined,
+            start_date: currentStartDate || undefined,
+            end_date: currentEndDate || undefined,
+          },
         },
-      });
+      );
 
       const payload = response.data?.data;
       const transferHistory = payload?.transfer_history ?? [];
@@ -396,15 +571,71 @@ export default function TransaksiLocationPage() {
       XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Transfer");
 
       const fileScope = locationName || locationId || "ALL";
-      const rangeLabel = currentStartDate && currentEndDate
-        ? currentStartDate === currentEndDate
-          ? currentStartDate
-          : `${currentStartDate} sd ${currentEndDate}`
-        : getRangeLabel(currentRange);
+      const rangeLabel =
+        currentStartDate && currentEndDate
+          ? currentStartDate === currentEndDate
+            ? currentStartDate
+            : `${currentStartDate} sd ${currentEndDate}`
+          : getRangeLabel(currentRange);
 
-      XLSX.writeFile(workbook, `MUSLA_TRANS_UTAMA - TRANSFER - ${fileScope} - ${rangeLabel}.xlsx`);
+      XLSX.writeFile(
+        workbook,
+        `MUSLA_TRANS_UTAMA - TRANSFER - ${fileScope} - ${rangeLabel}.xlsx`,
+      );
     } catch (error) {
       console.error("Error exporting transfer data:", error);
+    }
+  };
+
+  const handleTopUpSubmit = async ({
+    amount,
+    buktiTransferFile,
+  }: {
+    amount: number;
+    buktiTransferFile: File;
+  }) => {
+    if (!locationId) {
+      setToastType("error");
+      setToastMessage("Location tidak ditemukan");
+      setShowToast(true);
+      return;
+    }
+
+    const token = getStoredToken();
+    const payload = token ? decodeJwtPayload(token) : null;
+    const userId = payload?.sub || DEFAULT_TOP_UP_USER_ID;
+
+    if (!userId) {
+      setToastType("error");
+      setToastMessage("User tidak ditemukan. Silakan login ulang");
+      setShowToast(true);
+      return;
+    }
+
+    try {
+      setIsTopUpSubmitting(true);
+
+      const buktiTransfer = await readFileAsDataUrl(buktiTransferFile);
+
+      const response = await axios.post(`/api/finance/transfer/${locationId}`, {
+        amount,
+        bukti_transfer: buktiTransfer,
+        user_id: userId,
+      });
+
+      setIsTopUpModalOpen(false);
+      setToastType("success");
+      setToastMessage(response.data?.message || "Top up berhasil disimpan");
+      setShowToast(true);
+
+      await refreshTransfers();
+    } catch (error) {
+      console.error("Error submitting top up:", error);
+      setToastType("error");
+      setToastMessage("Gagal menyimpan top up");
+      setShowToast(true);
+    } finally {
+      setIsTopUpSubmitting(false);
     }
   };
 
@@ -415,9 +646,10 @@ export default function TransaksiLocationPage() {
 
     try {
       setIsDetailLoading(true);
-      const response = await axios.get<{ statusCode: number; data: TransactionDetail }>(
-        `/api/history/transaction/${transactionId}`,
-      );
+      const response = await axios.get<{
+        statusCode: number;
+        data: TransactionDetail;
+      }>(`/api/history/transaction/${transactionId}`);
 
       setSelectedDetail(response.data?.data ?? null);
       setIsDetailModalOpen(true);
@@ -433,7 +665,9 @@ export default function TransaksiLocationPage() {
   return (
     <div className="flex flex-col w-full max-w-full pb-10">
       <PageHeader
-        title={locationName ? `Riwayat Transfer ${locationName}` : "Riwayat Transfer"}
+        title={
+          locationName ? `Riwayat Transfer ${locationName}` : "Riwayat Transfer"
+        }
         breadcrumbs={[
           { label: "Dashboard", href: "/finance" },
           { label: "Riwayat Transfer", active: true },
@@ -508,6 +742,14 @@ export default function TransaksiLocationPage() {
               ]}
               className="min-w-30"
             />
+            <Button
+              variant="secondary"
+              className="px-6 py-2 text-xs font-bold h-10 border-gray-100 min-w-30"
+              icon={<Plus size={14} weight="bold" />}
+              onClick={() => setIsTopUpModalOpen(true)}
+            >
+              Top Up
+            </Button>
           </div>
         }
       >
@@ -536,17 +778,25 @@ export default function TransaksiLocationPage() {
                     ))
                 ) : transactions.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-8 py-10 text-center text-gray-400 text-sm">
+                    <td
+                      colSpan={5}
+                      className="px-8 py-10 text-center text-gray-400 text-sm"
+                    >
                       Tidak ada transaksi
                     </td>
                   </tr>
                 ) : (
                   transactions.map((row, index) => {
-                    const menuId = row.transaction_id || `${row.tanggal}-${row.waktu}-${index}`;
+                    const menuId =
+                      row.transaction_id ||
+                      `${row.tanggal}-${row.waktu}-${index}`;
                     const receiptImage = buildReceiptImageSrc(row.bukti_tf);
 
                     return (
-                      <tr key={menuId} className="group hover:bg-gray-50/50 transition-colors">
+                      <tr
+                        key={menuId}
+                        className="group hover:bg-gray-50/50 transition-colors"
+                      >
                         <td className="px-8 py-4 text-xs font-medium text-gray-600">
                           {formatDisplayDate(row.tanggal)}
                         </td>
@@ -558,7 +808,11 @@ export default function TransaksiLocationPage() {
                         </td>
                         <td className="px-4 py-4">
                           <Badge
-                            variant={row.transfer_status === "in" ? "success" : "danger"}
+                            variant={
+                              row.transfer_status === "in"
+                                ? "success"
+                                : "danger"
+                            }
                             className="rounded-lg px-3 py-1 text-[10px] font-bold"
                           >
                             {row.transfer_status === "in" ? "Masuk" : "Keluar"}
@@ -567,7 +821,11 @@ export default function TransaksiLocationPage() {
                         <td className="px-8 py-4 text-center relative">
                           {row.transfer_status === "out" ? (
                             <button
-                              onClick={() => void handleViewOutgoingDetail(row.transaction_id)}
+                              onClick={() =>
+                                void handleViewOutgoingDetail(
+                                  row.transaction_id,
+                                )
+                              }
                               className="p-2.5 text-gray-400 hover:text-gray-900 border border-gray-100 rounded-xl hover:bg-white transition-all inline-flex items-center justify-center shadow-sm"
                             >
                               <Eye size={18} weight="bold" />
@@ -576,7 +834,9 @@ export default function TransaksiLocationPage() {
                             <>
                               <button
                                 onClick={() => {
-                                  setOpenRowMenuId(openRowMenuId === menuId ? null : menuId);
+                                  setOpenRowMenuId(
+                                    openRowMenuId === menuId ? null : menuId,
+                                  );
                                 }}
                                 className={`p-2 rounded-xl transition-all border border-gray-100 shadow-sm hover:text-gray-900 ${
                                   openRowMenuId === menuId
@@ -603,7 +863,9 @@ export default function TransaksiLocationPage() {
                                   )}
                                   <button
                                     onClick={() => {
-                                      router.push(`/finance/transaksi/${locationId}/edit/${row.transaction_id || menuId}`);
+                                      router.push(
+                                        `/finance/transaksi/${locationId}/edit/${row.transaction_id || menuId}`,
+                                      );
                                     }}
                                     className="w-full text-left px-4 py-3 text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                                   >
@@ -658,6 +920,21 @@ export default function TransaksiLocationPage() {
           setSelectedReceiptImage(null);
         }}
         imageSrc={selectedReceiptImage}
+      />
+
+      <FinanceTopUpModal
+        isOpen={isTopUpModalOpen}
+        onClose={() => setIsTopUpModalOpen(false)}
+        onSubmit={handleTopUpSubmit}
+        isSubmitting={isTopUpSubmitting}
+        locationName={locationName}
+      />
+
+      <Toast
+        isVisible={showToast}
+        message={toastMessage}
+        type={toastType}
+        onClose={() => setShowToast(false)}
       />
     </div>
   );

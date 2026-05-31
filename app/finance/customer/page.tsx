@@ -317,13 +317,13 @@ export default function CustomerPage() {
       <section className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
         <div className="p-6 flex items-center justify-between flex-wrap gap-4">
           <h2 className="text-lg font-bold text-gray-900">Data Customer</h2>
-          <button
+          {/* <button
             suppressHydrationWarning
             className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer transition-all"
           >
             <Export size={18} />
             Export
-          </button>
+          </button> */}
         </div>
 
         <div className="overflow-x-auto">
