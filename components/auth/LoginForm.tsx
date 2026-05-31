@@ -89,7 +89,7 @@ export default function LoginForm({ initialRole }: LoginFormProps) {
           )}
 
           <div className="flex flex-col gap-2">
-            <label className="text-[13px] font-semibold text-gray-800 text-left">Username</label>
+            <label className="text-[13px] font-semibold text-gray-800 text-left">email</label>
             <input
               type="text"
               value={username}
@@ -120,7 +120,16 @@ export default function LoginForm({ initialRole }: LoginFormProps) {
             </div>
           </div>
 
-          <div className="flex gap-4 mt-8">
+          <div className="flex justify-end mt-2">
+              <a
+                href="/auth/forgot-password"
+                className="text-[12px] font-semibold text-[#00a0e9] hover:underline"
+              >
+                Lupa password?
+              </a>
+            </div>
+
+          <div className="flex gap-4 mt-6">
             <button
               type="button"
               onClick={handleCancel}

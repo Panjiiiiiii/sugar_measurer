@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC_PATHS = ["/auth/login", "/api/auth/login"];
+const PUBLIC_PATHS = [
+  "/auth/login",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+  "/api/auth/login",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+];
 
 const ROLE_PREFIX_MAP: Record<string, string[]> = {
   operator: ["/operator", "/api/branch"],
