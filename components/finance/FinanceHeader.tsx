@@ -6,12 +6,48 @@ import {
   CaretDown
 } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import LogoutModal from "../dashboard/LogoutModal";
 
 export default function FinanceHeader() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [userName, setUserName] = useState("User");
+  const router = useRouter();
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: "include" });
+        if (!res.ok) return;
+
+        const json = await res.json();
+        const name = json?.data?.name;
+
+        if (!cancelled && typeof name === "string" && name.trim()) {
+          setUserName(name);
+        }
+      } catch {
+        // Keep fallback name on fetch failure.
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch (_) {}
+    router.push("/auth/login");
+  };
 
   return (
     <>
@@ -40,17 +76,9 @@ export default function FinanceHeader() {
                 isDropdownOpen ? "bg-gray-50" : "hover:bg-gray-50/85"
               }`}
             >
-              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200 bg-gray-100 shrink-0">
-                <Image
-                  src="https://avatar.iran.liara.run/public/boy?username=Emirhan"
-                  alt="User"
-                  fill
-                  className="object-cover"
-                />
-              </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-gray-900">
-                  Emirhan Boruch
+                  {userName}
                 </span>
                 <CaretDown 
                   size={14} 
@@ -97,10 +125,7 @@ export default function FinanceHeader() {
       <LogoutModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
-        onLogout={() => {
-          console.log("Logging out...");
-          setIsLogoutModalOpen(false);
-        }}
+        onLogout={handleLogout}
       />
     </>
   );
