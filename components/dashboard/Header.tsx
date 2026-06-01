@@ -5,7 +5,6 @@ import {
   Bell,
   CaretDown
 } from "@phosphor-icons/react";
-import Image from "next/image";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import LogoutModal from "./LogoutModal";
@@ -13,6 +12,7 @@ import LogoutModal from "./LogoutModal";
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
+  const [userName, setUserName] = React.useState("User");
   const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
@@ -38,6 +38,32 @@ export default function Header() {
       }));
     }
   }, [role, pathname]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/auth/me", { credentials: "include" });
+        if (!res.ok) return;
+
+        const json = await res.json();
+        const name = json?.data?.name;
+
+        if (!cancelled && typeof name === "string" && name.trim()) {
+          setUserName(name);
+        }
+      } catch {
+        // Keep fallback name on fetch failure.
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -73,7 +99,7 @@ export default function Header() {
 
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-bold text-gray-900">
-                  Emirhan Boruch
+                  {userName}
                 </span>
                 <CaretDown
                   size={12}

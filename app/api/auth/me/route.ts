@@ -1,24 +1,31 @@
 import { NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
  
 export async function GET(request: NextRequest) {
-  // Middleware sudah inject header ini
-  const userId       = request.headers.get("x-user-id");
-  const role         = request.headers.get("x-user-role");
-  const locationId   = request.headers.get("x-user-location-id");
-  const email        = request.headers.get("x-user-email");
+  const userId = request.headers.get("x-user-id");
  
-  if (!userId || !role) {
+  if (!userId) {
+    return Response.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      location_id: true,
+    },
+  });
+
+  if (!user) {
     return Response.json({ message: "Unauthorized" }, { status: 401 });
   }
  
   return Response.json({
     statusCode: 200,
-    data: {
-      id: userId,
-      email,
-      role,
-      location_id: locationId || null,
-    },
+    data: user,
   });
 }
  

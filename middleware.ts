@@ -17,7 +17,15 @@ const ROLE_PREFIX_MAP: Record<string, string[]> = {
 };
 
 // Path yang boleh diakses semua role yang sudah login
-const SHARED_API = ["/api/location", "/api/owner", "/api/truck", "/api/history"];
+const SHARED_API = [
+  "/api/location",
+  "/api/owner",
+  "/api/truck",
+  "/api/history",
+  "/api/auth/me",
+  "/api/auth/logout",
+  "/api/auth/profile",
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
