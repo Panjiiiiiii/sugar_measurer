@@ -54,22 +54,11 @@ export default function DynamicProfilePage() {
         {/* Card Body */}
         <div className="p-8 flex flex-col md:flex-row items-start gap-12 max-w-4xl w-full">
           {/* Avatar Section */}
-          <div className="flex flex-col items-center shrink-0">
-            <div className="relative w-32 h-32 rounded-full overflow-hidden border border-gray-100 shadow-sm bg-gray-50">
-              <Image 
-                src="https://avatar.iran.liara.run/public/boy?username=Dadang"
-                alt="Profile Avatar"
-                fill
-                className="object-cover"
-              />
-            </div>
-          </div>
-
           {/* Form Section */}
           <div className="flex-1 w-full flex flex-col gap-6">
             {/* Nama */}
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-gray-950 block">Nama</label>
+              <label className="text-sm font-bold text-gray-950 block">Email</label>
               <input 
                 type="text"
                 className="w-full px-5 py-3.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:border-green-600 transition-all font-medium text-sm text-gray-800 shadow-sm"

@@ -6,12 +6,21 @@ import {
   CaretDown
 } from "@phosphor-icons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import LogoutModal from "../dashboard/LogoutModal";
 
 export default function FinanceHeader() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch (_) {}
+    router.push("/auth/login");
+  };
 
   return (
     <>
@@ -97,10 +106,7 @@ export default function FinanceHeader() {
       <LogoutModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
-        onLogout={() => {
-          console.log("Logging out...");
-          setIsLogoutModalOpen(false);
-        }}
+        onLogout={handleLogout}
       />
     </>
   );

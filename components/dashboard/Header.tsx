@@ -7,12 +7,13 @@ import {
 } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import LogoutModal from "./LogoutModal";
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
+  const router = useRouter();
   const params = useParams();
   const pathname = usePathname();
   const roleRaw = params.role as string;
@@ -38,6 +39,13 @@ export default function Header() {
     }
   }, [role, pathname]);
 
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch (_) {}
+    router.push("/auth/login");
+  };
+
   return (
     <>
       <header className="h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 fixed top-0 right-0 left-64 z-40 transition-all">
@@ -62,14 +70,7 @@ export default function Header() {
               className={`flex items-center gap-3 cursor-pointer p-1 rounded-xl transition-all ${isDropdownOpen ? "bg-gray-100" : "hover:bg-gray-50"
                 }`}
             >
-              <div className="relative w-9 h-9 rounded-full overflow-hidden bg-gray-200 border border-gray-100">
-                <Image
-                  src="https://avatar.iran.liara.run/public/boy?username=Emirhan"
-                  alt="User"
-                  fill
-                  className="object-cover"
-                />
-              </div>
+
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-bold text-gray-900">
                   Emirhan Boruch
@@ -119,10 +120,7 @@ export default function Header() {
       <LogoutModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
-        onLogout={() => {
-          console.log("Logging out...");
-          setIsLogoutModalOpen(false);
-        }}
+        onLogout={handleLogout}
       />
     </>
   );
