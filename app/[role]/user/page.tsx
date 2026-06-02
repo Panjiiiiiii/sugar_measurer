@@ -17,7 +17,7 @@ interface UserItem {
   name: string;
   email: string;
   password?: string;
-  role: "operator" | "finance" | "master" | "manager";
+  role: "operator" | "finance" |  "manager";
   location?: {
     id: string;
     name: string;
@@ -63,7 +63,6 @@ const fallbackMockUsers: UserItem[] = [
 function mapRoleLabel(role: string) {
   if (role === "operator") return "Admin Cabang";
   if (role === "finance") return "Admin Finance";
-  if (role === "master") return "Super Admin";
   if (role === "manager") return "Manager";
   return role;
 }
@@ -99,14 +98,25 @@ export default function DataUserPage() {
 
   const handleConfirmDelete = async () => {
     if (!userToDelete) return;
-    
-    // Simulate frontend deletion for instant testing
-    setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
-    
-    setToastType("success");
-    setToastMessage("Data User Berhasil Dihapus");
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+
+    try {
+      await axios.delete(`/api/user/${userToDelete.id}`);
+
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setUserToDelete(null);
+
+      setToastType("success");
+      setToastMessage("Data User Berhasil Dihapus");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      setToastType("error");
+      setToastMessage("Gagal menghapus data user");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      throw error;
+    }
   };
 
   const tableRef = useRef<HTMLTableElement>(null);
@@ -230,7 +240,6 @@ export default function DataUserPage() {
               <tr className="border-y border-[#F3F4F6] bg-[#F9FAFB]/50">
                 <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">Username</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">Email</th>
-                <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">Password</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">Role</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">Location</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider text-center">Action</th>
@@ -251,11 +260,6 @@ export default function DataUserPage() {
                     
                     {/* Email */}
                     <td className="px-8 py-5 text-sm font-semibold text-[#4B5563]">{row.email}</td>
-                    
-                    {/* Password */}
-                    <td className="px-8 py-5 text-sm font-semibold text-[#4B5563] truncate max-w-[150px]">
-                      {row.password ? (row.password.startsWith("$2") ? "adsldfRFS123!" : row.password) : "adsldfRFS123!"}
-                    </td>
                     
                     {/* Role */}
                     <td className="px-8 py-5 text-sm font-semibold text-[#4B5563]">
