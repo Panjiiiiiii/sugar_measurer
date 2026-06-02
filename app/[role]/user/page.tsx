@@ -353,7 +353,6 @@ export default function DataUserPage() {
                     <option value="all">Semua Role</option>
                     <option value="operator">Admin Cabang</option>
                     <option value="finance">Admin Finance</option>
-                    <option value="master">Super Admin</option>
                     <option value="manager">Manager</option>
                   </select>
                   <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">

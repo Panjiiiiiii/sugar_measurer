@@ -755,14 +755,16 @@ export default function DynamicTransaksiLocationPage() {
               ]}
               className="min-w-30"
             />
-            <Button
-              variant="secondary"
-              className="px-6 py-2 text-xs font-bold h-10 border-gray-100 min-w-30 cursor-pointer"
-              icon={<Plus size={14} weight="bold" />}
-              onClick={() => setIsTopUpModalOpen(true)}
-            >
-              Top Up
-            </Button>
+            {role !== "manager" && (
+              <Button
+                variant="secondary"
+                className="px-6 py-2 text-xs font-bold h-10 border-gray-100 min-w-30 cursor-pointer"
+                icon={<Plus size={14} weight="bold" />}
+                onClick={() => setIsTopUpModalOpen(true)}
+              >
+                Top Up
+              </Button>
+            )}
           </div>
         }
       >
