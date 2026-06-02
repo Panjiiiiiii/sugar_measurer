@@ -7,13 +7,28 @@ export default function LocationDashboard() {
   const params = useParams();
   const location = params.location as string;
 
+  const getCityName = (id: string) => {
+    const map: Record<string, string> = {
+      "loc-1": "Malang",
+      "loc-2": "Blitar",
+      "loc-3": "Kediri 1",
+      "loc-4": "Kediri 2",
+      "malang": "Malang",
+      "blitar": "Blitar",
+      "kediri-1": "Kediri 1",
+      "kediri-2": "Kediri 2",
+    };
+    return map[id] || id.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+  const locationName = getCityName(location);
+
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold text-gray-900 capitalize">
-        Dashboard {location.replace("-", " ")}
+        Dashboard {locationName}
       </h1>
       <p className="text-gray-500 mt-2">
-        Showing detailed data for {location.replace("-", " ")}.
+        Showing detailed data for {locationName}.
       </p>
       
       {/* For demonstration, we can show a simplified version of the main dashboard or a loading state */}

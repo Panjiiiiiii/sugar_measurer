@@ -14,6 +14,7 @@ const ROLE_PREFIX_MAP: Record<string, string[]> = {
   operator: ["/operator", "/api/branch"],
   master:   ["/master",   "/api/branch", "/api/owner", "/api/truck", "/api/location", "/api/user", "/api/history"],
   finance:  ["/finance",  "/api/finance", "/api/history", "/api/location", "/api/history/transfer"],
+  manager:  ["/manager",  "/api/finance", "/api/history", "/api/location", "/api/history/transfer", "/api/user"],
 };
 
 // Path yang boleh diakses semua role yang sudah login
@@ -29,6 +30,25 @@ const SHARED_API = [
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const bypassAuth = process.env.NEXT_PUBLIC_DEV_BYPASS === "true";
+  if (bypassAuth) {
+    let mockRole = "manager";
+    if (pathname.startsWith("/finance")) mockRole = "finance";
+    else if (pathname.startsWith("/master")) mockRole = "master";
+    else if (pathname.startsWith("/operator")) mockRole = "operator";
+
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-user-id", "mock-user-id");
+    requestHeaders.set("x-user-role", mockRole);
+    requestHeaders.set("x-user-location-id", "07bf151f-ed44-4a5d-96cb-afed7e087c7a");
+    requestHeaders.set("x-user-email", `${mockRole}@example.com`);
+
+    if (pathname === "/") {
+      return NextResponse.redirect(new URL(`/${mockRole}/dashboard`, request.url));
+    }
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
 
   // Bypass public paths
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
@@ -111,6 +131,7 @@ export async function middleware(request: NextRequest) {
 
 function roleDashboard(role: string) {
   if (role === "finance") return "/finance/dashboard";
+  if (role === "manager") return "/manager/dashboard";
   if (role === "master") return "/master";
   return "/operator";
 }

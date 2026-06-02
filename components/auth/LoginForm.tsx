@@ -45,6 +45,8 @@ export default function LoginForm({ initialRole }: LoginFormProps) {
 
       if (role === "finance") {
         window.location.href = "/finance/dashboard";
+      } else if (role === "manager") {
+        window.location.href = "/manager/dashboard";
       } else if (role === "master") {
         window.location.href = "/master";
       } else {

@@ -161,7 +161,21 @@ export default function TimbanganLocationPage() {
   const currentOwnershipType = searchParams.get("ownership_type") || "";
   const currentStatus = searchParams.get("status") || "";
 
-  const [locationName, setLocationName] = React.useState("");
+  const getCityName = (id: string) => {
+    const map: Record<string, string> = {
+      "loc-1": "Malang",
+      "loc-2": "Blitar",
+      "loc-3": "Kediri 1",
+      "loc-4": "Kediri 2",
+      "malang": "Malang",
+      "blitar": "Blitar",
+      "kediri-1": "Kediri 1",
+      "kediri-2": "Kediri 2",
+    };
+    return map[id] || id.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  const [locationName, setLocationName] = React.useState(getCityName(location));
   const [sugarPrice, setSugarPrice] = React.useState(0);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
   const [isSavingPrice, setIsSavingPrice] = React.useState(false);
@@ -218,7 +232,7 @@ export default function TimbanganLocationPage() {
         }
 
         console.error("Error fetching location name:", error);
-        setLocationName(location.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase()));
+        setLocationName(getCityName(location));
         setSugarPrice(0);
       }
     }
