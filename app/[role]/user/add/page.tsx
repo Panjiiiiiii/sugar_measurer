@@ -1,10 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { CaretDown } from "@phosphor-icons/react";
+import { CaretDown, Eye, EyeSlash } from "@phosphor-icons/react";
 import { Toast } from "@/components/ui";
 import Link from "next/link";
+import axios from "axios";
+
+interface Location {
+  id: string;
+  name: string;
+}
 
 export default function AddUserPage() {
   const router = useRouter();
@@ -13,11 +19,16 @@ export default function AddUserPage() {
   const role = !roleRaw || roleRaw === "undefined" ? "manager" : roleRaw;
 
   // Form States
-  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedLocationId, setSelectedLocationId] = useState("");
+
+  // Locations State
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
 
   // UI States
   const [showToast, setShowToast] = useState(false);
@@ -25,10 +36,30 @@ export default function AddUserPage() {
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = (e: React.FormEvent) => {
+  // Fetch locations on mount
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await axios.get("/api/location?limit=100");
+        setLocations(response.data?.data ?? []);
+      } catch (error) {
+        console.error("Error fetching locations:", error);
+        setToastType("error");
+        setToastMessage("Gagal memuat data lokasi");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
+      } finally {
+        setIsLoadingLocations(false);
+      }
+    };
+
+    fetchLocations();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!username || !email || !password || !selectedRole || !selectedLocation) {
+    if (!name || !email || !password || !selectedRole || !selectedLocationId) {
       setToastType("error");
       setToastMessage("Harap lengkapi semua bidang bertanda *");
       setShowToast(true);
@@ -36,22 +67,44 @@ export default function AddUserPage() {
       return;
     }
 
-    setIsSaving(true);
-    setToastType("success");
-    setToastMessage("Data Berhasil Disimpan");
-    setShowToast(true);
+    try {
+      setIsSaving(true);
 
-    setTimeout(() => {
-      router.push(`/${role}/user`);
-    }, 1500);
+      await axios.post("/api/user", {
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        role: selectedRole,
+        location_id: selectedLocationId,
+      });
+
+      sessionStorage.setItem(
+        "user-toast-message",
+        "User berhasil ditambahkan"
+      );
+      router.push(`/${role}/user?success=true`);
+    } catch (error) {
+      setIsSaving(false);
+      if (axios.isAxiosError(error)) {
+        const message =
+          error.response?.data?.message || "Gagal menyimpan data user";
+        setToastType("error");
+        setToastMessage(message);
+      } else {
+        setToastType("error");
+        setToastMessage("Terjadi kesalahan, coba lagi");
+      }
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
   };
 
   return (
     <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)]">
-      <Toast 
-        isVisible={showToast} 
-        message={toastMessage} 
-        type={toastType} 
+      <Toast
+        isVisible={showToast}
+        message={toastMessage}
+        type={toastType}
       />
 
       {/* Header section with Breadcrumbs */}
@@ -75,15 +128,15 @@ export default function AddUserPage() {
 
         {/* Card Form */}
         <form onSubmit={handleSave} className="p-8 space-y-6">
-          {/* Username */}
+          {/* Name */}
           <div className="space-y-2">
             <label className="text-[13px] font-bold text-gray-800 ml-1">
               Username <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder=""
               disabled={isSaving}
               className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009B4C]/10 focus:border-[#009B4C] transition-all text-sm font-semibold text-gray-900 placeholder:text-gray-400"
@@ -110,14 +163,28 @@ export default function AddUserPage() {
             <label className="text-[13px] font-bold text-gray-800 ml-1">
               Password <span className="text-red-500">*</span>
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder=""
-              disabled={isSaving}
-              className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009B4C]/10 focus:border-[#009B4C] transition-all text-sm font-semibold text-gray-900 placeholder:text-gray-400"
-            />
+            <div className="relative w-full">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder=""
+                disabled={isSaving}
+                className="w-full px-5 py-3.5 pr-14 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009B4C]/10 focus:border-[#009B4C] transition-all text-sm font-semibold text-gray-900 placeholder:text-gray-400"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                disabled={isSaving}
+                aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {showPassword ? <EyeSlash size={18} weight="bold" /> : <Eye size={18} weight="bold" />}
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 ml-1">
+              Min. 8 karakter, mengandung huruf besar, huruf kecil, dan angka
+            </p>
           </div>
 
           {/* Role */}
@@ -135,7 +202,6 @@ export default function AddUserPage() {
                 <option value="" disabled hidden></option>
                 <option value="operator">Admin Cabang</option>
                 <option value="finance">Admin Finance</option>
-                <option value="master">Super Admin</option>
                 <option value="manager">Manager</option>
               </select>
               <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
@@ -151,16 +217,19 @@ export default function AddUserPage() {
             </label>
             <div className="relative w-full">
               <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                disabled={isSaving}
-                className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009B4C]/10 focus:border-[#009B4C] transition-all text-sm font-semibold text-gray-900 appearance-none cursor-pointer pr-12"
+                value={selectedLocationId}
+                onChange={(e) => setSelectedLocationId(e.target.value)}
+                disabled={isSaving || isLoadingLocations}
+                className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009B4C]/10 focus:border-[#009B4C] transition-all text-sm font-semibold text-gray-900 appearance-none cursor-pointer pr-12 disabled:opacity-60"
               >
-                <option value="" disabled hidden></option>
-                <option value="Malang">Malang</option>
-                <option value="Blitar">Blitar</option>
-                <option value="Kediri 1">Kediri 1</option>
-                <option value="Kediri 2">Kediri 2</option>
+                <option value="" disabled hidden>
+                  {isLoadingLocations ? "Memuat lokasi..." : ""}
+                </option>
+                {locations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </option>
+                ))}
               </select>
               <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                 <CaretDown size={16} weight="bold" />
@@ -170,7 +239,7 @@ export default function AddUserPage() {
         </form>
       </div>
 
-      {/* Buttons wrapper matching Image 1 */}
+      {/* Buttons */}
       <div className="flex gap-4 max-w-5xl mx-auto w-full">
         <button
           type="button"
@@ -183,7 +252,7 @@ export default function AddUserPage() {
         <button
           type="button"
           onClick={handleSave}
-          disabled={isSaving}
+          disabled={isSaving || isLoadingLocations}
           className="flex-1 py-4 bg-[#009B4C] hover:bg-[#008741] text-white rounded-2xl text-sm font-bold active:scale-[0.98] transition-all shadow-md cursor-pointer text-center disabled:opacity-60"
         >
           {isSaving ? "Menyimpan..." : "Simpan"}

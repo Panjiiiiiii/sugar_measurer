@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
 }
 
 model user {
@@ -98,7 +98,6 @@ model logTransfer {
 
 enum role {
   operator
-  master
   finance
   manager
 }
