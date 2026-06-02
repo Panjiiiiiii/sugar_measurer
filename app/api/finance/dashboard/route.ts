@@ -146,6 +146,53 @@ function buildChartData(
 }
 
 export async function GET(request: Request) {
+  if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
+    const { searchParams } = new URL(request.url);
+    const filterRaw = getFirstQueryParam(searchParams, ["filter", "range"]) || "today";
+    const chartLocationId = getFirstQueryParam(searchParams, ["location_id", "id_location"]);
+
+    let chartData: ChartPoint[] = [];
+    if (filterRaw === "today") {
+      for (let h = 0; h < 24; h += 2) {
+        chartData.push({ label: `${String(h).padStart(2, "0")}:00`, tonase: Math.floor(Math.random() * 200000) + 50000 });
+      }
+    } else if (filterRaw === "week") {
+      const DAY_NAMES = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+      chartData = DAY_NAMES.map((name) => ({ label: name, tonase: Math.floor(Math.random() * 1500000) + 400000 }));
+    } else {
+      const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+      chartData = MONTH_NAMES.map((name) => ({ label: name, tonase: Math.floor(Math.random() * 5000000) + 1500000 }));
+    }
+
+    const mockLocations = [
+      { id: "loc-1", name: "Malang", sugar_price: 14500, account_balance: 500000000, paid_tonase: 250000, queue_tonase: 120000, transaction_in: 750000000, transaction_out: 250000000 },
+      { id: "loc-2", name: "Blitar", sugar_price: 14200, account_balance: 300000000, paid_tonase: 180000, queue_tonase: 90000, transaction_in: 500000000, transaction_out: 200000000 },
+      { id: "loc-3", name: "Kediri 1", sugar_price: 14300, account_balance: 250000000, paid_tonase: 150000, queue_tonase: 60000, transaction_in: 400000000, transaction_out: 150000000 },
+      { id: "loc-4", name: "Kediri 2", sugar_price: 14300, account_balance: 200000000, paid_tonase: 120000, queue_tonase: 50000, transaction_in: 300000000, transaction_out: 100000000 },
+    ];
+
+    const totalKas = mockLocations.reduce((sum, loc) => sum + loc.account_balance, 0);
+    const totalTonase = mockLocations.reduce((sum, loc) => sum + loc.paid_tonase + loc.queue_tonase, 0);
+    const totalKeluar = mockLocations.reduce((sum, loc) => sum + loc.transaction_out, 0);
+
+    return Response.json({
+      statusCode: 200,
+      data: {
+        filter: filterRaw,
+        kpi: {
+          total_kas: totalKas,
+          total_tonase: totalTonase,
+          total_transaksi_keluar: totalKeluar,
+        },
+        chart: {
+          location_id: chartLocationId ?? null,
+          data: chartData,
+        },
+        locations: mockLocations,
+      },
+    });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
 

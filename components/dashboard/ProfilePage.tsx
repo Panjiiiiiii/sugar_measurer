@@ -92,9 +92,9 @@ export default function ProfilePage({ initialRole, forcedRole }: ProfilePageProp
   }, [forcedRole]);
 
   const breadcrumbItems = useMemo(() => {
-    if (resolvedRole === "finance") {
+    if (resolvedRole === "finance" || resolvedRole === "manager") {
       return [
-        { label: "Dashboard", href: "/finance/dashboard" },
+        { label: "Dashboard", href: `/${resolvedRole}/dashboard` },
         { label: "Profile" },
       ];
     }
@@ -139,8 +139,8 @@ export default function ProfilePage({ initialRole, forcedRole }: ProfilePageProp
       setFormData((prev) => ({ ...prev, password: "" }));
 
       setTimeout(() => {
-        if (resolvedRole === "finance") {
-          router.push("/finance/dashboard?success=true");
+        if (resolvedRole === "finance" || resolvedRole === "manager") {
+          router.push(`/${resolvedRole}/dashboard?success=true`);
           return;
         }
 
@@ -157,7 +157,6 @@ export default function ProfilePage({ initialRole, forcedRole }: ProfilePageProp
     <div className="flex flex-col gap-8 max-w-5xl mx-auto w-full">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Profile</h1>
-        <Breadcrumb items={breadcrumbItems} />
       </div>
 
       <div className="bg-white rounded-[20px] border border-gray-100 shadow-sm overflow-hidden transition-all w-full">

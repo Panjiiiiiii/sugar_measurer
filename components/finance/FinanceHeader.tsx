@@ -6,7 +6,7 @@ import {
   CaretDown
 } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import LogoutModal from "../dashboard/LogoutModal";
 
@@ -15,6 +15,10 @@ export default function FinanceHeader() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [userName, setUserName] = useState("User");
   const router = useRouter();
+  const params = useParams();
+
+  const roleRaw = params?.role as string;
+  const role = (!roleRaw || roleRaw === "undefined") ? "finance" : roleRaw;
 
   React.useEffect(() => {
     let cancelled = false;
@@ -58,7 +62,7 @@ export default function FinanceHeader() {
         {/* Right Actions */}
         <div className="flex items-center gap-6">
           {/* Notifications */}
-          <Link href="/finance/notification">
+          <Link href={`/${role}/notification`}>
             <button 
               suppressHydrationWarning
               className="relative p-2.5 text-gray-400 hover:bg-gray-50 rounded-xl transition-colors"
@@ -99,7 +103,7 @@ export default function FinanceHeader() {
 
                 <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-lg z-20 py-1.5">
                   <Link
-                    href="/finance/profile"
+                    href={`/${role}/profile`}
                     onClick={() => setIsDropdownOpen(false)}
                     className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >

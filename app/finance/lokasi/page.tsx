@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import React, { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { DeleteModal, Pagination, Toast } from "@/components/ui";
-import { DotsThreeVertical, Export, Plus } from "@phosphor-icons/react";
+import { DeleteModal, Toast, Card, ActionMenu, Pagination } from "@/components/ui";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { DotsThreeVertical, Export } from "@phosphor-icons/react";
 
 interface LocationItem {
   id: string;
@@ -30,20 +30,10 @@ const PAGE_SIZE = 10;
 
 function parsePageParam(value: string | null) {
   const parsed = Number.parseInt(value ?? "1", 10);
-
   if (Number.isNaN(parsed) || parsed < 1) {
     return 1;
   }
-
   return parsed;
-}
-
-function formatCurrency(value: number | null | undefined) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(value ?? 0);
 }
 
 export default function LokasiPage() {
@@ -62,32 +52,14 @@ export default function LokasiPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [selectedLocationName, setSelectedLocationName] = useState<string | null>(null);
-  const [activeRowMenu, setActiveRowMenu] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("Data Berhasil Disimpan");
-  const tableRef = useRef<HTMLTableElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        activeRowMenu !== null &&
-        tableRef.current &&
-        !tableRef.current.contains(event.target as Node)
-      ) {
-        setActiveRowMenu(null);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [activeRowMenu]);
 
   useEffect(() => {
     let isMounted = true;
 
     async function fetchLocations() {
       setIsLoading(true);
-
       try {
         const response = await fetch(
           `/api/location?page=${currentPage}&limit=${PAGE_SIZE}`,
@@ -112,7 +84,6 @@ export default function LokasiPage() {
         );
       } catch (error) {
         if (!isMounted) return;
-
         console.error("Error fetching locations:", error);
         setLocations([]);
         setPagination({
@@ -128,7 +99,6 @@ export default function LokasiPage() {
     }
 
     fetchLocations();
-
     return () => {
       isMounted = false;
     };
@@ -156,7 +126,6 @@ export default function LokasiPage() {
         : pathname;
 
       router.replace(nextUrl);
-
       return () => clearTimeout(timer);
     }
   }, [pathname, router, searchParams]);
@@ -165,9 +134,7 @@ export default function LokasiPage() {
     if (page < 1 || page > pagination.total_page) {
       return;
     }
-
     sessionStorage.setItem("lokasi_navigated", "true");
-
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set("page", String(page));
     router.push(`${pathname}?${nextParams.toString()}`);
@@ -194,8 +161,25 @@ export default function LokasiPage() {
         console.error("Error deleting location:", error);
       }
     }
-
     setIsDeleteModalOpen(false);
+  };
+
+  const handleExport = () => {
+    if (typeof window === "undefined") return;
+    import("xlsx").then((XLSX) => {
+      const worksheet = XLSX.utils.json_to_sheet(
+        locations.map((row) => ({
+          "Nama Lokasi": row.name,
+          "Account Number": row.account_number ?? "-",
+          Balance: row.account_balance !== null && row.account_balance !== undefined
+            ? `Rp ${new Intl.NumberFormat("id-ID").format(row.account_balance)}`
+            : "Rp 0",
+        }))
+      );
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Locations");
+      XLSX.writeFile(workbook, "Data_Lokasi.xlsx");
+    });
   };
 
   return (
@@ -209,96 +193,91 @@ export default function LokasiPage() {
       />
 
       {/* Page Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Data Lokasi</h1>
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link href="/finance/lokasi/add">
-            <button
-              suppressHydrationWarning
-              className="flex items-center gap-2 px-6 py-2 bg-[#0095FF] text-white rounded-xl text-sm font-bold hover:bg-[#0084FF] transition-all shadow-sm cursor-pointer"
-            >
-              <Plus size={18} weight="bold" />
-              Add
-            </button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Data Lokasi"
+        primaryAction={{
+          label: "Add",
+          onClick: () => router.push("/finance/lokasi/add"),
+        }}
+      />
 
       {/* Data Lokasi Card */}
-      <section className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-        <div className="p-6 flex items-center justify-between flex-wrap gap-4">
-          <h2 className="text-lg font-bold text-gray-900">Data Lokasi</h2>
-          {/* <button
-            suppressHydrationWarning
-            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 cursor-pointer transition-all"
+      <Card
+        title="Data Lokasi"
+        noPadding
+        headerAction={
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-700 hover:bg-gray-50 cursor-pointer transition-all"
           >
-            <Export size={18} />
-            Export
-          </button> */}
-        </div>
-
+            <Export size={16} weight="bold" />
+            <span>Export</span>
+          </button>
+        }
+      >
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse" ref={tableRef}>
+          <table className="w-full text-left">
             <thead>
-              <tr className="border-y border-gray-100 bg-gray-50/30">
-                <th className="px-8 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Nama Lokasi</th>
-                <th className="px-8 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Account Number</th>
-                <th className="px-8 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Balance</th>
-                <th className="px-8 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">Action</th>
+              <tr className="border-b border-gray-100 text-xs font-semibold text-gray-400">
+                <th className="px-8 py-5 text-left font-semibold text-gray-400">Nama Lokasi</th>
+                <th className="px-8 py-5 text-left font-semibold text-gray-400">Account Number</th>
+                <th className="px-8 py-5 text-left font-semibold text-gray-400">Balance</th>
+                <th className="px-8 py-5 text-right font-semibold text-gray-400">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {isLoading ? (
-                <tr>
-                  <td colSpan={4} className="px-8 py-10 text-center text-sm font-medium text-gray-400">
-                    Memuat data lokasi...
-                  </td>
-                </tr>
+                Array(5)
+                  .fill(0)
+                  .map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <td className="px-8 py-5">
+                        <div className="h-4 bg-gray-100 rounded-lg w-24"></div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="h-4 bg-gray-100 rounded-lg w-32"></div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="h-4 bg-gray-100 rounded-lg w-24"></div>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <div className="h-9 bg-gray-50 rounded-xl w-9 ml-auto"></div>
+                      </td>
+                    </tr>
+                  ))
               ) : locations.length > 0 ? (
                 locations.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50/30 transition-colors">
-                    <td className="px-8 py-5 text-sm font-medium text-gray-600">{row.name}</td>
-                    <td className="px-8 py-5 text-sm font-medium text-gray-600">{row.account_number || "-"}</td>
-                    <td className="px-8 py-5 text-sm font-medium text-gray-600">{formatCurrency(row.account_balance)}</td>
-                    <td className="px-8 py-5 flex justify-center">
-                      <div className="relative">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveRowMenu(activeRowMenu === row.id ? null : row.id);
-                          }}
-                          suppressHydrationWarning
-                          className="p-2 text-gray-400 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100 cursor-pointer flex items-center justify-center"
-                        >
-                          <DotsThreeVertical size={20} weight="bold" />
-                        </button>
-
-                        {activeRowMenu === row.id && (
-                          <div className="absolute right-6 top-10 w-36 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-40 text-left animate-in fade-in slide-in-from-top-2 duration-150">
-                            <button
-                              onClick={() => {
-                                router.push(`/finance/lokasi/edit/${row.id}`);
-                                setActiveRowMenu(null);
-                              }}
-                              className="w-full text-left px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer"
-                            >
-                              Edit
-                            </button>
-                            <div className="border-t border-gray-100" />
-                            <button
-                              onClick={() => {
-                                setSelectedLocationId(row.id);
-                                setSelectedLocationName(row.name);
-                                setIsDeleteModalOpen(true);
-                                setActiveRowMenu(null);
-                              }}
-                              className="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-gray-50 transition-colors cursor-pointer"
-                            >
-                              Hapus
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                  <tr key={row.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-8 py-4 text-xs font-semibold text-[#111827] text-left">{row.name}</td>
+                    <td className="px-8 py-4 text-xs font-medium text-gray-500 text-left">{row.account_number || "-"}</td>
+                    <td className="px-8 py-4 text-xs font-medium text-gray-500 text-left">
+                      {row.account_balance !== null && row.account_balance !== undefined
+                        ? `Rp ${new Intl.NumberFormat("id-ID").format(row.account_balance)}`
+                        : "Rp 0"}
+                    </td>
+                    <td className="px-8 py-4 text-right">
+                      <ActionMenu
+                        trigger={
+                          <button className="p-2 text-gray-400 hover:text-gray-900 border border-gray-100 rounded-xl hover:bg-white hover:shadow-sm transition-all inline-flex items-center justify-center cursor-pointer">
+                            <DotsThreeVertical size={18} weight="bold" />
+                          </button>
+                        }
+                        items={[
+                          {
+                            label: "Edit",
+                            onClick: () => router.push(`/finance/lokasi/edit/${row.id}`),
+                          },
+                          {
+                            label: "Hapus",
+                            variant: "danger",
+                            onClick: () => {
+                              setSelectedLocationId(row.id);
+                              setSelectedLocationName(row.name);
+                              setIsDeleteModalOpen(true);
+                            },
+                          },
+                        ]}
+                      />
                     </td>
                   </tr>
                 ))
@@ -312,7 +291,8 @@ export default function LokasiPage() {
             </tbody>
           </table>
         </div>
-
+      </Card>
+      {!isLoading && locations.length > 0 && (
         <Pagination
           currentPage={pagination.number_page}
           totalPages={pagination.total_page}
@@ -320,7 +300,7 @@ export default function LokasiPage() {
           showingData={locations.length}
           onPageChange={handlePageChange}
         />
-      </section>
+      )}
     </div>
   );
 }

@@ -144,7 +144,7 @@ export default function CustomerPage() {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-full pb-10">
+    <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)] w-full max-w-full">
       <Toast
         isVisible={showToast}
         message={toastMessage}
@@ -155,27 +155,31 @@ export default function CustomerPage() {
       <PageHeader
         title="Data Customer"
         extraActions={
-          <div className="w-32">
-            {/* <Select 
+          <div className="w-36">
+            <Select 
               variant="compact"
-              defaultValue="Month" 
+              value={currentOwnershipType}
+              onChange={(e) => {
+                const nextParams = new URLSearchParams(searchParams.toString());
+                if (e.target.value) {
+                  nextParams.set("ownership_type", e.target.value);
+                } else {
+                  nextParams.delete("ownership_type");
+                }
+                nextParams.set("page", "1");
+                router.push(`/${role}/customer?${nextParams.toString()}`);
+              }}
               options={[
-                { value: "All", label: "All" },
-                { value: "Year", label: "Year" },
-                { value: "Month", label: "Month" },
-                { value: "Week", label: "Week" },
-                { value: "Day", label: "Day" }
+                { value: "", label: "Type Owner" },
+                { value: "farmer", label: "Petani" },
+                { value: "private", label: "Private" }
               ]} 
-            /> */}
+            />
           </div>
         }
         primaryAction={{
           label: "Add",
           onClick: () => router.push(`/${role}/customer/add`),
-        }}
-        secondaryAction={{
-          label: "Filter",
-          onClick: () => setIsFilterOpen(true),
         }}
       />
       <CustomerTable

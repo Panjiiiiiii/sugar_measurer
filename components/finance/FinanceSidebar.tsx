@@ -53,6 +53,13 @@ export default function FinanceSidebar() {
     );
   };
 
+  const ID_TO_SLUG: Record<string, string> = {
+    "loc-1": "malang",
+    "loc-2": "blitar",
+    "loc-3": "kediri-1",
+    "loc-4": "kediri-2",
+  };
+
   const menuItems: MenuItem[] = [
     {
       name: "Dashboard",
@@ -63,14 +70,20 @@ export default function FinanceSidebar() {
       name: "Data Timbangan",
       icon: Scales,
       subItems: locations.length
-        ? locations.map((loc) => ({ name: loc.name, href: `/finance/timbangan/${loc.id}` }))
+        ? locations.map((loc) => {
+            const slug = ID_TO_SLUG[loc.id] || loc.id;
+            return { name: loc.name, href: `/finance/timbangan/${slug}` };
+          })
         : undefined,
     },
     {
       name: "Data Transaksi",
       icon: ArrowsLeftRight,
       subItems: locations.length
-        ? locations.map((loc) => ({ name: loc.name, href: `/finance/transaksi/${loc.id}` }))
+        ? locations.map((loc) => {
+            const slug = ID_TO_SLUG[loc.id] || loc.id;
+            return { name: loc.name, href: `/finance/transaksi/${slug}` };
+          })
         : undefined,
     },
     {

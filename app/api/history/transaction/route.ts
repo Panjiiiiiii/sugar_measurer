@@ -66,6 +66,102 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
 
+    if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
+      const rawLoc = getFirstQueryParam(searchParams, ["location_id", "id_location"]) || "loc-1";
+      const mockCityMap: Record<string, string> = {
+        "loc-1": "Malang",
+        "loc-2": "Blitar",
+        "loc-3": "Kediri 1",
+        "loc-4": "Kediri 2",
+        "malang": "Malang",
+        "blitar": "Blitar",
+        "kediri-1": "Kediri 1",
+        "kediri-2": "Kediri 2",
+      };
+      const mockCityName = mockCityMap[rawLoc] || "Malang";
+
+      const mockInQueue = [
+        {
+          id: "tx-q-1",
+          tanggal_transaksi: "2026-06-02",
+          loading_in: "08:15",
+          no_pol_truck: "N 1234 AB",
+          nama_petani: "Joko",
+          nama_driver: "Slamet",
+          price: 14500,
+          location: mockCityName,
+          operator: "Dadang",
+          type_ownership: "farmer",
+          bruto: 8500,
+          tara: 0,
+          netto: 0,
+          amount: 0,
+          payment_method: "cash",
+          status: "queue",
+        }
+      ];
+
+      const mockHistory = [
+        {
+          id: "tx-h-1",
+          tanggal_transaksi: "2026-06-01",
+          loading_in: "10:00",
+          loading_out: "10:30",
+          no_pol_truck: "AG 9876 CD",
+          nama_petani: "Budi",
+          nama_driver: "Eko",
+          price: 14500,
+          location: mockCityName,
+          operator: "Dadang",
+          type_ownership: "farmer",
+          bruto: 9500,
+          tara: 1500,
+          netto: 8000,
+          amount: 116000000,
+          payment_method: "transfer",
+          status: "paid",
+        },
+        {
+          id: "tx-h-2",
+          tanggal_transaksi: "2026-06-01",
+          loading_in: "11:15",
+          loading_out: "11:45",
+          no_pol_truck: "L 5678 EF",
+          nama_petani: "Hadi",
+          nama_driver: "Ari",
+          price: 14500,
+          location: mockCityName,
+          operator: "Dadang",
+          type_ownership: "private",
+          bruto: 10200,
+          tara: 1700,
+          netto: 8500,
+          amount: 123250000,
+          payment_method: "cash",
+          status: "unpaid",
+        }
+      ];
+
+      return Response.json({
+        statusCode: 200,
+        kpi: {
+          paid: 116000000,
+          unpaid: 123250000,
+          inqueue: 1
+        },
+        data: {
+          inQueue: mockInQueue,
+          history: mockHistory,
+        },
+        page: {
+          number_page: 1,
+          total_page: 1,
+          total_data: 2,
+          per_page: 10
+        }
+      });
+    }
+
     const pageParam = getFirstQueryParam(searchParams, [
       "page",
       "number_page",

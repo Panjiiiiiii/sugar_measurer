@@ -8,7 +8,7 @@ import {
   ArrowsLeftRight,
   Bank
 } from "@phosphor-icons/react";
-import Breadcrumb from "@/components/dashboard/Breadcrumb";
+
 import NotificationFilterModal from "@/components/dashboard/NotificationFilterModal";
 
 interface Notification {
@@ -63,12 +63,6 @@ export default function DynamicNotificationPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Notifikasi</h1>
-        <Breadcrumb 
-          items={[
-            { label: lastPage.label, href: lastPage.href },
-            { label: "Notifikasi" }
-          ]} 
-        />
       </div>
 
       {/* Action Header */}

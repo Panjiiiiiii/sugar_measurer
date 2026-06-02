@@ -255,7 +255,21 @@ export default function TransaksiLocationPage() {
   const currentEndDate = searchParams.get("end_date") || "";
 
   const [isLoading, setIsLoading] = useState(true);
-  const [locationName, setLocationName] = useState("");
+  const getCityName = (id: string) => {
+    const map: Record<string, string> = {
+      "loc-1": "Malang",
+      "loc-2": "Blitar",
+      "loc-3": "Kediri 1",
+      "loc-4": "Kediri 2",
+      "malang": "Malang",
+      "blitar": "Blitar",
+      "kediri-1": "Kediri 1",
+      "kediri-2": "Kediri 2",
+    };
+    return map[id] || id.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  const [locationName, setLocationName] = useState(getCityName(locationId));
   const [transactions, setTransactions] = useState<TransferHistoryItem[]>([]);
   const [pagination, setPagination] = useState<ApiPaginationMeta>({
     number_page: 1,
@@ -668,10 +682,6 @@ export default function TransaksiLocationPage() {
         title={
           locationName ? `Riwayat Transfer ${locationName}` : "Riwayat Transfer"
         }
-        breadcrumbs={[
-          { label: "Dashboard", href: "/finance" },
-          { label: "Riwayat Transfer", active: true },
-        ]}
         extraActions={
           <div className="w-32">
             <Select

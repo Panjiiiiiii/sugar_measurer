@@ -367,7 +367,7 @@ export default function FinanceDashboard() {
                     }}
                     labelStyle={{ color: "#111827", fontWeight: "800", fontSize: "12px", display: "block", marginBottom: "4px" }}
                     itemStyle={{ color: "#0095FF", fontWeight: "800", fontSize: "14px", padding: "0" }}
-                    formatter={(value: number) => [`${(value / 100).toLocaleString("id-ID", { maximumFractionDigits: 2 })} Kw`, "Tonase"]}
+                    formatter={(value: any) => [`${(Number(value || 0) / 100).toLocaleString("id-ID", { maximumFractionDigits: 2 })} Kw`, "Tonase"]}
                   />
                   <Bar dataKey="tonase" barSize={24} isAnimationActive={false} shape={<CustomBar />} />
                 </BarChart>

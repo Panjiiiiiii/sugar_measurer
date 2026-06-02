@@ -135,6 +135,56 @@ export async function GET(request: Request) {
 	try {
 		const { searchParams } = new URL(request.url);
 
+		if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
+			const rawLoc = getFirstQueryParam(searchParams, ["location_id", "id_location", "location"]) || "loc-1";
+			const mockCityMap: Record<string, string> = {
+				"loc-1": "Malang",
+				"loc-2": "Blitar",
+				"loc-3": "Kediri 1",
+				"loc-4": "Kediri 2",
+				"malang": "Malang",
+				"blitar": "Blitar",
+				"kediri-1": "Kediri 1",
+				"kediri-2": "Kediri 2",
+			};
+			const mockCityName = mockCityMap[rawLoc] || "Malang";
+			const mockHistory = [
+				{
+					tanggal: "2026-06-01",
+					waktu: "14:30:22",
+					bukti_tf: "/bukti-transfer.png",
+					jumlah_nominal: 50000000,
+					location: mockCityName,
+					transfer_status: "in",
+					transaction_id: "tx-mock-1"
+				},
+				{
+					tanggal: "2026-06-02",
+					waktu: "09:15:00",
+					bukti_tf: null,
+					jumlah_nominal: 12500000,
+					location: mockCityName,
+					transfer_status: "out",
+					transaction_id: "tx-mock-2"
+				}
+			];
+			return Response.json({
+				statusCode: 200,
+				data: {
+					transaction_in: 50000000,
+					transaction_out: 12500000,
+					count_out_transaction: 1,
+					account_balance: rawLoc === "blitar" || rawLoc === "loc-2" ? 300000000 : 500000000,
+					transfer_history: mockHistory,
+					page: {
+						number_page: 1,
+						total_page: 1,
+						total_data: 2
+					}
+				}
+			});
+		}
+
 		const pageParam = getFirstQueryParam(searchParams, ["page", "number_page", "halaman"]);
 		const limitParam = getFirstQueryParam(searchParams, ["limit", "per_page", "page_size"]);
 		const locationId = getFirstQueryParam(searchParams, ["location_id", "id_location", "location"]);
