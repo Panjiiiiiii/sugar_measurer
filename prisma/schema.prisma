@@ -98,7 +98,6 @@ model logTransfer {
 
 enum role {
   operator
-  master
   finance
   manager
 }
