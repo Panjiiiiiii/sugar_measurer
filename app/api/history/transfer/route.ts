@@ -209,27 +209,25 @@ export async function GET(request: Request) {
 			dateFilter.lte = parsedEndDate;
 		}
 
-		const whereClause: Prisma.logTransferWhereInput = {
-			...(locationId ? { location_id: locationId } : {}),
-			...(parsedStatus ? { transfer_status: parsedStatus } : {}),
-			...(Object.keys(dateFilter).length > 0
-				? {
-					created_at: dateFilter,
-				}
-				: {}),
-		};
-
 		const summaryDateFilter = getSummaryDateFilter(normalizedRange);
 		const summaryWhereBase: Prisma.logTransferWhereInput = {
 			...(locationId ? { location_id: locationId } : {}),
-			...(summaryDateFilter
-				? {
-					created_at: summaryDateFilter,
-				}
-				: {}),
+			...(summaryDateFilter ? { created_at: summaryDateFilter } : {}),
 		};
 
-		const [transferHistory, totalData, transactionInAggregate, transactionOutAggregate, countOutTransaction] = await Promise.all([
+		// Gunakan summaryDateFilter sebagai fallback kalau tidak ada start_date/end_date eksplisit
+		const listDateFilter =
+			Object.keys(dateFilter).length > 0
+				? dateFilter
+				: summaryDateFilter ?? undefined;
+
+		const whereClause: Prisma.logTransferWhereInput = {
+			...(locationId ? { location_id: locationId } : {}),
+			...(parsedStatus ? { transfer_status: parsedStatus } : {}),
+			...(listDateFilter ? { created_at: listDateFilter } : {}),
+		};
+
+		const [transferHistory, totalData, transactionInAggregate, transactionOutAggregate, countOutTransaction, locationData] = await Promise.all([
 			prisma.logTransfer.findMany({
 				where: whereClause,
 				skip,
@@ -278,6 +276,13 @@ export async function GET(request: Request) {
 					transfer_status: transfer_status.out,
 				},
 			}),
+			// Ambil account_balance langsung dari location, bukan dari join transfer
+			locationId
+				? prisma.location.findUnique({
+						where: { id: locationId },
+						select: { account_balance: true },
+				  })
+				: Promise.resolve(null),
 		]);
 
 		const transactionIn = Number(transactionInAggregate._sum.transfer_amount ?? 0);
@@ -307,7 +312,7 @@ export async function GET(request: Request) {
 					transaction_in : transactionIn,
 					transaction_out : transactionOut,
 					count_out_transaction : countOutTransaction,
-					account_balance : transferHistory[0]?.location?.account_balance || 0,
+					account_balance : Number(locationData?.account_balance ?? 0),
 					transfer_history: data,
 					page: pagination,
 				},
@@ -325,4 +330,3 @@ export async function GET(request: Request) {
 		);
 	}
 }
-

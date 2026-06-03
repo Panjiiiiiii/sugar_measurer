@@ -12,8 +12,6 @@ import { DeleteModal, Toast, Button } from "@/components/ui";
 import { Export } from "@phosphor-icons/react";
 import TimbanganFilterModal from "@/components/dashboard/TimbanganFilterModal";
 
-const DEFAULT_BRANCH_LOCATION_ID = "07bf151f-ed44-4a5d-96cb-afed7e087c7a";
-
 interface ApiAntrianItem {
   id: string;
   tanggal_transaksi: string;
@@ -91,6 +89,15 @@ export default function TimbanganPage() {
     total_data: 0,
   });
   const currentPage = Number(searchParams.get("page") || 1);
+  const [authLocationId, setAuthLocationId] = useState("");
+
+  useEffect(() => {
+    axios.get<{ data?: { location_id?: string } }>("/api/auth/me")
+      .then((res) => setAuthLocationId(res.data?.data?.location_id || ""))
+      .catch(() => {});
+  }, []);
+
+  const resolvedLocationId = searchParams.get("location_id") || authLocationId;
 
   function formatCurrency(value: number) {
     return new Intl.NumberFormat("id-ID", {
@@ -215,7 +222,7 @@ export default function TimbanganPage() {
           params: {
             page: 1,
             limit: riwayatPagination.total_data || 1000,
-            location_id: searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
+            location_id: resolvedLocationId,
             ...(searchParams.get("start_date")
               ? { start_date: searchParams.get("start_date") }
               : {}),
@@ -277,7 +284,7 @@ export default function TimbanganPage() {
       setIsLoading(true);
       try {
         const locationResponse = await axios.get(
-          `/api/location/${searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID}`,
+          `/api/location/${resolvedLocationId}`,
         );
         const locationData = locationResponse.data?.data;
         if (locationData) {
@@ -303,7 +310,7 @@ export default function TimbanganPage() {
             params: {
               limit: 10,
               location_id:
-                searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
+                resolvedLocationId,
               // tidak kirim filter apapun supaya KPI selalu akurat
             },
           },
@@ -334,7 +341,7 @@ export default function TimbanganPage() {
               page: currentPage,
               limit: riwayatLimit,
               location_id:
-                searchParams.get("location_id") || DEFAULT_BRANCH_LOCATION_ID,
+                resolvedLocationId,
               ...(searchParams.get("start_date")
                 ? { start_date: searchParams.get("start_date") }
                 : {}),

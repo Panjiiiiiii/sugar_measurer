@@ -1,737 +1,508 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import * as XLSX from "xlsx";
 import axios from "axios";
-import ReactSelect, { type SingleValue } from "react-select";
-import {
-  CaretDown,
-  ArrowLeft
-} from "@phosphor-icons/react";
-import { Card } from "@/components/ui/Card";
-import { Input, Select } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
-import { Toast } from "@/components/ui/Toast";
-import { payment_method } from "@/generated/prisma/enums";
+import { PageHeader } from "@/components/dashboard/PageHeader";
+import { AntrianTable } from "@/components/dashboard/AntrianTable";
+import { RiwayatTimbanganTable } from "@/components/dashboard/RiwayatTimbanganTable";
+import { StatCard } from "@/components/ui/StatCard";
+import { DeleteModal, Toast, Button } from "@/components/ui";
+import { Export } from "@phosphor-icons/react";
+import TimbanganFilterModal from "@/components/dashboard/TimbanganFilterModal";
 
-interface Truck {
+interface ApiAntrianItem {
   id: string;
-  name: string;
-  license_plate: string;
+  tanggal_transaksi: string;
+  loading_in: string;
+  no_pol_truck: string;
+  nama_driver: string;
+  type_ownership: string | null;
+  nama_petani: string;
+  bruto: number;
 }
 
-interface Owner {
+interface ApiRiwayatItem {
   id: string;
-  name: string;
-  phone_number: string;
-  ownership_type: string;
+  tanggal_transaksi: string;
+  loading_in: string;
+  loading_out: string;
+  no_pol_truck: string;
+  nama_driver: string;
+  type_ownership: string | null;
+  nama_petani: string;
+  bruto: number;
+  tara: number;
+  netto: number;
+  amount: number;
+  payment_method: string;
+  status: "paid" | "unpaid";
 }
 
-interface TruckOption {
-  value: string;
-  label: string;
-  license_plate: string;
+interface TimbanganHistoryResponse {
+  statusCode: number;
+  kpi: {
+    paid: number;
+    unpaid: number;
+    inqueue: number;
+  };
+  data: {
+    inQueue: ApiAntrianItem[];
+    history: ApiRiwayatItem[];
+  };
+  page?: {
+    number_page: number;
+    total_page: number;
+    total_data: number;
+    per_page: number;
+  };
 }
 
-interface OwnerOption {
-  value: string;
-  label: string;
-  name: string;
-  ownership_type?: string | null;
-  special_price?: number | null;
-}
-
-interface PaginationMeta {
-  per_page: number;
-  number_page: number;
-  total_page: number;
-  total_data: number;
-}
-
-interface TruckListResponse {
-  statusCode?: number;
-  data: Truck[];
-  page?: PaginationMeta;
-}
-
-interface OwnerListResponse {
-  statusCode?: number;
-  data: Owner[];
-  page?: PaginationMeta;
-}
-
-interface LoginPayload {
-  sub?: string;
-  location_id?: string;
-}
-
-function decodeJwtPayload(token: string): LoginPayload | null {
-  const tokenParts = token.split(".");
-  if (tokenParts.length < 2) return null;
-
-  try {
-    const base64 = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-    const json = atob(padded);
-    return JSON.parse(json) as LoginPayload;
-  } catch {
-    return null;
-  }
-}
-
-function getStoredToken(): string | null {
-  const candidateKeys = ["token", "auth_token", "access_token", "authToken"];
-
-  for (const key of candidateKeys) {
-    const value = localStorage.getItem(key) ?? sessionStorage.getItem(key);
-    if (!value) continue;
-
-    try {
-      const parsed = JSON.parse(value) as { token?: string };
-      if (parsed?.token && typeof parsed.token === "string") {
-        return parsed.token;
-      }
-    } catch {
-      if (typeof value === "string" && value.includes(".")) {
-        return value;
-      }
-    }
-  }
-
-  return null;
-}
-
-function buildTodayIsoDateTime(time: string): string {
-  const [hour, minute] = time.split(":").map((val) => Number.parseInt(val, 10));
-  const now = new Date();
-  const composed = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    Number.isNaN(hour) ? 0 : hour,
-    Number.isNaN(minute) ? 0 : minute,
-    0,
-    0,
-  );
-
-  return composed.toISOString();
-}
-
-const selectStyles = {
-  control: (base: any, state: any) => ({
-    ...base,
-    minHeight: "48px",
-    borderRadius: "12px",
-    borderColor: state.isFocused ? "#3b82f6" : "#e2e8f0",
-    boxShadow: state.isFocused ? "0 0 0 4px rgba(59, 130, 246, 0.08)" : "none",
-    backgroundColor: state.isDisabled ? "#f9fafb" : "#ffffff",
-    cursor: "text",
-    "&:hover": {
-      borderColor: state.isFocused ? "#3b82f6" : "#cbd5e1",
-    },
-  }),
-  placeholder: (base: any) => ({
-    ...base,
-    color: "#9ca3af",
-  }),
-  singleValue: (base: any) => ({
-    ...base,
-    color: "#111827",
-  }),
-  input: (base: any) => ({
-    ...base,
-    color: "#111827",
-  }),
-  menu: (base: any) => ({
-    ...base,
-    borderRadius: "12px",
-    overflow: "hidden",
-    zIndex: 30,
-  }),
-  option: (base: any, state: any) => ({
-    ...base,
-    backgroundColor: state.isSelected
-      ? "#dbeafe"
-      : state.isFocused
-        ? "#eff6ff"
-        : "#ffffff",
-    color: "#111827",
-    cursor: "pointer",
-  }),
-  clearIndicator: (base: any) => ({
-    ...base,
-    color: "#94a3b8",
-    cursor: "pointer",
-    "&:hover": {
-      color: "#64748b",
-    },
-  }),
-  dropdownIndicator: (base: any, state: any) => ({
-    ...base,
-    color: state.isFocused ? "#3b82f6" : "#94a3b8",
-    "&:hover": {
-      color: "#3b82f6",
-    },
-  }),
-};
-
-export default function InputTimbanganPage() {
+export default function TimbanganPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const role = (params.role as string) || "branch";
-  
-  const [formData, setFormData] = useState({
-    nopol: "",
-    customer: "",
-    supir: "",
-    jamMasuk: "",
-    jamKeluar: "",
-    bruto: "",
-    tara: "",
-    paymentMethod: "",
-    harga: "7500",
-    isHargaSpesial: false,
-    truck_id: "",
-    owner_id: "",
-    user_id: "",
-    location_id: "",
-  });
+  const roleRaw = params.role as string;
+  const role = !roleRaw || roleRaw === "undefined" ? "branch" : roleRaw;
 
-  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const [truckOptions, setTruckOptions] = useState<TruckOption[]>([]);
-  const [selectedTruck, setSelectedTruck] = useState<TruckOption | null>(null);
-  const [isTruckLoading, setIsTruckLoading] = useState(false);
-  const [truckSearchQuery, setTruckSearchQuery] = useState("");
-  const [ownerOptions, setOwnerOptions] = useState<OwnerOption[]>([]);
-  const [selectedOwner, setSelectedOwner] = useState<OwnerOption | null>(null);
-  const [isOwnerLoading, setIsOwnerLoading] = useState(false);
-  const [ownerSearchQuery, setOwnerSearchQuery] = useState("");
-  const [locationPrice, setLocationPrice] = useState<number | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [antrian, setAntrian] = useState<any[]>([]);
+  const [riwayat, setRiwayat] = useState<any[]>([]);
+  const [location, setLocation] = useState<any>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
-
-  const DEFAULT_BRANCH_LOCATION_ID = "07bf151f-ed44-4a5d-96cb-afed7e087c7a";
-  const DEFAULT_BRANCH_USER_ID = "8345ff68-0aa6-4e76-bac5-ec14d782938f";
-  const queryLocationId = searchParams.get("location_id") || "";
-  const queryUserId = searchParams.get("user_id") || "";
+  const [summary, setSummary] = useState({
+    inQueue: 0,
+    paid: 0,
+    unpaid: 0,
+  });
+  const riwayatLimit = 10;
+  const [riwayatPagination, setRiwayatPagination] = useState({
+    per_page: riwayatLimit,
+    number_page: 1,
+    total_page: 1,
+    total_data: 0,
+  });
+  const currentPage = Number(searchParams.get("page") || 1);
+  const [authLocationId, setAuthLocationId] = useState("");
 
   useEffect(() => {
-    setIsMounted(true);
+    axios.get<{ data?: { location_id?: string } }>("/api/auth/me")
+      .then((res) => setAuthLocationId(res.data?.data?.location_id || ""))
+      .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (!isMounted) return;
+  const resolvedLocationId = searchParams.get("location_id") || authLocationId;
 
-    const token = getStoredToken();
-    const payload = token ? decodeJwtPayload(token) : null;
+  function formatCurrency(value: number) {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(value || 0);
+  }
 
-    setFormData((current) => ({
-      ...current,
-      user_id: queryUserId || payload?.sub || current.user_id,
-      location_id:
-        queryLocationId ||
-        payload?.location_id ||
-        current.location_id ||
-        DEFAULT_BRANCH_LOCATION_ID,
-    }));
-  }, [isMounted, queryLocationId, queryUserId]);
+    function formatKw(value: number) {
+      return `${new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format((value || 0) / 100)} kw`;
+    }
 
-  useEffect(() => {
-    if (!isMounted) return;
+    function formatExportDateLabel(value: string) {
+      if (!value) return "ALL";
 
-    const fetchLocation = async () => {
-      try {
-        const locationId = queryLocationId || formData.location_id || DEFAULT_BRANCH_LOCATION_ID;
-        const resp = await axios.get(`/api/location/${locationId}`);
-        const data = resp.data?.data;
-        if (data && typeof data.sugar_price === "number") {
-          setLocationPrice(data.sugar_price);
-          // if no owner special selected, set harga to location price
-          setFormData((cur) => ({ ...cur, harga: String(data.sugar_price ?? cur.harga) }));
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        return value;
+      }
+
+      return new Intl.DateTimeFormat("id-ID", {
+        timeZone: "Asia/Jakarta",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(parsed);
+    }
+
+    function getExportRangeLabel() {
+      const startDate = searchParams.get("start_date") || "";
+      const endDate = searchParams.get("end_date") || "";
+
+      if (startDate && endDate) {
+        if (startDate === endDate) {
+          return formatExportDateLabel(startDate);
         }
-      } catch (err) {
-        console.error("Error fetching location price:", err);
+
+        return `${formatExportDateLabel(startDate)} s.d ${formatExportDateLabel(endDate)}`;
       }
-    };
 
-    
+      const ownershipType = searchParams.get("ownership_type") || "";
+      const status = searchParams.get("status") || "";
+      const customer = searchParams.get("customer") || "";
 
-    fetchLocation();
-  }, [isMounted, queryLocationId, formData.location_id]);
-
-  useEffect(() => {
-    if (!isMounted) return;
-
-    const fetchOwners = async () => {
-      setIsOwnerLoading(true);
-
-      try {
-        const response = await axios.get<OwnerListResponse>("/api/owner", {
-          params: {
-            limit: 100,
-            search: ownerSearchQuery.trim() || undefined,
-          },
-        });
-
-        const options = (response.data.data ?? []).map((owner) => {
-          const ownerTypeLabel = owner.ownership_type === "farmer"
-            ? "Petani"
-            : owner.ownership_type === "private"
-              ? "Pribadi"
-              : owner.ownership_type;
-
-          return {
-            value: owner.id,
-            label: `${owner.name} (${owner.phone_number}) - ${ownerTypeLabel}`,
-            name: owner.name,
-            ownership_type: owner.ownership_type,
-            special_price: (owner as any).special_price ?? null,
-          } as OwnerOption;
-        });
-
-        setOwnerOptions(options);
-      } catch (error) {
-        console.error("Error fetching owner options:", error);
-        setOwnerOptions([]);
-      } finally {
-        setIsOwnerLoading(false);
+      if (ownershipType || status || customer) {
+        return [ownershipType, status, customer].filter(Boolean).join(" - ");
       }
-    };
 
-    const debounceTimer = setTimeout(() => {
-      fetchOwners();
-    }, 300);
+      return "ALL";
+    }
 
-    return () => clearTimeout(debounceTimer);
-  }, [isMounted, ownerSearchQuery]);
-
-  useEffect(() => {
-    if (!isMounted) return;
-
-    const fetchTrucks = async () => {
-      setIsTruckLoading(true);
-
-      try {
-        const response = await axios.get<TruckListResponse>("/api/truck", {
-          params: {
-            limit: 100,
-            search: truckSearchQuery.trim() || undefined,
-          },
-        });
-
-        const options = (response.data.data ?? []).map((truck) => {
-          const truckName = truck.name?.trim() || "Truk tanpa nama";
-
-          return {
-            value: truck.id,
-            label: `${truck.license_plate} - ${truckName}`,
-            license_plate: truck.license_plate,
-          };
-        });
-
-        setTruckOptions(options);
-      } catch (error) {
-        console.error("Error fetching truck options:", error);
-        setTruckOptions([]);
-      } finally {
-        setIsTruckLoading(false);
-      }
-    };
-
-    const debounceTimer = setTimeout(() => {
-      fetchTrucks();
-    }, 300);
-
-    return () => clearTimeout(debounceTimer);
-  }, [isMounted, truckSearchQuery]);
-
-  const handleTruckChange = (option: SingleValue<TruckOption>) => {
-    setSelectedTruck(option ?? null);
-    setFormData((current) => ({
-      ...current,
-      nopol: option?.license_plate ?? "",
-      truck_id: option?.value ?? "",
-    }));
-  };
-
-  const handleOwnerChange = (option: SingleValue<OwnerOption>) => {
-    setSelectedOwner(option ?? null);
-    const owner = option ?? null;
-    setFormData((current) => ({
-      ...current,
-      customer: owner?.label ?? "",
-      owner_id: owner?.value ?? "",
-    }));
-
-    // special owner: enable special price, set harga to owner's special_price and disable editing
-    if (owner?.ownership_type === "special") {
-      const sp = owner.special_price ?? null;
-      setFormData((cur) => ({ ...cur, harga: sp !== null ? String(sp) : cur.harga, isHargaSpesial: true }));
-    } else if (owner?.ownership_type === "private") {
-      // farmer or private: default harga to zero and allow manual edit
-      setFormData((cur) => ({ ...cur, harga: "0", isHargaSpesial: false }));
+  const handlePageChange = (page: number) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (page > 1) {
+      nextParams.set("page", String(page));
     } else {
-      // other owner types: default harga to location price and allow manual edit
-      setFormData((cur) => ({ ...cur, harga: locationPrice !== null ? String(locationPrice) : cur.harga, isHargaSpesial: false }));
+      nextParams.delete("page");
     }
+    router.push(`/${role}/timbangan?${nextParams.toString()}`);
   };
 
-  const isFormValid = 
-    !!formData.nopol && 
-    !!formData.customer && 
-    !!formData.supir && 
-    !!formData.jamMasuk && 
-    !!formData.bruto && 
-    !!formData.paymentMethod && 
-    !!formData.truck_id &&
-    !!formData.owner_id;
+  const handleStatusChange = async (id: string, status: string) => {
+    const currentItem = riwayat.find((item) => item.id === id);
 
-  const showErrorToast = (message: string) => {
-    setToastType("error");
-    setToastMessage(message);
-    setShowToast(true);
-  };
-
-  const handleSubmit = async () => {
-    if (!formData.truck_id) {
-      showErrorToast("Silakan pilih truk terlebih dahulu");
-      return;
-    }
-
-    if (!formData.owner_id) {
-      showErrorToast("Silakan pilih customer terlebih dahulu");
-      return;
-    }
-
-    // if (!formData.user_id) {
-    //   showErrorToast("User tidak ditemukan. Silakan login ulang");
-    //   return;
-    // }
-
-    const brutoWeight = Number.parseInt(formData.bruto, 10);
-    const taraWeight = formData.tara ? Number.parseInt(formData.tara, 10) : undefined;
-    const sugarPrice = Number.parseInt(formData.harga.replace(/[^0-9]/g, ""), 10);
-
-    if (Number.isNaN(brutoWeight)) {
-      showErrorToast("Berat bruto harus berupa angka yang valid");
-      return;
-    }
-
-    if (taraWeight !== undefined && Number.isNaN(taraWeight)) {
-      showErrorToast("Berat tara harus berupa angka yang valid");
+    if (!currentItem) {
+      setToastType("error");
+      setToastMessage("Data transaksi tidak ditemukan");
+      setShowToast(true);
       return;
     }
 
     try {
-      setIsSubmitting(true);
+      const response = await axios.put(`/api/branch/transaction/payment/${id}`, {
+        status,
+        payment_method: currentItem.payment_method,
+      });
 
-      const payload = {
-        bruto_weight: brutoWeight,
-        tarra_weight: taraWeight,
-        loading_in: buildTodayIsoDateTime(formData.jamMasuk),
-        loading_out: formData.jamKeluar
-          ? buildTodayIsoDateTime(formData.jamKeluar)
-          : undefined,
-        truck_id: formData.truck_id,
-        location_id: formData.location_id || queryLocationId || DEFAULT_BRANCH_LOCATION_ID,
-        user_id: formData.user_id || queryUserId || DEFAULT_BRANCH_USER_ID,
-        owner_id: formData.owner_id,
-        payment_method: formData.paymentMethod,
-        driver_name: formData.supir.trim() || undefined,
-        sugar_price: Number.isNaN(sugarPrice) ? undefined : sugarPrice,
-      };
+      setRiwayat((current) =>
+        current.map((item) =>
+          item.id === id ? { ...item, status: status as "paid" | "unpaid" } : item,
+        ),
+      );
 
-      const response = await axios.post("/api/branch/transaction/in", payload);
+      setSummary((current) => ({
+        ...current,
+        paid:
+          status === "paid"
+            ? current.paid + 1
+            : Math.max(0, current.paid - 1),
+        unpaid:
+          status === "unpaid"
+            ? current.unpaid + 1
+            : Math.max(0, current.unpaid - 1),
+      }));
 
       setToastType("success");
-      setToastMessage(response.data?.message || "Transaksi berhasil dibuat");
+      setToastMessage(response.data?.message || "Status transaksi berhasil diperbarui");
       setShowToast(true);
-
-      const nextParams = new URLSearchParams();
-      if (formData.location_id) {
-        nextParams.set("location_id", formData.location_id);
-      }
-      nextParams.set("success", "true");
-
-      setTimeout(() => {
-        router.push(`/${role}/timbangan?${nextParams.toString()}`);
-      }, 600);
+      setTimeout(() => setShowToast(false), 3000);
     } catch (error) {
       const apiMessage =
         axios.isAxiosError(error)
           ? (error.response?.data?.message as string | undefined)
           : undefined;
 
-      showErrorToast(apiMessage || "Gagal menyimpan transaksi");
-    } finally {
-      setIsSubmitting(false);
+      setToastType("error");
+      setToastMessage(apiMessage || "Gagal memperbarui status transaksi");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
     }
   };
 
-  // Derived values
-  const brutoVal = parseFloat(formData.bruto) || 0;
-  const taraVal = parseFloat(formData.tara) || 0;
-  const nettoKw = Math.max(0, brutoVal - taraVal) / 100;
-  const hargaVal = parseFloat(formData.harga.replace(/[^0-9]/g, "")) || 0;
-  const totalHarga = nettoKw * 100 * hargaVal;
-  const totalHargaDisplay = new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0
-  }).format(totalHarga);
+  const handleExport = async () => {
+    try {
+      const response = await axios.get<TimbanganHistoryResponse>(
+        "/api/history/transaction",
+        {
+          params: {
+            page: 1,
+            limit: riwayatPagination.total_data || 1000,
+            location_id: resolvedLocationId,
+            ...(searchParams.get("start_date")
+              ? { start_date: searchParams.get("start_date") }
+              : {}),
+            ...(searchParams.get("end_date")
+              ? { end_date: searchParams.get("end_date") }
+              : {}),
+            ...(searchParams.get("ownership_type")
+              ? { ownership_type: searchParams.get("ownership_type") }
+              : {}),
+            ...(searchParams.get("status")
+              ? { status: searchParams.get("status") }
+              : {}),
+            ...(searchParams.get("customer")
+              ? { customer: searchParams.get("customer") }
+              : {}),
+          },
+        },
+      );
 
-  const receiptData = {
-    customer: selectedOwner?.name || formData.customer,
-    nopol: selectedTruck?.license_plate || formData.nopol,
-    masuk: formData.jamMasuk,
-    keluar: formData.jamKeluar,
-    bruto: formData.bruto,
-    tara: formData.tara,
-    netto: nettoKw.toFixed(2),
-    hargaPerKw: hargaVal.toLocaleString("id-ID"),
-    total: totalHargaDisplay,
-    operator: "Dadang Utama Jaya",
+      const rows = (response.data?.data?.history ?? []).map((item) => ({
+        Tanggal: item.tanggal_transaksi,
+        Masuk: item.loading_in,
+        Keluar: item.loading_out,
+        Nopol: item.no_pol_truck,
+        Supir: item.nama_driver,
+        Ownership: item.type_ownership ?? "",
+        Customer: item.nama_petani,
+        Bruto: formatKw(item.bruto),
+        Tarre: formatKw(item.tara),
+        Netto: formatKw(item.netto),
+        Amount: formatCurrency(item.amount),
+        Payment: item.payment_method,
+        Status: item.status,
+      }));
+
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Timbangan");
+
+      const fileName = `MUSLA_TRANS_UTAMA - TIMBANGAN - (${getExportRangeLabel()}).xlsx`;
+      XLSX.writeFile(workbook, fileName);
+    } catch (error) {
+      console.error("Error exporting timbangan data:", error);
+    }
   };
 
+  useEffect(() => {
+    if (searchParams.get("success") === "true") {
+      setToastType("success");
+      setToastMessage("Data Berhasil Disimpan");
+      setShowToast(true);
+      const timer = setTimeout(() => setShowToast(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const locationResponse = await axios.get(
+          `/api/location/${resolvedLocationId}`,
+        );
+        const locationData = locationResponse.data?.data;
+        if (locationData) {
+          setLocation(locationData);
+        }
+      } catch (error) {
+        console.error("Error fetching location data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+
+      try {
+        // ✅ 1 request untuk antrian + KPI (tanpa filter, tanpa pagination)
+        const antrianResponse = await axios.get<TimbanganHistoryResponse>(
+          "/api/history/transaction",
+          {
+            params: {
+              limit: 10,
+              location_id:
+                resolvedLocationId,
+              // tidak kirim filter apapun supaya KPI selalu akurat
+            },
+          },
+        );
+
+        setSummary({
+          inQueue: Number(antrianResponse.data?.kpi?.inqueue ?? 0),
+          paid: Number(antrianResponse.data?.kpi?.paid ?? 0),
+          unpaid: Number(antrianResponse.data?.kpi?.unpaid ?? 0),
+        });
+        setAntrian(
+          (antrianResponse.data?.data?.inQueue ?? []).map((item) => ({
+            id: item.id,
+            transaction_date: item.tanggal_transaksi,
+            loading_in: item.loading_in,
+            license_plate: item.no_pol_truck,
+            driver_name: item.nama_driver,
+            ownership_type: item.type_ownership ?? "",
+            customer_name: item.nama_petani,
+            bruto_weight: item.bruto,
+          })),
+        );
+
+        const riwayatResponse = await axios.get<TimbanganHistoryResponse>(
+          "/api/history/transaction",
+          {
+            params: {
+              page: currentPage,
+              limit: riwayatLimit,
+              location_id:
+                resolvedLocationId,
+              ...(searchParams.get("start_date")
+                ? { start_date: searchParams.get("start_date") }
+                : {}),
+              ...(searchParams.get("end_date")
+                ? { end_date: searchParams.get("end_date") }
+                : {}),
+              ...(searchParams.get("ownership_type")
+                ? { ownership_type: searchParams.get("ownership_type") }
+                : {}),
+              ...(searchParams.get("status")
+                ? { status: searchParams.get("status") }
+                : {}),
+              ...(searchParams.get("customer")
+                ? { customer: searchParams.get("customer") }
+                : {}),
+            },
+          },
+        );
+
+        setRiwayat(
+          (riwayatResponse.data?.data?.history ?? []).map((item) => ({
+            id: item.id,
+            transaction_date: item.tanggal_transaksi,
+            loading_in: item.loading_in,
+            loading_out: item.loading_out,
+            license_plate: item.no_pol_truck,
+            driver_name: item.nama_driver,
+            ownership_type: item.type_ownership ?? "",
+            customer_name: item.nama_petani,
+            bruto_weight: item.bruto,
+            tarra_weight: item.tara,
+            netto_weight: item.netto,
+            total_price: item.amount,
+            payment_method: item.payment_method,
+            status: item.status,
+          })),
+        );
+
+        // ✅ Pagination HANYA dari riwayatResponse
+        if (riwayatResponse.data?.page) {
+          setRiwayatPagination({
+            per_page: riwayatLimit,
+            number_page: riwayatResponse.data.page.number_page || currentPage,
+            total_page: riwayatResponse.data.page.total_page || 1,
+            total_data: riwayatResponse.data.page.total_data || 0,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching timbangan data:", error);
+        setAntrian([]);
+        setRiwayat([]);
+        setSummary({ inQueue: 0, paid: 0, unpaid: 0 });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [searchParams, currentPage]);
+
   return (
-    <div className="flex flex-col gap-6 w-full max-w-full pb-10">
+    <div className="flex flex-col w-full max-w-full pb-10">
       <Toast
         isVisible={showToast}
-        onClose={() => setShowToast(false)}
-        type={toastType}
         message={toastMessage}
+        type={toastType}
+      />
+      <PageHeader
+        title="Timbangan"
+        thirdAction={{
+          label: "Export",
+          onClick: handleExport,
+          icon: <Export size={18} weight="bold" />,
+          variant: "white",
+        }}
+        primaryAction={{
+          label: "Add",
+          onClick: () => router.push(`/${role}/timbangan/add`),
+        }}
+        secondaryAction={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(true),
+        }}
       />
 
-      {/* Header & Breadcrumbs */}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="white" 
-              size="sm" 
-              onClick={() => router.back()}
-              className="p-2"
-              icon={<ArrowLeft size={18} weight="bold" className="text-gray-600" />}
-            >
-              {null}
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Input Timbangan</h1>
-          </div>
-          <Breadcrumbs 
-            items={[
-              { label: "Timbangan", href: `/${role}/timbangan` },
-              { label: "Input Timbangan", active: true }
-            ]} 
-          />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <StatCard
+          label="Today"
+          value={`${summary.inQueue} Truk`}
+          title="Dalam Antrian"
+        />
+        <StatCard
+          label="Today"
+          value={formatCurrency(summary.paid)}
+          title="Dibayar"
+        />
+        <StatCard
+          label="Today"
+          value={formatCurrency(summary.unpaid)}
+          title="Belum Dibayar"
+        />
+        <StatCard
+          label="Harga Patokan"
+          value={location ? formatCurrency(location.sugar_price) : "Rp 0"}
+          title="Harga tebu"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Form Column */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          <Card title="Form Timbangan">
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-2 w-full">
-                <label className="text-xs font-bold text-gray-600">
-                  Input Nopol <span className="text-red-500">*</span>
-                </label>
-                {isMounted ? (
-                  <ReactSelect
-                    isClearable
-                    isSearchable
-                    isLoading={isTruckLoading}
-                    placeholder="Cari nopol atau nama truck"
-                    value={selectedTruck}
-                    onChange={handleTruckChange}
-                    onInputChange={setTruckSearchQuery}
-                    inputValue={truckSearchQuery}
-                    options={truckOptions}
-                    styles={selectStyles}
-                    noOptionsMessage={() => (isTruckLoading ? "Memuat data truk..." : truckSearchQuery ? "Truk tidak ditemukan" : "Ketik untuk mencari truk")}
-                  />
-                ) : (
-                  <Input
-                    placeholder="Memuat data truk..."
-                    disabled
-                  />
-                )}
-              </div>
-              
-              <div className="flex flex-col gap-2 w-full">
-                <label className="text-xs font-bold text-gray-600">
-                  Customer <span className="text-red-500">*</span>
-                </label>
-                {isMounted ? (
-                  <ReactSelect
-                    isClearable
-                    isSearchable
-                    isLoading={isOwnerLoading}
-                    placeholder="Cari nama atau nomor customer"
-                    value={selectedOwner}
-                    onChange={handleOwnerChange}
-                    onInputChange={setOwnerSearchQuery}
-                    inputValue={ownerSearchQuery}
-                    options={ownerOptions}
-                    styles={selectStyles}
-                    noOptionsMessage={() => (isOwnerLoading ? "Memuat data customer..." : ownerSearchQuery ? "Customer tidak ditemukan" : "Ketik untuk mencari customer")}
-                  />
-                ) : (
-                  <Input
-                    placeholder="Memuat data customer..."
-                    disabled
-                  />
-                )}
-              </div>
+      <div className="flex flex-col gap-8">
+        <AntrianTable data={antrian} isLoading={isLoading} role={role} />
 
-              <Input 
-                label="Supir" 
-                required 
-                placeholder="Masukkan Nama Supir" 
-                value={formData.supir}
-                onChange={(e) => setFormData({ ...formData, supir: e.target.value })}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
-                <Input 
-                  label="Masuk" 
-                  required 
-                  type="time"
-                  placeholder="00:00" 
-                  value={formData.jamMasuk}
-                  onChange={(e) => setFormData({ ...formData, jamMasuk: e.target.value })}
-                />
-                <Input 
-                  label="Keluar" 
-                  type="time"
-                  placeholder="00:00" 
-                  value={formData.jamKeluar}
-                  onChange={(e) => setFormData({ ...formData, jamKeluar: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Input 
-                  label="Bruto(Kg)" 
-                  required 
-                  type="number" 
-                  placeholder="0" 
-                  value={formData.bruto}
-                  onChange={(e) => setFormData({ ...formData, bruto: e.target.value })}
-                />
-                <Input 
-                  label="Tara(Kg)" 
-                  type="number" 
-                  placeholder="0" 
-                  value={formData.tara}
-                  onChange={(e) => setFormData({ ...formData, tara: e.target.value })}
-                />
-              </div>
-
-              {/* Harga Spesial Toggle */}
-              <div className="flex items-center justify-between py-2">
-                <label className="text-xs font-bold text-gray-600">
-                  Harga Spesial <span className="text-red-500">*</span>
-                </label>
-                <button
-                  onClick={() => {
-                    // prevent toggling when owner has forced special price
-                    if (selectedOwner?.ownership_type === "special") return;
-                    setFormData((cur) => ({ ...cur, isHargaSpesial: !cur.isHargaSpesial }));
-                  }}
-                  disabled={selectedOwner?.ownership_type === "special"}
-                  className={`w-12 h-6 rounded-full transition-all relative ${formData.isHargaSpesial ? 'bg-[#00A3FF]' : 'bg-gray-200'} ${selectedOwner?.ownership_type === "special" ? 'opacity-60 cursor-not-allowed' : ''}`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isHargaSpesial ? 'left-7' : 'left-1'}`} />
-                </button>
-              </div>
-
-              <Input 
-                label="Harga" 
-                required 
-                value={formData.harga}
-                onChange={(e) => setFormData({ ...formData, harga: e.target.value })}
-                disabled={formData.isHargaSpesial}
-                placeholder="0"
-                className={formData.isHargaSpesial ? "bg-gray-50 text-gray-400 cursor-not-allowed" : ""}
-              />
-
-              <Select 
-                label="Metode Pembayaran" 
-                required 
-                icon={<CaretDown size={18} />}
-                value={formData.paymentMethod}
-                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                options={[
-                  { value : "", label : "Pilih Metode"},
-                  { value: "cash", label: "Cash" },
-                  { value: "transfer", label: "Transfer" }
-                ]}
-              />
-            </div>
-          </Card>
-        </div>
-
-        {/* Output Column */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <Card title="Output Timbangan">
-            <div className="flex flex-col gap-6">
-              <Input 
-                label="Output Netto(kw)" 
-                disabled 
-                placeholder="0" 
-                value={nettoKw.toFixed(2)}
-              />
-              <Input 
-                label="Output Harga" 
-                disabled 
-                placeholder="Rp 0" 
-                value={totalHargaDisplay}
-              />
-            </div>
-          </Card>
-        </div>
+        <RiwayatTimbanganTable
+          data={riwayat}
+          isLoading={isLoading}
+          onEdit={(id) => router.push(`/${role}/timbangan/edit/${id}`)}
+          onDelete={(id) => {
+            setSelectedId(id);
+            setIsDeleteOpen(true);
+          }}
+          onStatusChange={handleStatusChange}
+          pagination={riwayatPagination}
+          onPageChange={handlePageChange}
+        />
       </div>
 
-      {/* Action Buttons Footer */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-7">
-          <Button 
-            variant="white" 
-            className="w-full py-4" 
-            onClick={() => router.back()}
-          >
-            Batal
-          </Button>
-        </div>
-        <div className="lg:col-span-5 flex flex-col gap-4">
-          <Button 
-            variant="white" 
-            className="w-full py-4"
-            onClick={() => setIsReceiptOpen(true)}
-          >
-            Print Struk
-          </Button>
-          <Button 
-            variant="primary" 
-            className={`w-full py-4 ${!isFormValid || isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
-            disabled={!isFormValid || isSubmitting}
-            onClick={handleSubmit}
-          >
-            {isSubmitting ? "Menyimpan..." : "Simpan"}
-          </Button>
-        </div>
-      </div>
+      <TimbanganFilterModal
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        initialValues={{
+          startDate: searchParams.get("start_date") ?? "",
+          endDate: searchParams.get("end_date") ?? "",
+          customer: searchParams.get("customer") ?? "",
+          ownership_type: (searchParams.get("ownership_type") as any) ?? "",
+          status: (searchParams.get("status") as any) ?? "",
+        }}
+        onApply={(f) => {
+          const nextParams = new URLSearchParams();
 
-      <ReceiptModal 
-        isOpen={isReceiptOpen}
-        onClose={() => setIsReceiptOpen(false)}
-        data={receiptData}
+          // Pertahankan location_id jika ada
+          const locationId = searchParams.get("location_id");
+          if (locationId) nextParams.set("location_id", locationId);
+
+          // Reset ke page 1
+          nextParams.delete("page");
+
+          if (f.startDate) nextParams.set("start_date", f.startDate);
+          if (f.endDate) nextParams.set("end_date", f.endDate);
+          if (f.customer) nextParams.set("customer", f.customer);
+          if (f.ownership_type)
+            nextParams.set("ownership_type", f.ownership_type);
+          if (f.status) nextParams.set("status", f.status);
+
+          router.push(`/${role}/timbangan?${nextParams.toString()}`);
+          setIsFilterOpen(false);
+        }}
+      />
+
+      <DeleteModal
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+        onConfirm={() => console.log("Delete", selectedId)}
       />
     </div>
   );

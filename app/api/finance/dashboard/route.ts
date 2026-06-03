@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma";
 
 type FilterType = "today" | "week" | "month" | "year" | "all";
 
@@ -146,8 +146,6 @@ function buildChartData(
 }
 
 export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
   try {
     const { searchParams } = new URL(request.url);
 
