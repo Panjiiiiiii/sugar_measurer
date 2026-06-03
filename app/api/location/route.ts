@@ -32,20 +32,6 @@ function getFirstQueryParam(searchParams: URLSearchParams, keys: string[]) {
 }
 
 export async function GET(request: Request) {
-  if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
-    const mockLocations = [
-      { id: "malang", name: "Malang", sugar_price: 14500, account_balance: 500000000 },
-      { id: "blitar", name: "Blitar", sugar_price: 14200, account_balance: 300000000 },
-      { id: "kediri-1", name: "Kediri 1", sugar_price: 14300, account_balance: 250000000 },
-      { id: "kediri-2", name: "Kediri 2", sugar_price: 14300, account_balance: 200000000 },
-    ];
-    return Response.json({
-      statusCode: 200,
-      data: mockLocations,
-      page: { number_page: 1, total_page: 1, total_data: 4 },
-    });
-  }
-
   const { searchParams } = new URL(request.url);
   const pageParam = getFirstQueryParam(searchParams, [
     "page",

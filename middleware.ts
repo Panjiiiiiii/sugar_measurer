@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
   "/api/location",
+  "/api/history",
 ];
 
 const ROLE_PREFIX_MAP: Record<string, string[]> = {
@@ -33,24 +34,7 @@ const SHARED_API = [
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const bypassAuth = process.env.NEXT_PUBLIC_DEV_BYPASS === "true";
-  if (bypassAuth) {
-    let mockRole = "manager";
-    if (pathname.startsWith("/finance")) mockRole = "finance";
-    else if (pathname.startsWith("/master")) mockRole = "master";
-    else if (pathname.startsWith("/operator")) mockRole = "operator";
-
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-user-id", "mock-user-id");
-    requestHeaders.set("x-user-role", mockRole);
-    requestHeaders.set("x-user-location-id", "07bf151f-ed44-4a5d-96cb-afed7e087c7a");
-    requestHeaders.set("x-user-email", `${mockRole}@example.com`);
-
-    if (pathname === "/") {
-      return NextResponse.redirect(new URL(`/${mockRole}/dashboard`, request.url));
-    }
-    return NextResponse.next({ request: { headers: requestHeaders } });
-  }
+  
 
   // Bypass public paths
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {

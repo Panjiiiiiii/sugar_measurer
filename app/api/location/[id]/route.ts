@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma";
 
 export async function GET(
   _request: Request,
@@ -7,24 +7,7 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
-    const mockLocations: Record<string, { id: string; name: string; sugar_price: number; account_balance: number }> = {
-      "loc-1": { id: "loc-1", name: "Malang", sugar_price: 14500, account_balance: 500000000 },
-      "loc-2": { id: "loc-2", name: "Blitar", sugar_price: 14200, account_balance: 300000000 },
-      "loc-3": { id: "loc-3", name: "Kediri 1", sugar_price: 14300, account_balance: 250000000 },
-      "loc-4": { id: "loc-4", name: "Kediri 2", sugar_price: 14300, account_balance: 200000000 },
-    };
-    const mockLoc = mockLocations[id] || {
-      id,
-      name: id.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase()),
-      sugar_price: 14000,
-      account_balance: 100000000
-    };
-    return Response.json({
-      statusCode: 200,
-      data: mockLoc,
-    });
-  }
+  
 
   const location = await prisma.location.findUnique({
     where: {
@@ -56,12 +39,7 @@ export async function PUT(
   try {
     const { id } = await params;
 
-    if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
-      return Response.json({
-        statusCode: 201,
-        message: "Lokasi berhasil diperbarui",
-      });
-    }
+    
 
     const locationData: Partial<Prisma.locationUncheckedUpdateInput> =
       await request.json();
