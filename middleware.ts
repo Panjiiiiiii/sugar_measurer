@@ -8,6 +8,7 @@ const PUBLIC_PATHS = [
   "/api/auth/login",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
+  "/api/location",
 ];
 
 const ROLE_PREFIX_MAP: Record<string, string[]> = {
