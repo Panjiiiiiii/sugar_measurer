@@ -27,6 +27,7 @@ const SHARED_API = [
   "/api/auth/me",
   "/api/auth/logout",
   "/api/auth/profile",
+  "/api/notification/",
 ];
 
 export async function middleware(request: NextRequest) {

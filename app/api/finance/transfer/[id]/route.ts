@@ -3,6 +3,7 @@ import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { validateCreateTransferInput } from "@/schema/transfer";
 import { z } from "zod";
+import { sendNotification } from "@/lib/notification";
 
 const BASE64_PATTERN = /^data:([\w/+.-]+);base64,([A-Za-z0-9+/=\s]+)$/;
 
@@ -14,7 +15,6 @@ function getExtensionFromMimeType(mimeType: string) {
         "image/webp": "webp",
         "application/pdf": "pdf",
     };
-
     return mimeMap[mimeType] ?? "bin";
 }
 
@@ -29,15 +29,8 @@ function decodeBase64File(base64Input?: string) {
     try {
         const normalizedBase64 = base64Data.replace(/\s/g, "");
         const buffer = Buffer.from(normalizedBase64, "base64");
-
-        if (!buffer.byteLength) {
-            return null;
-        }
-
-        return {
-            mimeType: finalMimeType,
-            buffer,
-        };
+        if (!buffer.byteLength) return null;
+        return { mimeType: finalMimeType, buffer };
     } catch {
         return null;
     }
@@ -55,14 +48,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const amount = payload.amount;
 
         const decodedFile = decodeBase64File(payload.bukti_transfer);
-
         if (!decodedFile) {
-            return Response.json(
-                {
-                    message: "Invalid bukti transfer base64 format",
-                },
-                { status: 400 },
-            );
+            return Response.json({ message: "Invalid bukti transfer base64 format" }, { status: 400 });
         }
 
         const extension = getExtensionFromMimeType(decodedFile.mimeType);
@@ -76,28 +63,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         await mkdir(absoluteDirectory, { recursive: true });
         await writeFile(absoluteFilePath, decodedFile.buffer);
 
-        let transactionResult: {
-            updatedLocation: unknown;
-            transferLog: unknown;
-        } | null = null;
+        // Simpan untuk notif
+        let updatedBalance = 0;
+        let locationName = "";
 
         try {
-            transactionResult = await prisma.$transaction(async (tx) => {
+            const transactionResult = await prisma.$transaction(async (tx) => {
                 const existingLocation = await tx.location.findUnique({
                     where: { id: locationId },
                 });
-
-                if (!existingLocation) {
-                    return null;
-                }
+                if (!existingLocation) return null;
 
                 const updatedLocation = await tx.location.update({
                     where: { id: existingLocation.id },
-                    data: {
-                        account_balance: {
-                            increment: amount,
-                        },
-                    },
+                    data: { account_balance: { increment: amount } },
                 });
 
                 const transferLog = await tx.logTransfer.create({
@@ -105,36 +84,49 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                         location_id: existingLocation.id,
                         user_id: payload.user_id,
                         bukti_transfer: publicFilePath ?? "cash",
-                        transfer_status : "in",
+                        transfer_status: "in",
                         transfer_amount: amount,
                     },
                 });
 
-                return {
-                    updatedLocation,
-                    transferLog,
-                };
+                // Simpan untuk notif
+                updatedBalance = updatedLocation.account_balance ?? 0;
+                locationName = existingLocation.name;
+
+                return { updatedLocation, transferLog };
             });
+
+            if (!transactionResult) {
+                return Response.json({ message: "Location not found", data: null }, { status: 404 });
+            }
         } catch (dbError) {
             await unlink(absoluteFilePath).catch(() => undefined);
             throw dbError;
         }
 
-        if (!transactionResult) {
-            return Response.json(
-                {
-                    message: "Location not found",
-                    data: null,
-                },
-                { status: 404 },
-            );
-        }
+        // Query operator di lokasi tsb + semua manager
+        const recipients = await prisma.user.findMany({
+            where: {
+                OR: [
+                    { role: "operator", location_id: locationId },
+                    { role: "manager" },
+                ],
+            },
+            select: { id: true },
+        });
+
+        const userIds = recipients.map((u) => u.id);
+
+        await sendNotification({
+            userIds,
+            type: "transaction_in",
+            title: `Top up masuk - ${locationName}`,
+            description: `Saldo lokasi ${locationName} sekarang Rp ${updatedBalance.toLocaleString("id-ID")}`,
+            url: "/manager/notification",
+        });
 
         return Response.json(
-            {
-                statusCode: 201,
-                message: "Transfer added successfully",
-            },
+            { statusCode: 201, message: "Transfer added successfully" },
             { status: 201 },
         );
 
@@ -144,25 +136,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 field: issue.path.join("."),
                 message: issue.message,
             }));
-            const firstErrorMessage = validationErrors[0]?.message ?? "Validation failed";
-
             return Response.json(
-                {
-                    statusCode: 400,
-                    message: firstErrorMessage,
-                    errors: validationErrors,
-                    data: null,
-                },
+                { statusCode: 400, message: validationErrors[0]?.message ?? "Validation failed", errors: validationErrors, data: null },
                 { status: 400 },
             );
         }
 
-        return Response.json(
-            {
-                statusCode: 500,
-                message: "Error adding transfer",
-            },
-            { status: 500 },
-        );
+        return Response.json({ statusCode: 500, message: "Error adding transfer" }, { status: 500 });
     }
 }

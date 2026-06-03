@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-export default function RoleRedirectPage({ params }: { params: { role: string } }) {
-  const { role } = params;
+export default async function RoleRedirectPage({ params }: { params: Promise<{ role: string }> }) {
+  const { role } = await params;
   redirect(`/${role}/timbangan`);
 }

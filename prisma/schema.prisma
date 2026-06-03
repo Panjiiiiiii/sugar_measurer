@@ -5,22 +5,23 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 model user {
-  id           String         @id @default(uuid())
-  name         String
-  password     String
-  role         role
-  created_at   DateTime       @default(now())
-  updated_at   DateTime       @updatedAt
-  location_id  String
-  email        String         @unique
-  location     location       @relation(fields: [location_id], references: [id])
-  logTransfers logTransfer[]
-  transactions transaction[]
-  notification notification[]
+  id               String              @id @default(uuid())
+  name             String
+  password         String
+  role             role
+  created_at       DateTime            @default(now())
+  updated_at       DateTime            @updatedAt
+  location_id      String
+  email            String              @unique
+  location         location            @relation(fields: [location_id], references: [id])
+  logTransfers     logTransfer[]
+  transactions     transaction[]
+  notification     notification[]
+  pushSubscription push_subscription[]
 }
 
 model owner {
@@ -107,6 +108,16 @@ model notification {
   is_read     Boolean  @default(false)
   created_at  DateTime @default(now())
   user        user     @relation(fields: [user_id], references: [id])
+}
+
+model push_subscription {
+  id         String   @id @default(uuid())
+  user_id    String   @unique
+  endpoint   String
+  p256dh     String
+  auth       String
+  created_at DateTime @default(now())
+  user       user     @relation(fields: [user_id], references: [id])
 }
 
 enum role {

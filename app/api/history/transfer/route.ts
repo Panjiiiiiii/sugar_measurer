@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma, transfer_status } from "@/generated/prisma/client";
+import { Prisma, transfer_status } from "@/generated/prisma";
 
 interface PaginationMeta {
 	number_page: number;
