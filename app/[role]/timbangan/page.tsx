@@ -97,8 +97,8 @@ export default function TimbanganPage() {
       .catch(() => {});
   }, []);
 
-  const resolvedLocationId = searchParams.get("location_id") || authLocationId;
-
+  const resolvedLocationId =  authLocationId;
+  
   function formatCurrency(value: number) {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -280,6 +280,8 @@ export default function TimbanganPage() {
   }, [searchParams]);
 
   useEffect(() => {
+    if (!resolvedLocationId) return;
+
     const fetchData = async () => {
       setIsLoading(true);
       try {
@@ -296,9 +298,10 @@ export default function TimbanganPage() {
     };
 
     fetchData();
-  }, []);
+  }, [resolvedLocationId]);
 
   useEffect(() => {
+    if (!resolvedLocationId) return;
     const fetchData = async () => {
       setIsLoading(true);
 
@@ -380,7 +383,6 @@ export default function TimbanganPage() {
           })),
         );
 
-        // ✅ Pagination HANYA dari riwayatResponse
         if (riwayatResponse.data?.page) {
           setRiwayatPagination({
             per_page: riwayatLimit,
@@ -400,7 +402,7 @@ export default function TimbanganPage() {
     };
 
     fetchData();
-  }, [searchParams, currentPage]);
+  }, [searchParams, currentPage, resolvedLocationId]);
 
   return (
     <div className="flex flex-col w-full max-w-full pb-10">

@@ -45,7 +45,8 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
-    pathname.startsWith("/public")
+    pathname.startsWith("/public") ||
+    pathname === "/sw.js"
   ) {
     return NextResponse.next();
   }
