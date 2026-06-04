@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { date } from "zod";
 
 export async function GET(request: Request) {
   try {
