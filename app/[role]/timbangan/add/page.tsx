@@ -4,17 +4,13 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import ReactSelect, { type SingleValue } from "react-select";
-import {
-  CaretDown,
-  ArrowLeft
-} from "@phosphor-icons/react";
+import { CaretDown, ArrowLeft } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
 import { Toast } from "@/components/ui/Toast";
-import { payment_method } from "@/generated/prisma/enums";
 
 interface Truck {
   id: string;
@@ -60,47 +56,6 @@ interface OwnerListResponse {
   statusCode?: number;
   data: Owner[];
   page?: PaginationMeta;
-}
-
-interface LoginPayload {
-  sub?: string;
-  location_id?: string;
-}
-
-function decodeJwtPayload(token: string): LoginPayload | null {
-  const tokenParts = token.split(".");
-  if (tokenParts.length < 2) return null;
-
-  try {
-    const base64 = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-    const json = atob(padded);
-    return JSON.parse(json) as LoginPayload;
-  } catch {
-    return null;
-  }
-}
-
-function getStoredToken(): string | null {
-  const candidateKeys = ["token", "auth_token", "access_token", "authToken"];
-
-  for (const key of candidateKeys) {
-    const value = localStorage.getItem(key) ?? sessionStorage.getItem(key);
-    if (!value) continue;
-
-    try {
-      const parsed = JSON.parse(value) as { token?: string };
-      if (parsed?.token && typeof parsed.token === "string") {
-        return parsed.token;
-      }
-    } catch {
-      if (typeof value === "string" && value.includes(".")) {
-        return value;
-      }
-    }
-  }
-
-  return null;
 }
 
 function buildTodayIsoDateTime(time: string): string {
@@ -182,7 +137,12 @@ export default function InputTimbanganPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const role = (params.role as string) || "branch";
-  
+
+  // Auth state — sama seperti pola di TimbanganPage
+  const [authUserId, setAuthUserId] = useState("");
+  const [authLocationId, setAuthLocationId] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
   const [formData, setFormData] = useState({
     nopol: "",
     customer: "",
@@ -192,16 +152,13 @@ export default function InputTimbanganPage() {
     bruto: "",
     tara: "",
     paymentMethod: "",
-    harga: "7500",
+    harga: "",
     isHargaSpesial: false,
     truck_id: "",
     owner_id: "",
-    user_id: "",
-    location_id: "",
   });
 
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const [truckOptions, setTruckOptions] = useState<TruckOption[]>([]);
   const [selectedTruck, setSelectedTruck] = useState<TruckOption | null>(null);
   const [isTruckLoading, setIsTruckLoading] = useState(false);
@@ -216,61 +173,55 @@ export default function InputTimbanganPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error">("success");
 
-  const DEFAULT_BRANCH_LOCATION_ID = "07bf151f-ed44-4a5d-96cb-afed7e087c7a";
-  const DEFAULT_BRANCH_USER_ID = "8345ff68-0aa6-4e76-bac5-ec14d782938f";
-  const queryLocationId = searchParams.get("location_id") || "";
-  const queryUserId = searchParams.get("user_id") || "";
+  // Resolved IDs — tidak ada hardcoded fallback
+  const resolvedLocationId = authLocationId;
+  const resolvedUserId = authUserId;
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Ambil user + location dari auth/me — sama persis seperti TimbanganPage
   useEffect(() => {
-    if (!isMounted) return;
+    axios
+      .get<{ data?: { id?: string; location_id?: string } }>("/api/auth/me")
+      .then((res) => {
+        const data = res.data?.data;
+        if (data?.id) setAuthUserId(data.id);
+        if (data?.location_id) setAuthLocationId(data.location_id);
+      })
+      .catch(() => {});
+  }, []);
 
-    const token = getStoredToken();
-    const payload = token ? decodeJwtPayload(token) : null;
-
-    setFormData((current) => ({
-      ...current,
-      user_id: queryUserId || payload?.sub || current.user_id,
-      location_id:
-        queryLocationId ||
-        payload?.location_id ||
-        current.location_id ||
-        DEFAULT_BRANCH_LOCATION_ID,
-    }));
-  }, [isMounted, queryLocationId, queryUserId]);
-
+  // Fetch location price setelah authLocationId tersedia
   useEffect(() => {
-    if (!isMounted) return;
+    if (!resolvedLocationId) return;
 
     const fetchLocation = async () => {
       try {
-        const locationId = queryLocationId || formData.location_id || DEFAULT_BRANCH_LOCATION_ID;
-        const resp = await axios.get(`/api/location/${locationId}`);
+        const resp = await axios.get(`/api/location/${resolvedLocationId}`);
         const data = resp.data?.data;
         if (data && typeof data.sugar_price === "number") {
           setLocationPrice(data.sugar_price);
-          // if no owner special selected, set harga to location price
-          setFormData((cur) => ({ ...cur, harga: String(data.sugar_price ?? cur.harga) }));
+          setFormData((cur) => ({
+            ...cur,
+            harga: String(data.sugar_price),
+          }));
         }
       } catch (err) {
         console.error("Error fetching location price:", err);
       }
     };
 
-    
-
     fetchLocation();
-  }, [isMounted, queryLocationId, formData.location_id]);
+  }, [resolvedLocationId]);
 
+  // Fetch owners dengan debounce
   useEffect(() => {
     if (!isMounted) return;
 
     const fetchOwners = async () => {
       setIsOwnerLoading(true);
-
       try {
         const response = await axios.get<OwnerListResponse>("/api/owner", {
           params: {
@@ -280,11 +231,12 @@ export default function InputTimbanganPage() {
         });
 
         const options = (response.data.data ?? []).map((owner) => {
-          const ownerTypeLabel = owner.ownership_type === "farmer"
-            ? "Petani"
-            : owner.ownership_type === "private"
-              ? "Pribadi"
-              : owner.ownership_type;
+          const ownerTypeLabel =
+            owner.ownership_type === "farmer"
+              ? "Petani"
+              : owner.ownership_type === "private"
+                ? "Pribadi"
+                : owner.ownership_type;
 
           return {
             value: owner.id,
@@ -304,19 +256,16 @@ export default function InputTimbanganPage() {
       }
     };
 
-    const debounceTimer = setTimeout(() => {
-      fetchOwners();
-    }, 300);
-
+    const debounceTimer = setTimeout(fetchOwners, 300);
     return () => clearTimeout(debounceTimer);
   }, [isMounted, ownerSearchQuery]);
 
+  // Fetch trucks dengan debounce
   useEffect(() => {
     if (!isMounted) return;
 
     const fetchTrucks = async () => {
       setIsTruckLoading(true);
-
       try {
         const response = await axios.get<TruckListResponse>("/api/truck", {
           params: {
@@ -325,15 +274,11 @@ export default function InputTimbanganPage() {
           },
         });
 
-        const options = (response.data.data ?? []).map((truck) => {
-          const truckName = truck.name?.trim() || "Truk tanpa nama";
-
-          return {
-            value: truck.id,
-            label: `${truck.license_plate} - ${truckName}`,
-            license_plate: truck.license_plate,
-          };
-        });
+        const options = (response.data.data ?? []).map((truck) => ({
+          value: truck.id,
+          label: `${truck.license_plate} - ${truck.name?.trim() || "Truk tanpa nama"}`,
+          license_plate: truck.license_plate,
+        }));
 
         setTruckOptions(options);
       } catch (error) {
@@ -344,10 +289,7 @@ export default function InputTimbanganPage() {
       }
     };
 
-    const debounceTimer = setTimeout(() => {
-      fetchTrucks();
-    }, 300);
-
+    const debounceTimer = setTimeout(fetchTrucks, 300);
     return () => clearTimeout(debounceTimer);
   }, [isMounted, truckSearchQuery]);
 
@@ -369,26 +311,31 @@ export default function InputTimbanganPage() {
       owner_id: owner?.value ?? "",
     }));
 
-    // special owner: enable special price, set harga to owner's special_price and disable editing
     if (owner?.ownership_type === "special") {
       const sp = owner.special_price ?? null;
-      setFormData((cur) => ({ ...cur, harga: sp !== null ? String(sp) : cur.harga, isHargaSpesial: true }));
+      setFormData((cur) => ({
+        ...cur,
+        harga: sp !== null ? String(sp) : cur.harga,
+        isHargaSpesial: true,
+      }));
     } else if (owner?.ownership_type === "private") {
-      // farmer or private: default harga to zero and allow manual edit
       setFormData((cur) => ({ ...cur, harga: "0", isHargaSpesial: false }));
     } else {
-      // other owner types: default harga to location price and allow manual edit
-      setFormData((cur) => ({ ...cur, harga: locationPrice !== null ? String(locationPrice) : cur.harga, isHargaSpesial: false }));
+      setFormData((cur) => ({
+        ...cur,
+        harga: locationPrice !== null ? String(locationPrice) : cur.harga,
+        isHargaSpesial: false,
+      }));
     }
   };
 
-  const isFormValid = 
-    !!formData.nopol && 
-    !!formData.customer && 
-    !!formData.supir && 
-    !!formData.jamMasuk && 
-    !!formData.bruto && 
-    !!formData.paymentMethod && 
+  const isFormValid =
+    !!formData.nopol &&
+    !!formData.customer &&
+    !!formData.supir &&
+    !!formData.jamMasuk &&
+    !!formData.bruto &&
+    !!formData.paymentMethod &&
     !!formData.truck_id &&
     !!formData.owner_id;
 
@@ -409,14 +356,24 @@ export default function InputTimbanganPage() {
       return;
     }
 
-    // if (!formData.user_id) {
-    //   showErrorToast("User tidak ditemukan. Silakan login ulang");
-    //   return;
-    // }
+    if (!resolvedLocationId) {
+      showErrorToast("Location tidak ditemukan. Silakan login ulang");
+      return;
+    }
+
+    if (!resolvedUserId) {
+      showErrorToast("User tidak ditemukan. Silakan login ulang");
+      return;
+    }
 
     const brutoWeight = Number.parseInt(formData.bruto, 10);
-    const taraWeight = formData.tara ? Number.parseInt(formData.tara, 10) : undefined;
-    const sugarPrice = Number.parseInt(formData.harga.replace(/[^0-9]/g, ""), 10);
+    const taraWeight = formData.tara
+      ? Number.parseInt(formData.tara, 10)
+      : undefined;
+    const sugarPrice = Number.parseInt(
+      formData.harga.replace(/[^0-9]/g, ""),
+      10,
+    );
 
     if (Number.isNaN(brutoWeight)) {
       showErrorToast("Berat bruto harus berupa angka yang valid");
@@ -439,8 +396,8 @@ export default function InputTimbanganPage() {
           ? buildTodayIsoDateTime(formData.jamKeluar)
           : undefined,
         truck_id: formData.truck_id,
-        location_id: formData.location_id || queryLocationId || DEFAULT_BRANCH_LOCATION_ID,
-        user_id: formData.user_id || queryUserId || DEFAULT_BRANCH_USER_ID,
+        location_id: resolvedLocationId,
+        user_id: resolvedUserId,
         owner_id: formData.owner_id,
         payment_method: formData.paymentMethod,
         driver_name: formData.supir.trim() || undefined,
@@ -454,8 +411,8 @@ export default function InputTimbanganPage() {
       setShowToast(true);
 
       const nextParams = new URLSearchParams();
-      if (formData.location_id) {
-        nextParams.set("location_id", formData.location_id);
+      if (resolvedLocationId) {
+        nextParams.set("location_id", resolvedLocationId);
       }
       nextParams.set("success", "true");
 
@@ -463,10 +420,9 @@ export default function InputTimbanganPage() {
         router.push(`/${role}/timbangan?${nextParams.toString()}`);
       }, 600);
     } catch (error) {
-      const apiMessage =
-        axios.isAxiosError(error)
-          ? (error.response?.data?.message as string | undefined)
-          : undefined;
+      const apiMessage = axios.isAxiosError(error)
+        ? (error.response?.data?.message as string | undefined)
+        : undefined;
 
       showErrorToast(apiMessage || "Gagal menyimpan transaksi");
     } finally {
@@ -483,7 +439,7 @@ export default function InputTimbanganPage() {
   const totalHargaDisplay = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
-    minimumFractionDigits: 0
+    minimumFractionDigits: 0,
   }).format(totalHarga);
 
   const receiptData = {
@@ -512,22 +468,26 @@ export default function InputTimbanganPage() {
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="white" 
-              size="sm" 
+            <Button
+              variant="white"
+              size="sm"
               onClick={() => router.back()}
               className="p-2"
-              icon={<ArrowLeft size={18} weight="bold" className="text-gray-600" />}
+              icon={
+                <ArrowLeft size={18} weight="bold" className="text-gray-600" />
+              }
             >
               {null}
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Input Timbangan</h1>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+              Input Timbangan
+            </h1>
           </div>
-          <Breadcrumbs 
+          <Breadcrumbs
             items={[
               { label: "Timbangan", href: `/${role}/timbangan` },
-              { label: "Input Timbangan", active: true }
-            ]} 
+              { label: "Input Timbangan", active: true },
+            ]}
           />
         </div>
       </div>
@@ -553,16 +513,19 @@ export default function InputTimbanganPage() {
                     inputValue={truckSearchQuery}
                     options={truckOptions}
                     styles={selectStyles}
-                    noOptionsMessage={() => (isTruckLoading ? "Memuat data truk..." : truckSearchQuery ? "Truk tidak ditemukan" : "Ketik untuk mencari truk")}
+                    noOptionsMessage={() =>
+                      isTruckLoading
+                        ? "Memuat data truk..."
+                        : truckSearchQuery
+                          ? "Truk tidak ditemukan"
+                          : "Ketik untuk mencari truk"
+                    }
                   />
                 ) : (
-                  <Input
-                    placeholder="Memuat data truk..."
-                    disabled
-                  />
+                  <Input placeholder="Memuat data truk..." disabled />
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-2 w-full">
                 <label className="text-xs font-bold text-gray-600">
                   Customer <span className="text-red-500">*</span>
@@ -579,57 +542,70 @@ export default function InputTimbanganPage() {
                     inputValue={ownerSearchQuery}
                     options={ownerOptions}
                     styles={selectStyles}
-                    noOptionsMessage={() => (isOwnerLoading ? "Memuat data customer..." : ownerSearchQuery ? "Customer tidak ditemukan" : "Ketik untuk mencari customer")}
+                    noOptionsMessage={() =>
+                      isOwnerLoading
+                        ? "Memuat data customer..."
+                        : ownerSearchQuery
+                          ? "Customer tidak ditemukan"
+                          : "Ketik untuk mencari customer"
+                    }
                   />
                 ) : (
-                  <Input
-                    placeholder="Memuat data customer..."
-                    disabled
-                  />
+                  <Input placeholder="Memuat data customer..." disabled />
                 )}
               </div>
 
-              <Input 
-                label="Supir" 
-                required 
-                placeholder="Masukkan Nama Supir" 
+              <Input
+                label="Supir"
+                required
+                placeholder="Masukkan Nama Supir"
                 value={formData.supir}
-                onChange={(e) => setFormData({ ...formData, supir: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, supir: e.target.value })
+                }
               />
 
               <div className="grid grid-cols-2 gap-4">
-                <Input 
-                  label="Masuk" 
-                  required 
+                <Input
+                  label="Masuk"
+                  required
                   type="time"
-                  placeholder="00:00" 
+                  placeholder="00:00"
                   value={formData.jamMasuk}
-                  onChange={(e) => setFormData({ ...formData, jamMasuk: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, jamMasuk: e.target.value })
+                  }
                 />
-                <Input 
-                  label="Keluar" 
+                <Input
+                  label="Keluar"
                   type="time"
-                  placeholder="00:00" 
+                  placeholder="00:00"
                   value={formData.jamKeluar}
-                  onChange={(e) => setFormData({ ...formData, jamKeluar: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, jamKeluar: e.target.value })
+                  }
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Input 
-                  label="Bruto(Kg)" 
-                  required 
-                  type="number" 
-                  placeholder="0" 
+                <Input
+                  label="Bruto(Kg)"
+                  required
+                  type="number"
+                  placeholder="0"
                   value={formData.bruto}
-                  onChange={(e) => setFormData({ ...formData, bruto: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, bruto: e.target.value })
+                  }
                 />
-                <Input 
-                  label="Tara(Kg)" 
-                  type="number" 
-                  placeholder="0" 
+                <Input
+                  label="Tara(Kg)"
+                  type="number"
+                  placeholder="0"
                   value={formData.tara}
-                  onChange={(e) => setFormData({ ...formData, tara: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tara: e.target.value })
+                  }
                 />
               </div>
 
@@ -640,37 +616,49 @@ export default function InputTimbanganPage() {
                 </label>
                 <button
                   onClick={() => {
-                    // prevent toggling when owner has forced special price
                     if (selectedOwner?.ownership_type === "special") return;
-                    setFormData((cur) => ({ ...cur, isHargaSpesial: !cur.isHargaSpesial }));
+                    setFormData((cur) => ({
+                      ...cur,
+                      isHargaSpesial: !cur.isHargaSpesial,
+                    }));
                   }}
                   disabled={selectedOwner?.ownership_type === "special"}
-                  className={`w-12 h-6 rounded-full transition-all relative ${formData.isHargaSpesial ? 'bg-[#00A3FF]' : 'bg-gray-200'} ${selectedOwner?.ownership_type === "special" ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  className={`w-12 h-6 rounded-full transition-all relative ${formData.isHargaSpesial ? "bg-[#00A3FF]" : "bg-gray-200"} ${selectedOwner?.ownership_type === "special" ? "opacity-60 cursor-not-allowed" : ""}`}
                 >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isHargaSpesial ? 'left-7' : 'left-1'}`} />
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isHargaSpesial ? "left-7" : "left-1"}`}
+                  />
                 </button>
               </div>
 
-              <Input 
-                label="Harga" 
-                required 
+              <Input
+                label="Harga"
+                required
                 value={formData.harga}
-                onChange={(e) => setFormData({ ...formData, harga: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, harga: e.target.value })
+                }
                 disabled={formData.isHargaSpesial}
                 placeholder="0"
-                className={formData.isHargaSpesial ? "bg-gray-50 text-gray-400 cursor-not-allowed" : ""}
+                className={
+                  formData.isHargaSpesial
+                    ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                    : ""
+                }
               />
 
-              <Select 
-                label="Metode Pembayaran" 
-                required 
+              <Select
+                label="Metode Pembayaran"
+                required
                 icon={<CaretDown size={18} />}
                 value={formData.paymentMethod}
-                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, paymentMethod: e.target.value })
+                }
                 options={[
-                  { value : "", label : "Pilih Metode"},
+                  { value: "", label: "Pilih Metode" },
                   { value: "cash", label: "Cash" },
-                  { value: "transfer", label: "Transfer" }
+                  { value: "transfer", label: "Transfer" },
                 ]}
               />
             </div>
@@ -681,16 +669,16 @@ export default function InputTimbanganPage() {
         <div className="lg:col-span-5 flex flex-col gap-6">
           <Card title="Output Timbangan">
             <div className="flex flex-col gap-6">
-              <Input 
-                label="Output Netto(kw)" 
-                disabled 
-                placeholder="0" 
+              <Input
+                label="Output Netto(kw)"
+                disabled
+                placeholder="0"
                 value={nettoKw.toFixed(2)}
               />
-              <Input 
-                label="Output Harga" 
-                disabled 
-                placeholder="Rp 0" 
+              <Input
+                label="Output Harga"
+                disabled
+                placeholder="Rp 0"
                 value={totalHargaDisplay}
               />
             </div>
@@ -701,24 +689,24 @@ export default function InputTimbanganPage() {
       {/* Action Buttons Footer */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className="lg:col-span-7">
-          <Button 
-            variant="white" 
-            className="w-full py-4" 
+          <Button
+            variant="white"
+            className="w-full py-4"
             onClick={() => router.back()}
           >
             Batal
           </Button>
         </div>
         <div className="lg:col-span-5 flex flex-col gap-4">
-          <Button 
-            variant="white" 
+          <Button
+            variant="white"
             className="w-full py-4"
             onClick={() => setIsReceiptOpen(true)}
           >
             Print Struk
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             className={`w-full py-4 ${!isFormValid || isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
             disabled={!isFormValid || isSubmitting}
             onClick={handleSubmit}
@@ -728,7 +716,7 @@ export default function InputTimbanganPage() {
         </div>
       </div>
 
-      <ReceiptModal 
+      <ReceiptModal
         isOpen={isReceiptOpen}
         onClose={() => setIsReceiptOpen(false)}
         data={receiptData}

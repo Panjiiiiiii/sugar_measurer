@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma, transfer_status } from "@/generated/prisma/client";
+import { Prisma, transfer_status } from "@/generated/prisma";
 
 interface PaginationMeta {
 	number_page: number;
@@ -135,56 +135,6 @@ export async function GET(request: Request) {
 	try {
 		const { searchParams } = new URL(request.url);
 
-		if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
-			const rawLoc = getFirstQueryParam(searchParams, ["location_id", "id_location", "location"]) || "loc-1";
-			const mockCityMap: Record<string, string> = {
-				"loc-1": "Malang",
-				"loc-2": "Blitar",
-				"loc-3": "Kediri 1",
-				"loc-4": "Kediri 2",
-				"malang": "Malang",
-				"blitar": "Blitar",
-				"kediri-1": "Kediri 1",
-				"kediri-2": "Kediri 2",
-			};
-			const mockCityName = mockCityMap[rawLoc] || "Malang";
-			const mockHistory = [
-				{
-					tanggal: "2026-06-01",
-					waktu: "14:30:22",
-					bukti_tf: "/bukti-transfer.png",
-					jumlah_nominal: 50000000,
-					location: mockCityName,
-					transfer_status: "in",
-					transaction_id: "tx-mock-1"
-				},
-				{
-					tanggal: "2026-06-02",
-					waktu: "09:15:00",
-					bukti_tf: null,
-					jumlah_nominal: 12500000,
-					location: mockCityName,
-					transfer_status: "out",
-					transaction_id: "tx-mock-2"
-				}
-			];
-			return Response.json({
-				statusCode: 200,
-				data: {
-					transaction_in: 50000000,
-					transaction_out: 12500000,
-					count_out_transaction: 1,
-					account_balance: rawLoc === "blitar" || rawLoc === "loc-2" ? 300000000 : 500000000,
-					transfer_history: mockHistory,
-					page: {
-						number_page: 1,
-						total_page: 1,
-						total_data: 2
-					}
-				}
-			});
-		}
-
 		const pageParam = getFirstQueryParam(searchParams, ["page", "number_page", "halaman"]);
 		const limitParam = getFirstQueryParam(searchParams, ["limit", "per_page", "page_size"]);
 		const locationId = getFirstQueryParam(searchParams, ["location_id", "id_location", "location"]);
@@ -259,27 +209,25 @@ export async function GET(request: Request) {
 			dateFilter.lte = parsedEndDate;
 		}
 
-		const whereClause: Prisma.logTransferWhereInput = {
-			...(locationId ? { location_id: locationId } : {}),
-			...(parsedStatus ? { transfer_status: parsedStatus } : {}),
-			...(Object.keys(dateFilter).length > 0
-				? {
-					created_at: dateFilter,
-				}
-				: {}),
-		};
-
 		const summaryDateFilter = getSummaryDateFilter(normalizedRange);
 		const summaryWhereBase: Prisma.logTransferWhereInput = {
 			...(locationId ? { location_id: locationId } : {}),
-			...(summaryDateFilter
-				? {
-					created_at: summaryDateFilter,
-				}
-				: {}),
+			...(summaryDateFilter ? { created_at: summaryDateFilter } : {}),
 		};
 
-		const [transferHistory, totalData, transactionInAggregate, transactionOutAggregate, countOutTransaction] = await Promise.all([
+		// Gunakan summaryDateFilter sebagai fallback kalau tidak ada start_date/end_date eksplisit
+		const listDateFilter =
+			Object.keys(dateFilter).length > 0
+				? dateFilter
+				: summaryDateFilter ?? undefined;
+
+		const whereClause: Prisma.logTransferWhereInput = {
+			...(locationId ? { location_id: locationId } : {}),
+			...(parsedStatus ? { transfer_status: parsedStatus } : {}),
+			...(listDateFilter ? { created_at: listDateFilter } : {}),
+		};
+
+		const [transferHistory, totalData, transactionInAggregate, transactionOutAggregate, countOutTransaction, locationData] = await Promise.all([
 			prisma.logTransfer.findMany({
 				where: whereClause,
 				skip,
@@ -328,6 +276,13 @@ export async function GET(request: Request) {
 					transfer_status: transfer_status.out,
 				},
 			}),
+			// Ambil account_balance langsung dari location, bukan dari join transfer
+			locationId
+				? prisma.location.findUnique({
+						where: { id: locationId },
+						select: { account_balance: true },
+				  })
+				: Promise.resolve(null),
 		]);
 
 		const transactionIn = Number(transactionInAggregate._sum.transfer_amount ?? 0);
@@ -357,7 +312,7 @@ export async function GET(request: Request) {
 					transaction_in : transactionIn,
 					transaction_out : transactionOut,
 					count_out_transaction : countOutTransaction,
-					account_balance : transferHistory[0]?.location?.account_balance || 0,
+					account_balance : Number(locationData?.account_balance ?? 0),
 					transfer_history: data,
 					page: pagination,
 				},
@@ -375,4 +330,3 @@ export async function GET(request: Request) {
 		);
 	}
 }
-
