@@ -6,7 +6,8 @@ import {
   Funnel, 
   Checks, 
   ArrowsLeftRight,
-  Bank
+  Bank,
+  Trash
 } from "@phosphor-icons/react";
 
 import NotificationFilterModal from "@/components/dashboard/NotificationFilterModal";
@@ -77,6 +78,10 @@ export default function DynamicNotificationPage() {
         <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-900 hover:bg-gray-50 transition-all shadow-sm">
           <Checks size={20} weight="bold" className="text-gray-900" />
           Tandai sudah di baca semua
+        </button>
+        <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-900 hover:bg-gray-50 transition-all shadow-sm">
+          <Trash size={20} weight="bold" className="text-gray-900" />
+          Hapus semua notifikasi
         </button>
       </div>
 

@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  Funnel, 
-  Checks, 
-  ArrowsLeftRight, 
+import {
+  Funnel,
+  Checks,
+  ArrowsLeftRight,
   Wallet,
-  Check
+  Check,
+  Trash,
 } from "@phosphor-icons/react";
 import NotificationFilterModal from "@/components/dashboard/NotificationFilterModal";
 
@@ -18,7 +19,7 @@ const notifications = [
     description: "Transaksi masuk Sebesar 100.000.000",
     time: "15.00",
     isUnread: true,
-    group: "Hari ini"
+    group: "Hari ini",
   },
   {
     id: 2,
@@ -27,7 +28,7 @@ const notifications = [
     description: "Transfer ke cabang malang untuk transaksi kedepannya",
     time: "15.00",
     isUnread: true,
-    group: "Hari ini"
+    group: "Hari ini",
   },
   {
     id: 3,
@@ -36,7 +37,7 @@ const notifications = [
     description: "Transaksi masuk Sebesar 100.000.000",
     time: "15.00",
     isUnread: true,
-    group: "Hari ini"
+    group: "Hari ini",
   },
   {
     id: 4,
@@ -45,7 +46,7 @@ const notifications = [
     description: "Transfer ke cabang malang untuk transaksi kedepannya",
     time: "15.00",
     isUnread: true,
-    group: "Hari ini"
+    group: "Hari ini",
   },
   {
     id: 5,
@@ -54,7 +55,7 @@ const notifications = [
     description: "Transaksi masuk Sebesar 100.000.000",
     time: "15.00",
     isUnread: true,
-    group: "Hari ini"
+    group: "Hari ini",
   },
   {
     id: 6,
@@ -63,7 +64,7 @@ const notifications = [
     description: "Transaksi masuk Sebesar 100.000.000",
     time: "15.00",
     isUnread: true,
-    group: "Kemarin"
+    group: "Kemarin",
   },
   {
     id: 7,
@@ -72,7 +73,7 @@ const notifications = [
     description: "Transfer ke cabang malang untuk transaksi kedepannya",
     time: "15.00",
     isUnread: true,
-    group: "Kemarin"
+    group: "Kemarin",
   },
   {
     id: 8,
@@ -81,7 +82,7 @@ const notifications = [
     description: "Transaksi masuk Sebesar 100.000.000",
     time: "15.00",
     isUnread: false,
-    group: "Kemarin"
+    group: "Kemarin",
   },
   {
     id: 9,
@@ -90,7 +91,7 @@ const notifications = [
     description: "Transfer ke cabang malang untuk transaksi kedepannya",
     time: "15.00",
     isUnread: true,
-    group: "Kemarin"
+    group: "Kemarin",
   },
   {
     id: 10,
@@ -99,8 +100,8 @@ const notifications = [
     description: "Transaksi masuk Sebesar 100.000.000",
     time: "15.00",
     isUnread: false,
-    group: "Kemarin"
-  }
+    group: "Kemarin",
+  },
 ];
 
 export default function NotificationPage() {
@@ -110,7 +111,7 @@ export default function NotificationPage() {
   return (
     <div className="p-8 space-y-8">
       {/* Filter Modal */}
-      <NotificationFilterModal 
+      <NotificationFilterModal
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         onApply={(data) => {
@@ -123,7 +124,7 @@ export default function NotificationPage() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Notifikasi</h1>
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => setIsFilterOpen(true)}
             suppressHydrationWarning
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all"
@@ -131,12 +132,16 @@ export default function NotificationPage() {
             <Funnel size={18} />
             Filter
           </button>
-          <button 
+          <button
             suppressHydrationWarning
             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-900 rounded-xl text-sm font-bold text-gray-900 hover:bg-gray-50 transition-all"
           >
             <Checks size={18} weight="bold" />
             Tandai sudah di baca semua
+          </button>
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-bold text-gray-900 hover:bg-gray-50 transition-all shadow-sm">
+            <Trash size={20} weight="bold" className="text-gray-900" />
+            Hapus semua notifikasi
           </button>
         </div>
       </div>
@@ -148,14 +153,20 @@ export default function NotificationPage() {
             {/* Group Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-400">{group}</span>
+                <span className="text-sm font-medium text-gray-400">
+                  {group}
+                </span>
                 {group === "Hari ini" && (
-                  <span className="px-2 py-0.5 bg-red-50 text-red-500 text-[10px] font-bold rounded-md">8</span>
+                  <span className="px-2 py-0.5 bg-red-50 text-red-500 text-[10px] font-bold rounded-md">
+                    8
+                  </span>
                 )}
               </div>
               <button className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
                 <Checks size={16} />
-                <span className="text-xs font-semibold">Tandai sudah di baca semua</span>
+                <span className="text-xs font-semibold">
+                  Tandai sudah di baca semua
+                </span>
               </button>
             </div>
 
@@ -164,7 +175,7 @@ export default function NotificationPage() {
               {notifications
                 .filter((n) => n.group === group)
                 .map((notif) => (
-                  <div 
+                  <div
                     key={notif.id}
                     className="relative bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex items-start gap-5 hover:border-gray-200 transition-all cursor-pointer group"
                   >
@@ -177,10 +188,16 @@ export default function NotificationPage() {
                     </div>
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-base font-bold text-gray-900">{notif.title}</h3>
-                        <span className="text-sm font-medium text-gray-400">{notif.time}</span>
+                        <h3 className="text-base font-bold text-gray-900">
+                          {notif.title}
+                        </h3>
+                        <span className="text-sm font-medium text-gray-400">
+                          {notif.time}
+                        </span>
                       </div>
-                      <p className="text-sm text-gray-400 font-medium">{notif.description}</p>
+                      <p className="text-sm text-gray-400 font-medium">
+                        {notif.description}
+                      </p>
                     </div>
                     {notif.isUnread && (
                       <div className="absolute top-4 right-4 w-2 h-2 bg-red-500 rounded-full border border-white"></div>

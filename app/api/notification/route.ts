@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { date } from "zod";
 
 export async function GET(request: Request) {
   try {
@@ -21,11 +22,18 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
     try {
-        const { user_id } = await request.json();
+        const { user_id, date } = await request.json();
         await prisma.notification.updateMany({
             where: { user_id },
             data: { is_read: true },
         });
+
+        if (date) {
+            await prisma.notification.updateMany({
+                where: { user_id, created_at: { gte: new Date(date) } },
+                data: { is_read: true },
+            });
+        }
         return Response.json(
             { statusCode: 200, message: "Notification updated successfully" },
             { status: 200 },
