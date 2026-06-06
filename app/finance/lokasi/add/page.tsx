@@ -4,6 +4,30 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CaretRight } from "@phosphor-icons/react";
 
+const DRAFT_KEY = "lokasi_drafts";
+
+interface DraftLokasi {
+  draftId: string;
+  name: string;
+  sugar_price: string;
+  account_balance: string;
+  account_number: string;
+  savedAt: string;
+  status: "draft" | "synced" | "failed";
+}
+
+function saveDraft(data: Omit<DraftLokasi, "draftId" | "savedAt" | "status">) {
+  const existing: DraftLokasi[] = JSON.parse(localStorage.getItem(DRAFT_KEY) || "[]");
+  const newDraft: DraftLokasi = {
+    draftId: `draft-${Date.now()}`,
+    ...data,
+    savedAt: new Date().toISOString(),
+    status: "draft",
+  };
+  existing.push(newDraft);
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(existing));
+}
+
 export default function InputLokasiPage() {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
@@ -22,15 +46,12 @@ export default function InputLokasiPage() {
 
   const handleSave = async () => {
     if (!isFormValid) return;
-
     setIsSaving(true);
 
     try {
       const response = await fetch("/api/location", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name.trim(),
           sugar_price: Number(formData.sugar_price),
@@ -41,13 +62,14 @@ export default function InputLokasiPage() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to save location");
-      }
+      if (!response.ok) throw new Error("Failed to save location");
 
       router.push("/finance/lokasi?success=true");
     } catch (error) {
       console.error("Error saving location:", error);
+      // API gagal → simpan sebagai draft
+      saveDraft(formData);
+      router.push("/finance/lokasi?draft=true");
     } finally {
       setIsSaving(false);
     }
@@ -59,7 +81,7 @@ export default function InputLokasiPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Input Lokasi</h1>
         <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
-          <span 
+          <span
             onClick={() => router.push("/finance/lokasi")}
             className="hover:text-gray-900 cursor-pointer transition-colors"
           >
@@ -76,14 +98,14 @@ export default function InputLokasiPage() {
           <div className="px-8 py-5 border-b border-gray-100 bg-white">
             <h2 className="text-base font-bold text-gray-900">Form Lokasi</h2>
           </div>
-          
+
           <div className="p-8 space-y-6">
             {/* Nama Lokasi */}
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-950 block">
                 Nama Lokasi <span className="text-red-500 font-bold">*</span>
               </label>
-              <input 
+              <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -97,7 +119,7 @@ export default function InputLokasiPage() {
               <label className="text-sm font-bold text-gray-950 block">
                 Harga Tebu <span className="text-red-500 font-bold">*</span>
               </label>
-              <input 
+              <input
                 type="number"
                 value={formData.sugar_price}
                 onChange={(e) => setFormData({ ...formData, sugar_price: e.target.value })}
@@ -111,10 +133,12 @@ export default function InputLokasiPage() {
               <label className="text-sm font-bold text-gray-950 block">
                 Nomor Rekening <span className="text-red-500 font-bold">*</span>
               </label>
-              <input 
+              <input
                 type="number"
                 value={formData.account_number}
-                onChange={(e) => setFormData({ ...formData, account_number: e.target.value.replace(/\D/g, "") })}
+                onChange={(e) =>
+                  setFormData({ ...formData, account_number: e.target.value.replace(/\D/g, "") })
+                }
                 className="w-full px-6 py-4 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-gray-300"
                 placeholder="Masukkan nomor rekening lokasi"
               />
@@ -125,7 +149,7 @@ export default function InputLokasiPage() {
               <label className="text-sm font-bold text-gray-950 block">
                 Saldo Awal (IDR)
               </label>
-              <input 
+              <input
                 type="number"
                 value={formData.account_balance}
                 onChange={(e) => setFormData({ ...formData, account_balance: e.target.value })}
@@ -138,19 +162,19 @@ export default function InputLokasiPage() {
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-4">
-          <button 
+          <button
             onClick={() => router.back()}
             className="w-full py-4 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-gray-900 hover:bg-gray-50 active:bg-gray-100/80 transition-all shadow-sm cursor-pointer"
             suppressHydrationWarning
           >
             Batal
           </button>
-          <button 
+          <button
             onClick={handleSave}
             disabled={!isFormValid || isSaving}
             className={`w-full py-4 text-white rounded-2xl text-sm font-bold transition-all shadow-md ${
               isFormValid && !isSaving
-                ? "bg-[#009262] hover:bg-[#007a52] active:bg-[#006342] cursor-pointer" 
+                ? "bg-[#009262] hover:bg-[#007a52] active:bg-[#006342] cursor-pointer"
                 : "bg-gray-300 cursor-not-allowed shadow-none"
             }`}
             suppressHydrationWarning
