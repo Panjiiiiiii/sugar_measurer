@@ -10,6 +10,9 @@ const PUBLIC_PATHS = [
   "/api/auth/reset-password",
   "/api/location",
   "/api/history",
+  "/403",
+  "/404",
+  "/505",
 ];
 
 const ROLE_PREFIX_MAP: Record<string, string[]> = {
@@ -73,7 +76,7 @@ export async function middleware(request: NextRequest) {
     // Token invalid/expired
     const response = pathname.startsWith("/api/")
       ? Response.json({ message: "Token expired or invalid" }, { status: 401 })
-      : NextResponse.redirect(new URL("/auth/login", request.url));
+      : NextResponse.redirect(new URL("/403", request.url));
 
     // Clear cookie
     if (response instanceof NextResponse) {
@@ -111,7 +114,7 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith("/api/")) {
       return Response.json({ message: "Forbidden" }, { status: 403 });
     }
-    return NextResponse.redirect(new URL("/auth/login", request.url));
+    return NextResponse.redirect(new URL("/403", request.url));
   }
 
   return response;
