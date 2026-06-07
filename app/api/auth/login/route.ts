@@ -19,6 +19,42 @@ export async function POST(request: Request) {
       );
     }
 
+    if (process.env.NEXT_PUBLIC_DEV_BYPASS === "true") {
+      const mockUsers: Record<string, any> = {
+        "branch@example.com": { id: "user-1", name: "Admin Cabang", email: "branch@example.com", role: "operator", location_id: "loc-1" },
+        "finance@example.com": { id: "user-2", name: "Admin Keuangan", email: "finance@example.com", role: "finance", location_id: "loc-2" },
+        "manager@example.com": { id: "user-3", name: "Manager", email: "manager@example.com", role: "manager", location_id: "loc-3" },
+      };
+
+      if (mockUsers[email] && password === "Password123") {
+        const user = mockUsers[email];
+        const jwtSecret = process.env.JWT_SECRET || "fallback_secret_for_dev_bypass_123456789";
+        const token = jwt.sign(
+          {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+            location_id: user.location_id,
+          },
+          jwtSecret,
+          { expiresIn: "7d" }
+        );
+        const cookieStore = await cookies();
+        cookieStore.set("token", token, {
+          httpOnly: true,
+          secure: false,
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7,
+          path: "/",
+        });
+        return Response.json({
+          statusCode: 200,
+          message: "Login successful (Bypass Dev Mode)",
+          data: user,
+        });
+      }
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {

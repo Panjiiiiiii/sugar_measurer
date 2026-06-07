@@ -59,7 +59,8 @@ export default function TonaseChart() {
   ];
 
   const renderCustomBar = (props: any) => {
-    const { x, y, width, height } = props;
+    const { x, y, width, height, payload } = props;
+    const isPeak = payload?.isPeak;
 
     return (
       <g className="bar-group cursor-pointer outline-none">
@@ -69,7 +70,7 @@ export default function TonaseChart() {
           y={y}
           width={width}
           height={height}
-          fill="#F3F4F6"
+          fill="var(--chart-bar-bg)"
           rx={6}
         />
         {/* Animated Foreground Bar (Filling up via CSS hover) */}
@@ -80,7 +81,7 @@ export default function TonaseChart() {
           height={height}
           fill="#0099FF"
           rx={6}
-          className="bar-foreground"
+          className={`bar-foreground ${isPeak ? "bar-peak" : ""}`}
         />
       </g>
     );
@@ -93,6 +94,9 @@ export default function TonaseChart() {
           clip-path: inset(100% 0 0 0);
           transition: clip-path 0.8s cubic-bezier(0.4, 0, 0.2, 1);
           pointer-events: none;
+        }
+        .bar-peak {
+          clip-path: inset(0% 0 0 0) !important;
         }
         .bar-group:hover .bar-foreground {
           clip-path: inset(0% 0 0 0);
@@ -149,7 +153,7 @@ export default function TonaseChart() {
             data={data}
             margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
           >
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
             <XAxis
               dataKey="time"
               axisLine={false}

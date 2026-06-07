@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Eye, EyeSlash } from "@phosphor-icons/react";
 
 interface LoginFormProps {
@@ -8,6 +8,11 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ initialRole }: LoginFormProps) {
+  useEffect(() => {
+    localStorage.setItem("theme", "light");
+    document.documentElement.classList.remove("dark");
+  }, []);
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

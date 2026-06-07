@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma/browser";
+import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { validateCreateOwnerInput } from "@/schema/owner";
 import { z } from "zod";
@@ -55,13 +55,11 @@ export async function GET(request: Request) {
         {
           name: {
             contains: search,
-            mode: "insensitive",
           },
         },
         {
           phone_number: {
             contains: search,
-            mode: "insensitive",
           },
         },
       ];
