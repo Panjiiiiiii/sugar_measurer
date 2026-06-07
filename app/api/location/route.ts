@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
 import { validateCreateLocationInput } from "@/schema/location";
 import { z } from "zod";
 
