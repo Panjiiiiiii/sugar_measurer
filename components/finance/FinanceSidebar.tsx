@@ -35,7 +35,7 @@ export default function FinanceSidebar() {
   ];
 
   const [openMenus, setOpenMenus] = useState<string[]>(["Data Timbangan", "Data Transaksi"]);
-  const [locations, setLocations] = useState<{ id: string; name: string }[]>(DEFAULT_LOCATIONS);
+  const [locations, setLocations] = useState<{ id: string; name: string }[]>();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function FinanceSidebar() {
     {
       name: "Data Timbangan",
       icon: Scales,
-      subItems: locations.length
+      subItems: locations?.length
         ? locations.map((loc) => {
             const slug = ID_TO_SLUG[loc.id] || loc.id;
             return { name: loc.name, href: `/finance/timbangan/${slug}` };
@@ -95,7 +95,7 @@ export default function FinanceSidebar() {
     {
       name: "Data Transaksi",
       icon: ArrowsLeftRight,
-      subItems: locations.length
+      subItems: locations?.length
         ? locations.map((loc) => {
             const slug = ID_TO_SLUG[loc.id] || loc.id;
             return { name: loc.name, href: `/finance/transaksi/${slug}` };
