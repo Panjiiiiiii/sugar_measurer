@@ -55,6 +55,13 @@ body {
   color-scheme: dark;
 }
 
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --chart-grid: #f3f4f6;   /* tambah ini */
+  --chart-bar-bg: #e5e7eb; /* tambah ini */
+}
+
 /* --- ROLE BRANCH (Image 1 Style) --- */
 .dark .role-branch {
   background-color: #09090b !important;
