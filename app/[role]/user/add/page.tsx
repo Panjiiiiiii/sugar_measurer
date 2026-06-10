@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { CaretDown, Eye, EyeSlash } from "@phosphor-icons/react";
 import { Toast } from "@/components/ui";
 import Link from "next/link";
-import axios from "@/lib/axios";xios";xios";xios";
+import axios from "@/lib/axios";
 
 interface Location {
   id: string;
