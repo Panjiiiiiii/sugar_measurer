@@ -20,6 +20,5 @@ axios.interceptors.response.use(
   },
 );
 
-axios.defaults.timeout = 1;
 
 export default axios;
