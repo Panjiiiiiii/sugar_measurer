@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import * as XLSX from "xlsx";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { Export, CaretDown, Eye } from "@phosphor-icons/react";
 import {
   StatCard,

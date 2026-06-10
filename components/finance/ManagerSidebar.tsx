@@ -11,9 +11,12 @@ import {
   MapPin,
   Users,
   CaretDown,
-  Lightning
+  Lightning,
+  Sun,
+  Moon
 } from "@phosphor-icons/react";
-import axios from "axios";
+import axios from "@/lib/axios";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface MenuItem {
   name: string;
@@ -25,12 +28,25 @@ interface MenuItem {
 export default function ManagerSidebar() {
   const pathname = usePathname();
   const params = useParams();
+  const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const roleRaw = params.role as string;
   const role = (!roleRaw || roleRaw === "undefined") ? "manager" : roleRaw;
 
+  const DEFAULT_LOCATIONS = [
+    { id: "loc-1", name: "Malang" },
+    { id: "loc-2", name: "Blitar" },
+    { id: "loc-3", name: "Kediri 1" },
+    { id: "loc-4", name: "Kediri 2" },
+  ];
+
   const [openMenus, setOpenMenus] = useState<string[]>(["Data Timbangan", "Data Transaksi"]);
-  const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
+  const [locations, setLocations] = useState<{ id: string; name: string }[]>(DEFAULT_LOCATIONS);
 
   useEffect(() => {
     let isMounted = true;
@@ -100,7 +116,7 @@ export default function ManagerSidebar() {
   }
 
   return (
-    <div className="w-64 h-full bg-white border-r border-[#F3F4F6] flex flex-col fixed left-0 top-0 z-50">
+    <div className="sidebar-container w-64 h-full bg-white border-r border-[#F3F4F6] flex flex-col fixed left-0 top-0 z-50">
       {/* Brand */}
       <div className="p-6 flex items-center gap-3">
         <div className="w-8 h-8 bg-[#0095FF] rounded-lg flex items-center justify-center shrink-0">
@@ -196,6 +212,31 @@ export default function ManagerSidebar() {
           })}
         </ul>
       </nav>
+
+      {/* Theme Toggle */}
+      <div className="px-4 py-4 border-t border-gray-100 dark:border-zinc-800/80 mt-auto">
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-[#6B7280] hover:bg-gray-50/50 cursor-pointer"
+        >
+          {!mounted ? (
+            <>
+              <Moon size={20} weight="regular" />
+              <span className="text-sm font-semibold text-[#6B7280]">Mode Gelap</span>
+            </>
+          ) : theme === "light" ? (
+            <>
+              <Moon size={20} weight="regular" />
+              <span className="text-sm font-semibold text-[#6B7280]">Mode Gelap</span>
+            </>
+          ) : (
+            <>
+              <Sun size={20} weight="regular" />
+              <span className="text-sm font-semibold text-[#6B7280]">Mode Terang</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }

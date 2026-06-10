@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma/browser";
+import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 

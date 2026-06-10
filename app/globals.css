@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -10,13 +17,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -42,4 +42,436 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
+}
+
+/* ==========================================================================
+   DARK THEME SYSTEM (CUSTOM STYLING & ACCURACY ACCORDING TO MOCKUPS)
+   ========================================================================== */
+
+/* Dark Mode base properties */
+.dark {
+  --chart-grid: #1f1f23;
+  --chart-bar-bg: #18181b;
+  color-scheme: dark;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --chart-grid: #f3f4f6;   /* tambah ini */
+  --chart-bar-bg: #e5e7eb; /* tambah ini */
+}
+
+/* --- ROLE BRANCH (Image 1 Style) --- */
+.dark .role-branch {
+  background-color: #09090b !important;
+  color: #f4f4f5 !important;
+}
+
+.dark .role-branch .bg-white {
+  background-color: #131316 !important;
+}
+
+.dark .role-branch .border-gray-50,
+.dark .role-branch .border-gray-100,
+.dark .role-branch .border-gray-200,
+.dark .role-branch .border-slate-200 {
+  border-color: #1f1f23 !important;
+}
+
+/* --- ROLE FINANCE & MANAGER (Image 2 Style) --- */
+.dark .role-finance-manager {
+  background-color: #0c0c0e !important;
+  color: #f4f4f5 !important;
+}
+
+.dark .role-finance-manager.bg-\[\#F9FAFB\] {
+  background-color: #0c0c0e !important;
+}
+
+.dark .role-finance-manager .bg-white {
+  background-color: #09090b !important;
+}
+
+.dark .role-finance-manager .border-gray-50,
+.dark .role-finance-manager .border-gray-100,
+.dark .role-finance-manager .border-gray-200,
+.dark .role-finance-manager .border-slate-200 {
+  border-color: #18181b !important;
+}
+
+/* --- COMMON DARK ELEMENTS --- */
+/* Page background resets */
+.dark .bg-\[\#F9FAFB\],
+.dark .bg-slate-50,
+.dark .bg-gray-50 {
+  background-color: transparent !important;
+}
+
+/* Sidebar */
+.dark .sidebar-container {
+  background-color: #09090b !important;
+  border-color: #1c1c1f !important;
+}
+
+/* Sidebar menu titles and navigation links styling */
+.dark .sidebar-container a,
+.dark .sidebar-container button {
+  color: #a1a1aa !important;
+}
+
+/* Sidebar active link background */
+.dark .sidebar-container a[class*="bg-blue-50"] {
+  background-color: rgba(14, 165, 233, 0.15) !important;
+  color: #38bdf8 !important;
+}
+
+.dark .sidebar-container a[class*="bg-blue-50"] span {
+  color: #38bdf8 !important;
+}
+
+/* Sidebar hover link & button in light mode */
+.sidebar-container a:hover,
+.sidebar-container button:hover {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+/* Sidebar hover link & button in dark mode */
+.dark .sidebar-container a:hover,
+.dark .sidebar-container button:hover {
+  background-color: #18181c !important;
+  color: #ffffff !important;
+}
+
+/* Header */
+.dark .header-container {
+  background-color: rgba(12, 12, 14, 0.8) !important;
+  border-color: #1c1c1f !important;
+}
+
+/* Dropdowns & Modals */
+.dark .absolute.bg-white,
+.dark .fixed .bg-white,
+.dark .relative.bg-white {
+  background-color: #0c0c0e !important;
+  border-color: #1f1f23 !important;
+  color: #ffffff !important;
+}
+
+/* Text overrides in Dark Mode */
+.dark .text-gray-950,
+.dark .text-gray-900,
+.dark .text-\[\#111827\],
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #ffffff !important;
+}
+
+.dark .text-gray-800,
+.dark .text-gray-700,
+.dark .text-gray-600 {
+  color: #d4d4d8 !important;
+}
+
+.dark .text-gray-500,
+.dark .text-gray-400,
+.dark .text-\[\#64748B\],
+.dark .text-\[\#6B7280\],
+.dark .text-\[\#9CA3AF\],
+.dark .text-\[\#A0AEC0\] {
+  color: #a1a1aa !important;
+}
+
+/* Tables in Dark Mode */
+.dark table {
+  color: #e4e4e7 !important;
+}
+
+.dark th {
+  color: #71717a !important;
+  border-color: #1f1f23 !important;
+}
+
+.dark tr,
+.dark td {
+  border-color: #1f1f23 !important;
+}
+
+.dark tbody tr:hover {
+  background-color: #18181c !important;
+}
+
+/* Inputs, Selects & Buttons */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #0d0d0f !important;
+  border-color: #27272a !important;
+  color: #ffffff !important;
+}
+
+.dark input::placeholder {
+  color: #71717a !important;
+}
+
+/* Custom Scrollbar for Dark Mode */
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: #18181b !important;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #27272a !important;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46 !important;
+}
+
+/* Badges */
+.dark .bg-gray-50,
+.dark .bg-gray-50\/50,
+.dark .bg-\[\#F8F9FA\] {
+  background-color: #1c1c1f !important;
+  color: #a1a1aa !important;
+}
+
+/* Modal footer in dark mode */
+.dark .fixed div[class*="bg-gray-50"] {
+  background-color: #131316 !important;
+}
+
+.dark .bg-blue-50,
+.dark .bg-blue-50\/80 {
+  background-color: rgba(14, 165, 233, 0.15) !important;
+  color: #38bdf8 !important;
+}
+
+.dark .text-\[\#6C757D\] {
+  color: #a1a1aa !important;
+}
+
+/* Recharts tooltip background */
+.dark .recharts-tooltip-wrapper .bg-white {
+  background-color: #0c0c0e !important;
+  border-color: #1f1f23 !important;
+  color: #ffffff !important;
+}
+
+/* User Profile Dropdown Styling */
+/* Dropdown Box */
+.user-dropdown {
+  background-color: #ffffff !important;
+  border-color: #f3f4f6 !important;
+}
+
+.dark .user-dropdown {
+  background-color: #0c0c0e !important;
+  border-color: #1f1f23 !important;
+}
+
+/* Profile Link */
+.user-dropdown .profile-link {
+  color: #374151 !important;
+  /* text-gray-700 */
+  background-color: transparent !important;
+}
+
+.user-dropdown .profile-link:hover {
+  background-color: #f3f4f6 !important;
+  /* gray-100 */
+  color: #111827 !important;
+  /* gray-900 */
+}
+
+.dark .user-dropdown .profile-link {
+  color: #d4d4d8 !important;
+  /* text-gray-300 */
+  background-color: transparent !important;
+}
+
+.dark .user-dropdown .profile-link:hover {
+  background-color: #18181c !important;
+  /* dark card bg */
+  color: #ffffff !important;
+}
+
+/* Log Out Button */
+.user-dropdown .logout-button {
+  color: #ef4444 !important;
+  /* text-red-500 */
+  background-color: transparent !important;
+}
+
+.user-dropdown .logout-button:hover {
+  background-color: #fef2f2 !important;
+  /* red-50 */
+  color: #dc2626 !important;
+  /* red-600 */
+}
+
+.dark .user-dropdown .logout-button {
+  color: #f87171 !important;
+  /* text-red-400 */
+  background-color: transparent !important;
+}
+
+.dark .user-dropdown .logout-button:hover {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  /* red-500 with 10% opacity */
+  color: #ef4444 !important;
+  /* red-500 */
+}
+
+/* Header Actions Styling */
+.header-container a,
+.header-container button {
+  background-color: transparent !important;
+}
+
+/* Hover effects in light mode */
+.header-container a:hover,
+.header-container button:hover {
+  background-color: #f3f4f6 !important;
+  /* gray-100 */
+  color: #111827 !important;
+}
+
+/* Open state of dropdown button in light mode */
+.header-container button[class*="bg-gray-100"] {
+  background-color: #f3f4f6 !important;
+}
+
+/* Dark mode overrides */
+.dark .header-container a,
+.dark .header-container button {
+  color: #d4d4d8 !important;
+  background-color: transparent !important;
+}
+
+.dark .header-container a:hover,
+.dark .header-container button:hover {
+  background-color: #18181c !important;
+  color: #ffffff !important;
+}
+
+/* Open state of dropdown button in dark mode */
+.dark .header-container button[class*="bg-gray-100"] {
+  background-color: #18181c !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   MODAL & FORM DARK MODE POLISH
+   ========================================================================== */
+
+/* Form Labels in Dark Mode */
+.dark label {
+  color: #a1a1aa !important;
+}
+
+/* Gray 100 background elements in Dark Mode (e.g. upload wrappers) */
+.dark .bg-gray-100 {
+  background-color: #1c1c1f !important;
+}
+
+/* Global Border overrides in Dark Mode to ensure portals/modals have dark borders */
+.dark .border-gray-50,
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-slate-200 {
+  border-color: #1f1f23 !important;
+}
+
+/* Gray/Emerald/Blue alerts and wrappers in Dark Mode */
+.dark .bg-gray-50\/20 {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.dark .bg-gray-50\/70 {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.dark .bg-emerald-50\/60,
+.dark .bg-emerald-50\/30 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+.dark .border-emerald-100 {
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.dark .text-emerald-900,
+.dark .text-emerald-700 {
+  color: #34d399 !important;
+}
+
+.dark .hover\:bg-blue-50\/20:hover {
+  background-color: rgba(14, 165, 233, 0.1) !important;
+}
+
+/* White buttons (e.g. Cancel) in Dark Mode */
+.dark button[class*="bg-white"],
+.dark button[class*="hover:bg-gray-50"] {
+  background-color: #1c1c1f !important;
+  border-color: #27272a !important;
+  color: #d4d4d8 !important;
+}
+
+.dark button[class*="bg-white"]:hover,
+.dark button[class*="hover:bg-gray-50"]:hover {
+  background-color: #27272a !important;
+  color: #ffffff !important;
+}
+
+/* Ghost buttons and close buttons in Dark Mode */
+.dark button[class*="text-gray-400"]:hover {
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   TABLE & DASHBOARD DARK MODE ACCURACY OVERRIDES
+   ========================================================================== */
+
+/* Table header background using arbitrary bg-[#F9FAFB]/50 class */
+.dark .bg-\[\#F9FAFB\]\/50 {
+  background-color: #131316 !important;
+}
+
+/* Card wrappers, border lines and layout dividers using arbitrary colors */
+.dark .border-\[\#F3F4F6\],
+.dark .divide-\[\#F3F4F6\]>*+*,
+.dark .border-y.border-\[\#F3F4F6\],
+.dark .border-t.border-\[\#F3F4F6\],
+.dark .border-\[\#E5E7EB\] {
+  border-color: #1f1f23 !important;
+}
+
+/* Username, Email, and cell text color using arbitrary text-[#4B5563] (gray-600) class */
+.dark .text-\[\#4B5563\] {
+  color: #d4d4d8 !important;
+}
+
+/* Filter button text and other elements using arbitrary text-[#374151] (gray-700) class */
+.dark .text-\[\#374151\] {
+  color: #d4d4d8 !important;
+}
+
+/* Hover background for buttons and lists using hover:bg-gray-50 */
+.dark .hover\:bg-gray-50:hover {
+  background-color: #1c1c1f !important;
+}
+
+/* Inputs and wrappers using bg-gray-50/30 */
+.dark .bg-gray-50\/30 {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Row action menu dots hover state */
+.dark .hover\:text-gray-600:hover {
+  color: #ffffff !important;
 }

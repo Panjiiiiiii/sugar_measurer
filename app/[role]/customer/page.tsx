@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { CustomerTable } from "@/components/dashboard/CustomerTable";
 import { DeleteModal, Toast, Select } from "@/components/ui";
-import axios from "axios";
+import axios from "@/lib/axios";
 import CustomerFilterModal from "@/components/dashboard/CustomerFilterModal";
 
 interface Customer {

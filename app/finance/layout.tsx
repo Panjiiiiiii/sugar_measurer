@@ -13,7 +13,7 @@ export default async function FinanceLayout({
   const userId = headersList.get("x-user-id") ?? "";
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex">
+    <div className="min-h-screen bg-[#F9FAFB] flex role-finance-manager">
       <FinanceSidebar />
       <div className="flex-1 flex flex-col ml-64 min-w-0">
         <FinanceHeader />

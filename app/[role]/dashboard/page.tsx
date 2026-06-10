@@ -20,7 +20,7 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import axios from "axios";
+import axios from "@/lib/axios";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -349,7 +349,7 @@ export default function DynamicDashboard() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" />
                   <XAxis
                     dataKey="label"
                     axisLine={false}
@@ -403,10 +403,11 @@ export default function DynamicDashboard() {
 // ── Custom Bar ─────────────────────────────────────────────────────────────────
 
 function CustomBar(props: any) {
-  const { x, y, width, height } = props;
+  const { x, y, width, height, payload } = props;
+  const isPeak = payload?.isPeak || payload?.label === "18:00";
   return (
     <g className="group cursor-pointer">
-      <rect x={x} y={y} width={width} height={height} fill="#F3F4F6" rx={6} />
+      <rect x={x} y={y} width={width} height={height} fill="var(--chart-bar-bg)" rx={6} />
       <rect
           x={x}
           y={y}
@@ -414,7 +415,7 @@ function CustomBar(props: any) {
           height={height}
           fill="#0095FF"
           rx={6}
-          className="transition-all duration-500 ease-in-out [clip-path:inset(100%_0_0_0)] group-hover:[clip-path:inset(0%_0_0_0)]"
+          className={`transition-all duration-500 ease-in-out ${isPeak ? "[clip-path:inset(0%_0_0_0)]" : "[clip-path:inset(100%_0_0_0)]"} group-hover:[clip-path:inset(0%_0_0_0)]`}
       />
     </g>
   );

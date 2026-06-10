@@ -9,7 +9,7 @@ import {
   Export,
   DotsThreeVertical,
 } from "@phosphor-icons/react";
-import axios from "axios";
+import axios from "@/lib/axios";
 
 interface Customer {
   id: string;

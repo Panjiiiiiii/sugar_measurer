@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import axios from "axios";
+import axios from "@/lib/axios";xios";
 import { CaretDown } from "@phosphor-icons/react";
 import { 
   Card, 

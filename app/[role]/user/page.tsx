@@ -10,7 +10,7 @@ import {
   CaretDown
 } from "@phosphor-icons/react";
 import { Toast, DeleteModal } from "@/components/ui";
-import axios from "axios";
+import axios from "@/lib/axios";
 
 interface UserItem {
   id: string;
@@ -24,41 +24,6 @@ interface UserItem {
   };
 }
 
-// Visual mock data exactly as shown in Image 1
-const fallbackMockUsers: UserItem[] = [
-  {
-    id: "mock-1",
-    name: "Budi",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "operator",
-    location: { id: "loc-1", name: "Malang" }
-  },
-  {
-    id: "mock-2",
-    name: "Dadang",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "finance",
-    location: { id: "loc-1", name: "Malang" }
-  },
-  {
-    id: "mock-3",
-    name: "Julpan",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "finance",
-    location: { id: "loc-2", name: "Kediri" }
-  },
-  {
-    id: "mock-4",
-    name: "Jaedin",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "finance",
-    location: { id: "loc-3", name: "Blitar" }
-  }
-];
 
 function mapRoleLabel(role: string) {
   if (role === "operator") return "Admin Cabang";
@@ -145,17 +110,11 @@ export default function DataUserPage() {
 
         const apiUsers = response.data?.data ?? [];
         
-        if (apiUsers.length > 0) {
-          setUsers(apiUsers);
-        } else {
-          // If database is empty, fallback to the exact mock data from Image 1
-          setUsers(fallbackMockUsers);
-        }
+        setUsers(apiUsers);
       } catch (error) {
         if (!isMounted) return;
         console.error("Failed to fetch users from database:", error);
-        // On error, fallback to mock data so the page always renders perfectly
-        setUsers(fallbackMockUsers);
+        setUsers([]);
       } finally {
         if (isMounted) {
           setIsLoading(false);

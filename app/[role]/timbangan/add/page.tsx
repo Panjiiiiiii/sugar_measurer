@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import axios from "axios";
+import axios from "@/lib/axios";
 import ReactSelect, { type SingleValue } from "react-select";
 import { CaretDown, ArrowLeft } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
 import { Toast } from "@/components/ui/Toast";
+import { useTheme } from "@/components/ThemeProvider";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -62,15 +63,88 @@ function buildTodayIsoDateTime(time: string): string {
     Number.isNaN(hour) ? 0 : hour, Number.isNaN(minute) ? 0 : minute, 0, 0).toISOString();
 }
 
-const selectStyles = {
-  control: (base: any, state: any) => ({ ...base, minHeight: "48px", borderRadius: "12px", borderColor: state.isFocused ? "#3b82f6" : "#e2e8f0", boxShadow: state.isFocused ? "0 0 0 4px rgba(59,130,246,0.08)" : "none", backgroundColor: state.isDisabled ? "#f9fafb" : "#ffffff", cursor: "text", "&:hover": { borderColor: state.isFocused ? "#3b82f6" : "#cbd5e1" } }),
-  placeholder: (base: any) => ({ ...base, color: "#9ca3af" }),
-  singleValue: (base: any) => ({ ...base, color: "#111827" }),
-  input: (base: any) => ({ ...base, color: "#111827" }),
-  menu: (base: any) => ({ ...base, borderRadius: "12px", overflow: "hidden", zIndex: 30 }),
-  option: (base: any, state: any) => ({ ...base, backgroundColor: state.isSelected ? "#dbeafe" : state.isFocused ? "#eff6ff" : "#ffffff", color: "#111827", cursor: "pointer" }),
-  clearIndicator: (base: any) => ({ ...base, color: "#94a3b8", cursor: "pointer", "&:hover": { color: "#64748b" } }),
-  dropdownIndicator: (base: any, state: any) => ({ ...base, color: state.isFocused ? "#3b82f6" : "#94a3b8", "&:hover": { color: "#3b82f6" } }),
+const getSelectStyles = (theme: string) => {
+  const isDark = theme === "dark";
+  return {
+    control: (base: any, state: any) => ({
+      ...base,
+      minHeight: "48px",
+      borderRadius: "12px",
+      borderColor: state.isFocused 
+        ? "#3b82f6" 
+        : isDark ? "#27272a" : "#e2e8f0",
+      boxShadow: state.isFocused ? "0 0 0 4px rgba(59,130,246,0.08)" : "none",
+      backgroundColor: state.isDisabled 
+        ? (isDark ? "#1c1c1f" : "#f9fafb") 
+        : (isDark ? "#0d0d0f" : "#ffffff"),
+      cursor: "text",
+      "&:hover": {
+        borderColor: state.isFocused 
+          ? "#3b82f6" 
+          : isDark ? "#3f3f46" : "#cbd5e1"
+      }
+    }),
+    placeholder: (base: any) => ({
+      ...base,
+      color: isDark ? "#71717a" : "#9ca3af"
+    }),
+    singleValue: (base: any) => ({
+      ...base,
+      color: isDark ? "#ffffff" : "#111827"
+    }),
+    input: (base: any) => ({
+      ...base,
+      color: isDark ? "#ffffff" : "#111827"
+    }),
+    menu: (base: any) => ({
+      ...base,
+      borderRadius: "12px",
+      overflow: "hidden",
+      zIndex: 30,
+      backgroundColor: isDark ? "#0c0c0e" : "#ffffff",
+      border: isDark ? "1px solid #1f1f23" : "1px solid #f3f4f6"
+    }),
+    option: (base: any, state: any) => ({
+      ...base,
+      backgroundColor: state.isSelected 
+        ? (isDark ? "#2563eb" : "#dbeafe") 
+        : state.isFocused 
+          ? (isDark ? "#18181c" : "#eff6ff") 
+          : (isDark ? "#0c0c0e" : "#ffffff"),
+      color: isDark ? "#ffffff" : "#111827",
+      cursor: "pointer",
+      "&:active": {
+        backgroundColor: isDark ? "#2563eb" : "#dbeafe"
+      }
+    }),
+    noOptionsMessage: (base: any) => ({
+      ...base,
+      color: isDark ? "#71717a" : "#9ca3af",
+      backgroundColor: isDark ? "#0c0c0e" : "#ffffff"
+    }),
+    loadingMessage: (base: any) => ({
+      ...base,
+      color: isDark ? "#71717a" : "#9ca3af",
+      backgroundColor: isDark ? "#0c0c0e" : "#ffffff"
+    }),
+    clearIndicator: (base: any) => ({
+      ...base,
+      color: isDark ? "#71717a" : "#94a3b8",
+      cursor: "pointer",
+      "&:hover": {
+        color: isDark ? "#a1a1aa" : "#64748b"
+      }
+    }),
+    dropdownIndicator: (base: any, state: any) => ({
+      ...base,
+      color: state.isFocused 
+        ? "#3b82f6" 
+        : isDark ? "#71717a" : "#94a3b8",
+      "&:hover": {
+        color: "#3b82f6"
+      }
+    }),
+  };
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -79,6 +153,8 @@ export default function InputTimbanganPage() {
   const params = useParams();
   const router = useRouter();
   const role = (params.role as string) || "branch";
+  const { theme } = useTheme();
+  const selectStyles = React.useMemo(() => getSelectStyles(theme), [theme]);
 
   const [authUserId, setAuthUserId] = useState("");
   const [authLocationId, setAuthLocationId] = useState("");

@@ -3,20 +3,22 @@
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CaretDown, CaretRight } from "@phosphor-icons/react";
-import { Card, Input, Select, Button, Breadcrumbs } from "@/components/ui";
-import axios from "axios";
+import { Card, Input, Select, Button, Breadcrumbs, Toast } from "@/components/ui";
+import axios from "@/lib/axios";
 
 export default function InputCustomerPage() {
   const params = useParams();
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
+  const [toastMessage, setToastMessage] = useState("");
+  const [showToast, setShowToast] = useState(false);
   const role = (params.role as string) || "branch";
 
   const [form, setForm] = useState({
     nama: "",
     typeOwner: "",
     phoneNumber: "",
-    specialPrice: ""
+    specialPrice: "",
   });
 
   const isFormValid =
@@ -48,6 +50,8 @@ export default function InputCustomerPage() {
       router.push(`/${role}/customer?success=true`);
     } catch (error) {
       console.error("Error saving owner:", error);
+      setToastMessage("Terjadi kesalahan saat menyimpan data customer");
+      setShowToast(true);
     } finally {
       setIsSaving(false);
     }
@@ -55,6 +59,8 @@ export default function InputCustomerPage() {
 
   return (
     <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)] w-full">
+      <Toast isVisible={showToast} message={toastMessage} type="error" />
+
       {/* Header & Breadcrumbs */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">

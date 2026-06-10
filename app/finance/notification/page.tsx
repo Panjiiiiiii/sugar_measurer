@@ -8,7 +8,7 @@ import {
   Wallet,
   Trash,
 } from "@phosphor-icons/react";
-import axios from "axios";
+import axios from "@/lib/axios";
 import NotificationFilterModal from "@/components/dashboard/NotificationFilterModal";
 
 interface NotifItem {

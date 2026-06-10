@@ -23,7 +23,7 @@ export default async function DynamicDashboardLayout({
 
     if (isFinanceOrManager) {
         return (
-            <div className="min-h-screen bg-[#F9FAFB] flex">
+            <div className="min-h-screen bg-[#F9FAFB] flex role-finance-manager">
                 <ManagerSidebar />
                 <div className="flex-1 flex flex-col ml-64 min-w-0">
                     <FinanceHeader />
@@ -37,7 +37,7 @@ export default async function DynamicDashboardLayout({
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex">
+        <div className="min-h-screen bg-slate-50 flex role-branch">
             <Sidebar />
             <div className="flex-1 flex flex-col ml-64 transition-all overflow-x-hidden">
                 <Header />

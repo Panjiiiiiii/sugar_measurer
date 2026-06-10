@@ -8,12 +8,21 @@ import {
   Truck, 
   User,
   ArrowsLeftRight,
-  Lightning
+  Lightning,
+  Sun,
+  Moon
 } from "@phosphor-icons/react";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const params = useParams();
+  const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
   
   const roleRaw = params.role as string;
   const role = (!roleRaw || roleRaw === "undefined") ? "branch" : roleRaw;
@@ -42,7 +51,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="w-64 h-full bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 transition-all z-50">
+    <div className="sidebar-container w-64 h-full bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 transition-all z-50">
       {/* Brand */}
       <div className="p-6 flex items-center gap-3">
         <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
@@ -90,6 +99,31 @@ export default function Sidebar() {
           })}
         </ul>
       </nav>
+
+      {/* Theme Toggle */}
+      <div className="px-3 py-4 border-t border-gray-100 dark:border-zinc-800/80 mt-auto">
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-[#64748B] hover:bg-gray-50/80 hover:text-gray-900 cursor-pointer"
+        >
+          {!mounted ? (
+            <>
+              <Moon size={22} weight="bold" />
+              <span className="text-sm font-bold text-[#64748B]">Mode Gelap</span>
+            </>
+          ) : theme === "light" ? (
+            <>
+              <Moon size={22} weight="bold" />
+              <span className="text-sm font-bold text-[#64748B]">Mode Gelap</span>
+            </>
+          ) : (
+            <>
+              <Sun size={22} weight="bold" />
+              <span className="text-sm font-bold text-[#64748B]">Mode Terang</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }

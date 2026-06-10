@@ -6,7 +6,7 @@ import { ArrowLeft, CaretDown } from "@phosphor-icons/react";
 import { Card, Input, Select, Button, Breadcrumbs } from "@/components/ui";
 import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
 import { Toast } from "@/components/ui/Toast";
-import axios from "axios";
+import axios from "@/lib/axios";
 
 // ─── Draft helpers ────────────────────────────────────────────────────────────
 

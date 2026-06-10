@@ -50,12 +50,14 @@ export default function FinanceHeader() {
     try {
       await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     } catch (_) {}
+    localStorage.setItem("theme", "light");
+    document.documentElement.classList.remove("dark");
     router.push("/auth/login");
   };
 
   return (
     <>
-      <header className="h-[72px] bg-white border-b border-gray-100 flex items-center justify-between px-8 fixed top-0 right-0 left-64 z-40">
+      <header className="header-container h-[72px] bg-white border-b border-gray-100 flex items-center justify-between px-8 fixed top-0 right-0 left-64 z-40">
         {/* Empty spacer replacing search bar */}
         <div />
 
@@ -101,11 +103,11 @@ export default function FinanceHeader() {
                   onClick={() => setIsDropdownOpen(false)}
                 />
 
-                <div className="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-lg z-20 py-1.5">
+                <div className="user-dropdown absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-lg z-20 py-1.5">
                   <Link
                     href={`/${role}/profile`}
                     onClick={() => setIsDropdownOpen(false)}
-                    className="flex items-center px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="profile-link flex items-center px-4 py-2.5 text-sm font-medium transition-colors"
                   >
                     Profile
                   </Link>
@@ -114,7 +116,7 @@ export default function FinanceHeader() {
                       setIsDropdownOpen(false);
                       setIsLogoutModalOpen(true);
                     }}
-                    className="w-full flex items-center px-4 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50/50 transition-colors"
+                    className="logout-button w-full flex items-center px-4 py-2.5 text-sm font-medium transition-colors"
                   >
                     Log Out
                   </button>
