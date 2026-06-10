@@ -1,4 +1,4 @@
-import { Prisma } from "@/generated/prisma/browser";
+import { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 
@@ -32,6 +32,8 @@ export async function GET(
     name: user.name,
     email: user.email,
     location: user.location.name,
+    location_id: user.location_id,
+    role : user.role,
     transactions: user.location.transactions.map((transaction) => ({
       id: transaction.id,
       date: transaction.transaction_date,

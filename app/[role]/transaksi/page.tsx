@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import * as XLSX from "xlsx";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { Export, CaretDown, Eye } from "@phosphor-icons/react";
 import {
   StatCard,
@@ -84,8 +84,6 @@ interface SummaryData {
   accountBalance: number;
 }
 
-const DEFAULT_BRANCH_LOCATION_ID = "07bf151f-ed44-4a5d-96cb-afed7e087c7a";
-
 function formatRupiah(value: number) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -159,6 +157,8 @@ export default function TransaksiPage() {
   const searchParams = useSearchParams();
   const roleRaw = params.role as string;
   const role = !roleRaw || roleRaw === "undefined" ? "branch" : roleRaw;
+  const [authLocationId, setAuthLocationId] = useState<string>("");
+  const [isAuthLoaded, setIsAuthLoaded] = useState(false);
   const currentPage = Number(searchParams.get("page") || 1);
   const currentRange = normalizeRangeValue(
     searchParams.get("range") || "monthly",
@@ -166,6 +166,35 @@ export default function TransaksiPage() {
   const currentStatus = searchParams.get("status") || "";
   const currentStartDate = searchParams.get("start_date") || "";
   const currentEndDate = searchParams.get("end_date") || "";
+  const resolvedLocationId = searchParams.get("location_id") || authLocationId;
+
+  useEffect(() => {
+    let isActive = true;
+
+    const fetchAuthUser = async () => {
+      try {
+        const response = await axios.get<{ data?: { location_id?: string | null } }>("/api/auth/me");
+        if (!isActive) return;
+
+        setAuthLocationId(response.data?.data?.location_id || "");
+      } catch (error) {
+        console.error("Error fetching auth user:", error);
+        if (isActive) {
+          setAuthLocationId("");
+        }
+      } finally {
+        if (isActive) {
+          setIsAuthLoaded(true);
+        }
+      }
+    };
+
+    fetchAuthUser();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const [isLoading, setIsLoading] = useState(true);
   const [transactions, setTransactions] = useState<TransactionData[]>([]);
@@ -192,6 +221,10 @@ export default function TransaksiPage() {
 
   useEffect(() => {
     const fetchTransactions = async () => {
+      if (!resolvedLocationId) {
+        return;
+      }
+
       setIsLoading(true);
       try {
         const response = await axios.get<TransferHistoryResponse>(
@@ -200,7 +233,7 @@ export default function TransaksiPage() {
             params: {
               page: currentPage,
               limit: 10,
-              location_id: DEFAULT_BRANCH_LOCATION_ID,
+              location_id: resolvedLocationId,
               range: buildRangeRequestValue(currentRange),
               status: currentStatus || undefined,
               start_date: currentStartDate || undefined,
@@ -263,6 +296,7 @@ export default function TransaksiPage() {
     currentStatus,
     currentStartDate,
     currentEndDate,
+    resolvedLocationId,
   ]);
 
   const handlePageChange = (page: number) => {
@@ -347,13 +381,17 @@ export default function TransaksiPage() {
 
   const handleExportAll = async () => {
     try {
+      if (!resolvedLocationId) {
+        return;
+      }
+
       const response = await axios.get<TransferHistoryResponse>(
         "/api/history/transfer",
         {
           params: {
             page: 1,
             limit: pagination.total_data || 1000,
-            location_id: DEFAULT_BRANCH_LOCATION_ID,
+            location_id: resolvedLocationId,
             range: buildRangeRequestValue(currentRange),
             status: currentStatus || undefined,
             start_date: currentStartDate || undefined,

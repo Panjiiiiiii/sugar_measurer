@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma";
 import bcrypt from "bcrypt";
 import { validateCreateUserInput } from "@/schema/user";
 import { z } from "zod";
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
             name: userData.name,
             email: userData.email,
             password: hashedPassword,
-            role: userData.role,
+            role: (userData.role === "master" ? "manager" : userData.role) as any,
             location: {
                 connect: {
                     id: userData.location_id,

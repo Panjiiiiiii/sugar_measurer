@@ -8,7 +8,7 @@ import {
   useSearchParams,
 } from "next/navigation";
 import * as XLSX from "xlsx";
-import axios from "axios";
+import axios from "@/lib/axios";
 import {
   CaretDown,
   DotsThreeVertical,
@@ -97,57 +97,7 @@ interface SummaryData {
   accountBalance: number;
 }
 
-interface LoginPayload {
-  sub?: string;
-  location_id?: string;
-}
-
 const PAGE_SIZE = 10;
-const DEFAULT_TOP_UP_USER_ID = "29e7c366-5081-4841-801d-f2c7fd673574";
-
-function decodeJwtPayload(token: string): LoginPayload | null {
-  const tokenParts = token.split(".");
-
-  if (tokenParts.length < 2) {
-    return null;
-  }
-
-  try {
-    const base64 = tokenParts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
-    const json = atob(padded);
-
-    return JSON.parse(json) as LoginPayload;
-  } catch {
-    return null;
-  }
-}
-
-function getStoredToken(): string | null {
-  const candidateKeys = ["token", "auth_token", "access_token", "authToken"];
-
-  for (const key of candidateKeys) {
-    const value = localStorage.getItem(key) ?? sessionStorage.getItem(key);
-
-    if (!value) {
-      continue;
-    }
-
-    try {
-      const parsed = JSON.parse(value) as { token?: string };
-
-      if (parsed?.token && typeof parsed.token === "string") {
-        return parsed.token;
-      }
-    } catch {
-      if (typeof value === "string" && value.includes(".")) {
-        return value;
-      }
-    }
-  }
-
-  return null;
-}
 
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -615,19 +565,19 @@ export default function TransaksiLocationPage() {
       return;
     }
 
-    const token = getStoredToken();
-    const payload = token ? decodeJwtPayload(token) : null;
-    const userId = payload?.sub || DEFAULT_TOP_UP_USER_ID;
-
-    if (!userId) {
-      setToastType("error");
-      setToastMessage("User tidak ditemukan. Silakan login ulang");
-      setShowToast(true);
-      return;
-    }
-
     try {
       setIsTopUpSubmitting(true);
+
+      const meRes = await axios.get<{ data?: { id?: string } }>("/api/auth/me");
+      const userId = meRes.data?.data?.id;
+
+      if (!userId) {
+        setToastType("error");
+        setToastMessage("User tidak ditemukan. Silakan login ulang");
+        setShowToast(true);
+        setIsTopUpSubmitting(false);
+        return;
+      }
 
       const buktiTransfer = await readFileAsDataUrl(buktiTransferFile);
 

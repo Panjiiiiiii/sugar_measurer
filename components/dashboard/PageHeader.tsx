@@ -62,7 +62,7 @@ export function PageHeader({
               variant={primaryAction.variant || "secondary"} 
               icon={primaryAction.icon || <Plus size={18} weight="bold" />}
               onClick={primaryAction.onClick}
-              className="bg-[#0095FF] hover:bg-[#0084FF] text-xs h-[40px] px-6 font-bold flex items-center justify-center shrink-0 rounded-xl"
+              className="bg-[#0095FF] hover:bg-[#0084FF] text-white text-xs h-[40px] px-6 font-bold flex items-center justify-center shrink-0 rounded-xl dark:text-zinc-950"
             >
               {primaryAction.label}
             </Button>

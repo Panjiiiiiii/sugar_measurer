@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/generated/prisma/client";
+import { Prisma } from "@/generated/prisma";
 import { validateCreateTruckInput } from "@/schema/truck";
 
 interface PaginationMeta {
@@ -54,7 +54,6 @@ export async function GET(request: Request) {
         if (search) {
             whereClause.license_plate = {
                 contains: search,
-                mode: "insensitive",
             };
         }
         const [trucks, totalData] = await Promise.all([

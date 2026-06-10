@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useParams, useRouter } from "next/navigation";
-import axios from "axios";
+import axios from "@/lib/axios";xios";xios";xios";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import TrukTable from "@/components/dashboard/TrukTable";
 import TrukFilterModal from "@/components/dashboard/TrukFilterModal";

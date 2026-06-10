@@ -10,60 +10,24 @@ import {
   CaretDown
 } from "@phosphor-icons/react";
 import { Toast, DeleteModal } from "@/components/ui";
-import axios from "axios";
+import axios from "@/lib/axios";
 
 interface UserItem {
   id: string;
   name: string;
   email: string;
   password?: string;
-  role: "operator" | "finance" | "master" | "manager";
+  role: "operator" | "finance" |  "manager";
   location?: {
     id: string;
     name: string;
   };
 }
 
-// Visual mock data exactly as shown in Image 1
-const fallbackMockUsers: UserItem[] = [
-  {
-    id: "mock-1",
-    name: "Budi",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "operator",
-    location: { id: "loc-1", name: "Malang" }
-  },
-  {
-    id: "mock-2",
-    name: "Dadang",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "finance",
-    location: { id: "loc-1", name: "Malang" }
-  },
-  {
-    id: "mock-3",
-    name: "Julpan",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "finance",
-    location: { id: "loc-2", name: "Kediri" }
-  },
-  {
-    id: "mock-4",
-    name: "Jaedin",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "finance",
-    location: { id: "loc-3", name: "Blitar" }
-  }
-];
 
 function mapRoleLabel(role: string) {
   if (role === "operator") return "Admin Cabang";
   if (role === "finance") return "Admin Finance";
-  if (role === "master") return "Super Admin";
   if (role === "manager") return "Manager";
   return role;
 }
@@ -99,14 +63,25 @@ export default function DataUserPage() {
 
   const handleConfirmDelete = async () => {
     if (!userToDelete) return;
-    
-    // Simulate frontend deletion for instant testing
-    setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
-    
-    setToastType("success");
-    setToastMessage("Data User Berhasil Dihapus");
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+
+    try {
+      await axios.delete(`/api/user/${userToDelete.id}`);
+
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
+      setUserToDelete(null);
+
+      setToastType("success");
+      setToastMessage("Data User Berhasil Dihapus");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      setToastType("error");
+      setToastMessage("Gagal menghapus data user");
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+      throw error;
+    }
   };
 
   const tableRef = useRef<HTMLTableElement>(null);
@@ -135,17 +110,11 @@ export default function DataUserPage() {
 
         const apiUsers = response.data?.data ?? [];
         
-        if (apiUsers.length > 0) {
-          setUsers(apiUsers);
-        } else {
-          // If database is empty, fallback to the exact mock data from Image 1
-          setUsers(fallbackMockUsers);
-        }
+        setUsers(apiUsers);
       } catch (error) {
         if (!isMounted) return;
         console.error("Failed to fetch users from database:", error);
-        // On error, fallback to mock data so the page always renders perfectly
-        setUsers(fallbackMockUsers);
+        setUsers([]);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -230,7 +199,6 @@ export default function DataUserPage() {
               <tr className="border-y border-[#F3F4F6] bg-[#F9FAFB]/50">
                 <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">Username</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">Email</th>
-                <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">Password</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">Role</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">Location</th>
                 <th className="px-8 py-4 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider text-center">Action</th>
@@ -251,11 +219,6 @@ export default function DataUserPage() {
                     
                     {/* Email */}
                     <td className="px-8 py-5 text-sm font-semibold text-[#4B5563]">{row.email}</td>
-                    
-                    {/* Password */}
-                    <td className="px-8 py-5 text-sm font-semibold text-[#4B5563] truncate max-w-[150px]">
-                      {row.password ? (row.password.startsWith("$2") ? "adsldfRFS123!" : row.password) : "adsldfRFS123!"}
-                    </td>
                     
                     {/* Role */}
                     <td className="px-8 py-5 text-sm font-semibold text-[#4B5563]">
@@ -349,7 +312,6 @@ export default function DataUserPage() {
                     <option value="all">Semua Role</option>
                     <option value="operator">Admin Cabang</option>
                     <option value="finance">Admin Finance</option>
-                    <option value="master">Super Admin</option>
                     <option value="manager">Manager</option>
                   </select>
                   <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">

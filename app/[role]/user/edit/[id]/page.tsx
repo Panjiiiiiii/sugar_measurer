@@ -2,57 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { CaretDown } from "@phosphor-icons/react";
+import { CaretDown, Eye, EyeSlash } from "@phosphor-icons/react";
 import { Toast } from "@/components/ui";
 import Link from "next/link";
-import axios from "axios";
+import axios from "@/lib/axios";
 
-interface UserItem {
+interface Location {
   id: string;
   name: string;
-  email: string;
-  password?: string;
-  role: "operator" | "finance" | "master" | "manager";
-  location?: {
-    id: string;
-    name: string;
-  };
 }
-
-const fallbackMockUsers: Record<string, UserItem> = {
-  "mock-1": {
-    id: "mock-1",
-    name: "Budi",
-    email: "email@email.com",
-    password: "adfhaipfh123!!ss",
-    role: "operator",
-    location: { id: "loc-2", name: "Blitar" }
-  },
-  "mock-2": {
-    id: "mock-2",
-    name: "Dadang",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "finance",
-    location: { id: "loc-1", name: "Malang" }
-  },
-  "mock-3": {
-    id: "mock-3",
-    name: "Julpan",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "finance",
-    location: { id: "loc-3", name: "Kediri" }
-  },
-  "mock-4": {
-    id: "mock-4",
-    name: "Jaedin",
-    email: "email@email.com",
-    password: "adsldfRFS123!",
-    role: "finance",
-    location: { id: "loc-2", name: "Blitar" }
-  }
-};
 
 export default function EditUserPage() {
   const router = useRouter();
@@ -62,11 +20,15 @@ export default function EditUserPage() {
   const userId = params.id as string;
 
   // Form States
-  const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedLocationId, setSelectedLocationId] = useState("");
+
+  // Data States
+  const [locations, setLocations] = useState<Location[]>([]);
 
   // UI States
   const [showToast, setShowToast] = useState(false);
@@ -78,55 +40,48 @@ export default function EditUserPage() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadUser() {
+    async function loadData() {
       setIsLoading(true);
       try {
-        // Attempt database fetch first
-        const response = await axios.get(`/api/user/${userId}`);
+        const [userRes, locationRes] = await Promise.all([
+          axios.get(`/api/user/${userId}`),
+          axios.get("/api/location?limit=100"),
+        ]);
+
         if (!isMounted) return;
 
-        const apiUser = response.data?.data;
+        const apiUser = userRes.data?.data;
         if (apiUser) {
-          setUsername(apiUser.name ?? "");
+          setName(apiUser.name ?? "");
           setEmail(apiUser.email ?? "");
-          setPassword(apiUser.password ?? "adsldfRFS123!");
           setSelectedRole(apiUser.role ?? "");
-          setSelectedLocation(apiUser.location?.name ?? "Malang");
-        } else {
-          loadFallback();
+          setSelectedLocationId(apiUser.location_id ?? "");
         }
+
+        setLocations(locationRes.data?.data ?? []);
       } catch (err) {
         if (!isMounted) return;
-        console.warn("Failed to fetch user from DB, falling back to mock data:", err);
-        loadFallback();
+        console.error("Failed to load data:", err);
+        setToastType("error");
+        setToastMessage("Gagal memuat data user");
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 3000);
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       }
     }
 
-    function loadFallback() {
-      // Fallback matching Image 2 exactly when id is mock-1 or defaulted
-      const fallbackUser = fallbackMockUsers[userId] || fallbackMockUsers["mock-1"];
-      setUsername(fallbackUser.name);
-      setEmail(fallbackUser.email);
-      setPassword(fallbackUser.password || "adfhaipfh123!!ss");
-      setSelectedRole(fallbackUser.role);
-      setSelectedLocation(fallbackUser.location?.name || "Blitar");
-    }
-
-    loadUser();
+    loadData();
 
     return () => {
       isMounted = false;
     };
   }, [userId]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!username || !email || !password || !selectedRole || !selectedLocation) {
+    if (!name || !email || !selectedRole || !selectedLocationId) {
       setToastType("error");
       setToastMessage("Harap lengkapi semua bidang bertanda *");
       setShowToast(true);
@@ -134,27 +89,51 @@ export default function EditUserPage() {
       return;
     }
 
-    setIsSaving(true);
-    setToastType("success");
-    setToastMessage("Data Berhasil Disimpan");
-    setShowToast(true);
+    try {
+      setIsSaving(true);
 
-    setTimeout(() => {
-      router.push(`/${role}/user`);
-    }, 1500);
+      const payload: Record<string, string> = {
+        name: name.trim(),
+        email: email.trim(),
+        role: selectedRole,
+        location_id: selectedLocationId,
+      };
+
+      // Hanya kirim password kalau diisi
+      if (password) {
+        payload.password = password;
+      }
+
+      await axios.put(`/api/user/${userId}`, payload);
+
+      sessionStorage.setItem("user-toast-message", "User berhasil diperbarui");
+      router.push(`/${role}/user?success=true`);
+    } catch (err) {
+      setIsSaving(false);
+      if (axios.isAxiosError(err)) {
+        const message = err.response?.data?.message || "Gagal menyimpan data user";
+        setToastType("error");
+        setToastMessage(message);
+      } else {
+        setToastType("error");
+        setToastMessage("Terjadi kesalahan, coba lagi");
+      }
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    }
   };
 
   return (
     <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)]">
-      <Toast 
-        isVisible={showToast} 
-        message={toastMessage} 
-        type={toastType} 
+      <Toast
+        isVisible={showToast}
+        message={toastMessage}
+        type={toastType}
       />
 
       {/* Header section with Breadcrumbs */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Input User</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Edit User</h1>
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 select-none">
           <Link href={`/${role}/user`} className="hover:text-gray-900 transition-colors">
             Data User
@@ -168,25 +147,25 @@ export default function EditUserPage() {
       <div className="bg-white border border-[#F3F4F6] rounded-3xl shadow-sm overflow-hidden w-full max-w-5xl mx-auto">
         {/* Card Header */}
         <div className="px-8 py-5 border-b border-[#F3F4F6]">
-          <h2 className="text-base font-bold text-gray-900 select-none">Form Input User</h2>
+          <h2 className="text-base font-bold text-gray-900 select-none">Form Edit User</h2>
         </div>
 
         {/* Card Form */}
         {isLoading ? (
           <div className="p-20 text-center text-sm font-semibold text-gray-400 select-none animate-pulse">
-            Memuat formulir edit user...
+            Memuat data user...
           </div>
         ) : (
-          <form onSubmit={handleSave} className="p-8 space-y-6 animate-in fade-in duration-200">
-            {/* Username */}
+          <form onSubmit={handleSave} className="p-8 space-y-6">
+            {/* Name */}
             <div className="space-y-2">
               <label className="text-[13px] font-bold text-gray-800 ml-1">
                 Username <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 disabled={isSaving}
                 className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009B4C]/10 focus:border-[#009B4C] transition-all text-sm font-semibold text-gray-900 placeholder:text-gray-400"
               />
@@ -206,18 +185,31 @@ export default function EditUserPage() {
               />
             </div>
 
-            {/* Password */}
+            {/* Password - opsional saat edit */}
             <div className="space-y-2">
               <label className="text-[13px] font-bold text-gray-800 ml-1">
-                Password <span className="text-red-500">*</span>
+                Password{" "}
+                <span className="text-gray-400 font-normal">(kosongkan jika tidak ingin mengubah)</span>
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isSaving}
-                className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009B4C]/10 focus:border-[#009B4C] transition-all text-sm font-semibold text-gray-900 placeholder:text-gray-400"
-              />
+              <div className="relative w-full">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isSaving}
+                  placeholder="••••••••"
+                  className="w-full px-5 py-3.5 pr-14 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009B4C]/10 focus:border-[#009B4C] transition-all text-sm font-semibold text-gray-900 placeholder:text-gray-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  disabled={isSaving}
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors disabled:opacity-50"
+                >
+                  {showPassword ? <EyeSlash size={18} weight="bold" /> : <Eye size={18} weight="bold" />}
+                </button>
+              </div>
             </div>
 
             {/* Role */}
@@ -235,7 +227,6 @@ export default function EditUserPage() {
                   <option value="" disabled hidden></option>
                   <option value="operator">Admin Cabang</option>
                   <option value="finance">Admin Finance</option>
-                  <option value="master">Super Admin</option>
                   <option value="manager">Manager</option>
                 </select>
                 <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
@@ -251,16 +242,17 @@ export default function EditUserPage() {
               </label>
               <div className="relative w-full">
                 <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
+                  value={selectedLocationId}
+                  onChange={(e) => setSelectedLocationId(e.target.value)}
                   disabled={isSaving}
                   className="w-full px-5 py-3.5 bg-white border border-gray-200 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#009B4C]/10 focus:border-[#009B4C] transition-all text-sm font-semibold text-gray-900 appearance-none cursor-pointer pr-12"
                 >
                   <option value="" disabled hidden></option>
-                  <option value="Malang">Malang</option>
-                  <option value="Blitar">Blitar</option>
-                  <option value="Kediri 1">Kediri 1</option>
-                  <option value="Kediri 2">Kediri 2</option>
+                  {locations.map((loc) => (
+                    <option key={loc.id} value={loc.id}>
+                      {loc.name}
+                    </option>
+                  ))}
                 </select>
                 <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                   <CaretDown size={16} weight="bold" />
@@ -271,9 +263,9 @@ export default function EditUserPage() {
         )}
       </div>
 
-      {/* Buttons wrapper matching Image 2 */}
+      {/* Buttons */}
       {!isLoading && (
-        <div className="flex gap-4 max-w-5xl mx-auto w-full animate-in fade-in duration-200">
+        <div className="flex gap-4 max-w-5xl mx-auto w-full">
           <button
             type="button"
             onClick={() => router.push(`/${role}/user`)}
