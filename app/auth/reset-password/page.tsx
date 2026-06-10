@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Eye, EyeSlash, CheckCircle } from "@phosphor-icons/react";
 
@@ -16,7 +16,7 @@ const PASSWORD_RULES: PasswordRule[] = [
   { label: "Mengandung karakter unik (!@#$%^&*)", test: (v) => /[^a-zA-Z0-9]/.test(v) },
 ];
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams  = useSearchParams();
   const router        = useRouter();
   const email         = searchParams.get("email") ?? "";
@@ -29,7 +29,6 @@ export default function ResetPasswordPage() {
   const [error,           setError]           = useState<string | null>(null);
   const [success,         setSuccess]         = useState(false);
 
-  // Kalau tidak ada email di query param, redirect ke forgot
   useEffect(() => {
     if (!email) router.replace("/auth/forgot-password");
   }, [email, router]);
@@ -188,5 +187,13 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
