@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import axios from "axios";
+import axios from "@/lib/axios";
 import ReactSelect, { type SingleValue } from "react-select";
 import { CaretDown, ArrowLeft } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";

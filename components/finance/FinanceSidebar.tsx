@@ -14,7 +14,7 @@ import {
   Sun,
   Moon
 } from "@phosphor-icons/react";
-import axios from "axios";
+import axios from "@/lib/axios";
 import { useTheme } from "@/components/ThemeProvider";
 
 interface MenuItem {

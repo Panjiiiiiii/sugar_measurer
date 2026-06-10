@@ -19,7 +19,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import Link from "next/link";
-import axios from "axios";
+import axios from "@/lib/axios";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

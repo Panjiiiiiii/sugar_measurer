@@ -20,7 +20,7 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import axios from "axios";
+import axios from "@/lib/axios";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

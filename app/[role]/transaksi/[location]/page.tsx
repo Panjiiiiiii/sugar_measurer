@@ -8,7 +8,7 @@ import {
   useSearchParams,
 } from "next/navigation";
 import * as XLSX from "xlsx";
-import axios from "axios";
+import axios from "@/lib/axios";xios";
 import {
   CaretDown,
   DotsThreeVertical,

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import axios from "axios";
+import axios from "@/lib/axios";
 import * as XLSX from "xlsx";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import {

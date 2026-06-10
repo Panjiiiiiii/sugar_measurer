@@ -10,7 +10,7 @@ import {
   CaretDown
 } from "@phosphor-icons/react";
 import { Toast, DeleteModal } from "@/components/ui";
-import axios from "axios";
+import axios from "@/lib/axios";
 
 interface UserItem {
   id: string;
