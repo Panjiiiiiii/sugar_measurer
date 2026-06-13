@@ -1,9 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { validateCreateTransferInput } from "@/schema/transfer";
 import { z } from "zod";
 import { sendNotification } from "@/lib/notification";
+import { storeFile } from "@/lib/storage";
 
 const BASE64_PATTERN = /^data:([\w/+.-]+);base64,([A-Za-z0-9+/=\s]+)$/;
 
@@ -53,15 +52,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         }
 
         const extension = getExtensionFromMimeType(decodedFile.mimeType);
-        const relativeDirectory = path.join("finance", "transfer");
-        const absoluteDirectory = path.join(process.cwd(), "public", relativeDirectory);
+        const relativeDirectory = "finance/transfer";
         const transferTimestamp = formatTransferTimestamp(new Date());
         const fileName = `${locationId}-${transferTimestamp}.${extension}`;
-        const absoluteFilePath = path.join(absoluteDirectory, fileName);
-        const publicFilePath = `/${relativeDirectory.replace(/\\/g, "/")}/${fileName}`;
 
-        await mkdir(absoluteDirectory, { recursive: true });
-        await writeFile(absoluteFilePath, decodedFile.buffer);
+        const stored = await storeFile(decodedFile.buffer, decodedFile.mimeType, relativeDirectory, fileName);
+        const publicFilePath = stored.url;
 
         // Simpan untuk notif
         let updatedBalance = 0;
@@ -89,7 +85,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                     },
                 });
 
-                // Simpan untuk notif
                 updatedBalance = updatedLocation.account_balance ?? 0;
                 locationName = existingLocation.name;
 
@@ -100,11 +95,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
                 return Response.json({ message: "Location not found", data: null }, { status: 404 });
             }
         } catch (dbError) {
-            await unlink(absoluteFilePath).catch(() => undefined);
+            await stored.delete();
             throw dbError;
         }
 
-        // Query operator di lokasi tsb + semua manager
         const recipients = await prisma.user.findMany({
             where: {
                 OR: [
