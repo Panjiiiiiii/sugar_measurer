@@ -172,7 +172,8 @@ export default function CustomerPage() {
               options={[
                 { value: "", label: "Type Owner" },
                 { value: "farmer", label: "Petani" },
-                { value: "private", label: "Private" }
+                { value: "private", label: "Private" },
+                { value: "special", label: "Khusus" },
               ]} 
             />
           </div>
