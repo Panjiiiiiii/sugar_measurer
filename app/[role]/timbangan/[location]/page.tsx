@@ -594,7 +594,7 @@ export default function DynamicTimbanganLocationPage() {
         </div>
       )}
 
-      <div className="p-8 space-y-8">
+      <div className="space-y-8">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <h1 className="text-2xl font-bold text-gray-900">Data Timbangan {locationName}</h1>
           <button

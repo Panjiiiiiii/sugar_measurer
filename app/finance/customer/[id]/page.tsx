@@ -8,7 +8,7 @@ export default function CustomerDetailPage() {
   const id = params.id as string;
 
   return (
-    <div className="p-8">
+    <div>
       <h1 className="text-2xl font-bold text-gray-900 capitalize">
         Detail Customer {id}
       </h1>

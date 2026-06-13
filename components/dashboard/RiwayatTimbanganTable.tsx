@@ -55,10 +55,15 @@ export function RiwayatTimbanganTable({ data, isLoading, onEdit, onDelete, onSta
   }).format(value || 0);
 
   return (
-    <Card title="Riwayat Timbangan" noPadding>
-      <div className="px-8 pb-4 flex items-center gap-2">
-        <Badge variant="blue">Today</Badge>
-      </div>
+    <Card
+      title={
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-bold text-gray-900">Riwayat Timbangan</h3>
+          <Badge variant="blue">Today</Badge>
+        </div>
+      }
+      noPadding
+    >
       <div className="overflow-x-auto custom-scrollbar max-w-full">
         <div className="min-w-350">
           <table className="w-full text-left">

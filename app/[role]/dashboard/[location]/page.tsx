@@ -23,7 +23,7 @@ export default function LocationDashboard() {
   const locationName = getCityName(location);
 
   return (
-    <div className="p-8">
+    <div>
       <h1 className="text-2xl font-bold text-gray-900 capitalize">
         Dashboard {locationName}
       </h1>
