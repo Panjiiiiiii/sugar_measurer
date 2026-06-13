@@ -6,6 +6,7 @@ type UpdateOwnerPayload = {
   type_owner?: string;
   type_ownership?: "farmer" | "private" | "special";
   special_price?: number;
+  phone_number?: string;
 };
 
 export async function GET(
@@ -95,6 +96,7 @@ export async function PUT(
           payload.type_ownership ?? existingOwner.ownership_type,
         special_price:
           payload.special_price ?? existingOwner.special_price,
+          phone_number: payload.phone_number ?? existingOwner.phone_number,
       },
     });
 
