@@ -142,6 +142,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             );
         }
 
+        console.error("Error processing transfer:", error);
+
         return Response.json({ statusCode: 500, message: "Error adding transfer" }, { status: 500 });
     }
 }
