@@ -24,10 +24,15 @@ interface AntrianTableProps {
 
 export function AntrianTable({ data, isLoading, role }: AntrianTableProps) {
   return (
-    <Card title="Antrian Timbangan" noPadding>
-      <div className="px-8 pb-4">
-        <Badge variant="blue">Today</Badge>
-      </div>
+    <Card
+      title={
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-bold text-gray-900">Antrian Timbangan</h3>
+          <Badge variant="blue">Today</Badge>
+        </div>
+      }
+      noPadding
+    >
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>

@@ -149,7 +149,7 @@ export default function DataUserPage() {
   };
 
   return (
-    <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)]">
+    <div className="space-y-8">
       <Toast 
         isVisible={showToast} 
         message={toastMessage} 

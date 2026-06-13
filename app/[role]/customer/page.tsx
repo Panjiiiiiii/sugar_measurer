@@ -144,7 +144,7 @@ export default function CustomerPage() {
   };
 
   return (
-    <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)] w-full max-w-full">
+    <div className="space-y-8 w-full max-w-full">
       <Toast
         isVisible={showToast}
         message={toastMessage}

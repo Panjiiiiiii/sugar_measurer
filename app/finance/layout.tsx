@@ -17,7 +17,7 @@ export default async function FinanceLayout({
       <FinanceSidebar />
       <div className="flex-1 flex flex-col ml-64 min-w-0">
         <FinanceHeader />
-        <main className="flex-1 mt-[72px] overflow-x-hidden w-full">
+        <main className="flex-1 mt-[72px] p-8 overflow-x-hidden w-full">
           {userId && <PushNotificationInit userId={userId} />}
           {children}
         </main>

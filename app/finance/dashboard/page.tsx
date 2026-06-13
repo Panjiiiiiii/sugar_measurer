@@ -222,7 +222,7 @@ export default function FinanceDashboard() {
         </div>
       )}
 
-      <div className="p-8 space-y-8">
+      <div className="space-y-8">
         {/* Date Filter */}
         <div className="relative z-20">
           <button
