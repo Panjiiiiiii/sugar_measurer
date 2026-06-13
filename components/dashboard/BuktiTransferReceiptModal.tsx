@@ -22,13 +22,19 @@ function normalizeImageSrc(imageSrc?: string | null) {
     return null;
   }
 
+  // sudah berupa path lengkap (mis. /api/files/finance/transfer/xxx.jpg)
+  if (imageSrc.startsWith("/api/files/")) {
+    return imageSrc;
+  }
+
+  // fallback untuk data lama yang cuma simpan nama file / path lama
   const fileName = imageSrc.split("/").pop()?.trim();
 
   if (!fileName) {
     return null;
   }
 
-  return `/finance/transfer/${encodeURIComponent(fileName)}`;
+  return `/api/files/finance/transfer/${encodeURIComponent(fileName)}`;
 }
 
 export function BuktiTransferReceiptModal({ isOpen, onClose, imageSrc }: BuktiTransferReceiptModalProps) {
