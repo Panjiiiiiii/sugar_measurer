@@ -144,7 +144,7 @@ export default function NotificationPage() {
     notifications.filter((n) => n.group === group && !n.is_read).length;
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8">
       <NotificationFilterModal
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}

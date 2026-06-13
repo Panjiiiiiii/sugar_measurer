@@ -55,7 +55,7 @@ export default function InputTransaksiPage() {
   };
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="space-y-8">
       {/* Header & Breadcrumbs */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Input Transaksi</h1>

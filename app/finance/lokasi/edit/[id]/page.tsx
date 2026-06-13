@@ -118,7 +118,7 @@ export default function EditLokasiPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)] w-full">
+      <div className="space-y-8 w-full">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Edit Lokasi</h1>
         </div>
@@ -130,7 +130,7 @@ export default function EditLokasiPage() {
   }
 
   return (
-    <div className="p-8 space-y-8 bg-[#F9FAFB] min-h-[calc(100vh-72px)] w-full">
+    <div className="space-y-8 w-full">
       {/* Header & Breadcrumbs */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Edit Lokasi</h1>

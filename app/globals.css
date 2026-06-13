@@ -101,11 +101,33 @@ body {
 }
 
 /* --- COMMON DARK ELEMENTS --- */
-/* Page background resets */
-.dark .bg-\[\#F9FAFB\],
-.dark .bg-slate-50,
-.dark .bg-gray-50 {
-  background-color: transparent !important;
+/* Page background resets to match roles */
+.dark .role-branch,
+.dark .role-branch.bg-slate-50,
+.dark .role-branch .bg-slate-50,
+.dark .role-branch.bg-gray-50,
+.dark .role-branch .bg-gray-50,
+.dark .role-branch.bg-\[\#F9FAFB\],
+.dark .role-branch .bg-\[\#F9FAFB\],
+.dark .role-branch .ml-64,
+.dark .role-branch main {
+  background-color: #09090b !important;
+}
+
+.dark .role-finance-manager,
+.dark .role-finance-manager.bg-\[\#F9FAFB\],
+.dark .role-finance-manager .bg-\[\#F9FAFB\],
+.dark .role-finance-manager.bg-slate-50,
+.dark .role-finance-manager .bg-slate-50,
+.dark .role-finance-manager.bg-gray-50,
+.dark .role-finance-manager .bg-gray-50,
+.dark .role-finance-manager .ml-64,
+.dark .role-finance-manager main {
+  background-color: #0c0c0e !important;
+}
+
+.dark body {
+  background-color: #09090b !important;
 }
 
 /* Sidebar */
@@ -128,6 +150,27 @@ body {
 
 .dark .sidebar-container a[class*="bg-blue-50"] span {
   color: #38bdf8 !important;
+}
+
+/* Sidebar active items in dark mode (Finance & Manager) */
+.dark .sidebar-container .text-\[\#111827\] {
+  color: #38bdf8 !important;
+}
+
+/* Sidebar active item icons in dark mode */
+.dark .sidebar-container .text-\[\#111827\] svg,
+.dark .sidebar-container .text-\[\#111827\] path {
+  color: #38bdf8 !important;
+}
+
+/* Sidebar active item background in dark mode */
+.dark .sidebar-container .bg-\[\#F3F4F6\]\/50 {
+  background-color: rgba(14, 165, 233, 0.15) !important;
+}
+
+/* Sidebar hover states for inactive links in dark mode */
+.dark .sidebar-container .hover\:text-\[\#111827\]:hover {
+  color: #ffffff !important;
 }
 
 /* Sidebar hover link & button in light mode */
@@ -415,21 +458,19 @@ body {
 }
 
 /* White buttons (e.g. Cancel) in Dark Mode */
-.dark button[class*="bg-white"],
-.dark button[class*="hover:bg-gray-50"] {
+.dark button.bg-white {
   background-color: #1c1c1f !important;
   border-color: #27272a !important;
   color: #d4d4d8 !important;
 }
 
-.dark button[class*="bg-white"]:hover,
-.dark button[class*="hover:bg-gray-50"]:hover {
+.dark button.bg-white:hover {
   background-color: #27272a !important;
   color: #ffffff !important;
 }
 
 /* Ghost buttons and close buttons in Dark Mode */
-.dark button[class*="text-gray-400"]:hover {
+.dark button.text-gray-400:hover {
   color: #ffffff !important;
 }
 
