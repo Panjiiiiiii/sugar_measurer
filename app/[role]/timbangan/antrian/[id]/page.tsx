@@ -30,7 +30,7 @@ function getDrafts(): any[] {
 function toJakartaTimeString(isoString?: string | null): string {
   if (!isoString) return "";
   const date = new Date(isoString);
-  // tambah 7 jam untuk WIB
+  if (isNaN(date.getTime())) return ""; // invalid date guard
   const wib = new Date(date.getTime() + 7 * 60 * 60 * 1000);
   const hours = String(wib.getUTCHours()).padStart(2, "0");
   const minutes = String(wib.getUTCMinutes()).padStart(2, "0");
