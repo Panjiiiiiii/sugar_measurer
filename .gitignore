@@ -43,5 +43,5 @@ next-env.d.ts
 /generated/prisma
 
 # finance transfer proof uploads
-/public/finance/transfer/
-/public/finance/transaction/
+# /public/finance/transfer/
+# /public/finance/transaction/
