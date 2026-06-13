@@ -232,7 +232,7 @@ export async function GET(request: Request) {
           }),
           prisma.transaction.aggregate({
             where: { ...txWhere, status: "queue" },
-            _sum: { netto_weight: true },
+            _sum: { bruto_weight: true },
           }),
           prisma.logTransfer.aggregate({
             where: { ...tfWhere, transfer_status: "in" },
@@ -250,7 +250,7 @@ export async function GET(request: Request) {
           sugar_price: loc.sugar_price,
           account_balance: loc.account_balance ?? 0,
           paid_tonase: Number(paidTonase._sum.netto_weight ?? 0),
-          queue_tonase: Number(queueTonase._sum.netto_weight ?? 0),
+          queue_tonase: Number(queueTonase._sum.bruto_weight ?? 0),
           transaction_in: Number(txIn._sum.transfer_amount ?? 0),
           transaction_out: Number(txOut._sum.transfer_amount ?? 0),
         };
