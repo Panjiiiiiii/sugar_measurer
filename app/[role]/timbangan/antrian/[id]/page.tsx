@@ -41,29 +41,6 @@ function saveDraftOut(transactionId: string, payload: DraftTimbanganOut["payload
   localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
 }
 
-function toJakartaTimeString(dbValue?: string | null): string {
-  if (!dbValue) return "";
-  
-  // Format: "2026-06-13 16:00:00" atau "2026-06-13T16:00:00" atau ISO dengan Z
-  const match = dbValue.match(/(\d{2}):(\d{2}):\d{2}(\.\d+)?(Z)?$/);
-  
-  if (match) {
-    const hasZ = !!match[4];
-    let hours = parseInt(match[1], 10);
-    const minutes = match[2];
-    
-    if (hasZ) {
-      // Ada Z = UTC, perlu convert ke WIB (+7)
-      hours = (hours + 7) % 24;
-    }
-    // Tanpa Z = anggap sudah WIB, langsung pakai
-    
-    return `${String(hours).padStart(2, "0")}:${minutes}`;
-  }
-  
-  return "";
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AntrianTimbanganDetailPage() {
@@ -97,8 +74,8 @@ export default function AntrianTimbanganDetailPage() {
           nopol: transaction.lisence_plate ?? current.nopol,
           customer: transaction.owner_name ?? current.customer,
           supir: transaction.driver ?? current.supir,
-          masuk: toJakartaTimeString(transaction.loading_in) || current.masuk,
-          keluar: toJakartaTimeString(transaction.loading_out) || current.keluar,
+          masuk: transaction.loading_in || current.masuk,
+          keluar: transaction.loading_out || current.keluar,
           bruto: String(transaction.bruto ?? current.bruto),
           tara: String(transaction.tare ?? current.tara),
           harga: String(transaction.price ?? current.harga),
