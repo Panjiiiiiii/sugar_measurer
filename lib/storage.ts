@@ -14,6 +14,7 @@ export async function storeFile(
     fileName: string,
 ): Promise<StoredFile> {
     if (process.env.STORAGE_DRIVER === "vercel-blob") {
+        console.log("STORAGE_DRIVER =", process.env.STORAGE_DRIVER);
         const { put, del } = await import("@vercel/blob");
         const key = `${relativeDir}/${fileName}`;
         const blob = await put(key, buffer, { access: "public", contentType: mimeType });
