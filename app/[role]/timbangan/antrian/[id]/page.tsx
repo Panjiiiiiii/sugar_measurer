@@ -57,10 +57,19 @@ export default function AntrianTimbanganDetailPage() {
     harga: "", paymentMethod: "cash",
   });
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [authUserName, setAuthUserName] = useState("");
   const [data, setData] = useState<any>({});
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "warning">("success");
+
+  useEffect(() => {
+    axios.get<{ data?: { name?: string } }>("/api/auth/me")
+      .then((res) => {
+        const name = res.data?.data?.name;
+        if (name) setAuthUserName(name);
+      }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     async function fetchTransaction(id: string) {
@@ -133,6 +142,19 @@ export default function AntrianTimbanganDetailPage() {
   const totalHarga = nettoKw * 100 * hargaVal;
   const totalHargaDisplay = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(totalHarga);
 
+  const receiptData = {
+    customer: formData.customer,
+    nopol: formData.nopol,
+    masuk: formData.masuk,
+    keluar: formData.keluar,
+    bruto: formData.bruto,
+    tara: formData.tara,
+    netto: nettoKw.toFixed(2),
+    hargaPerKw: hargaVal.toLocaleString("id-ID"),
+    total: totalHargaDisplay,
+    operator: authUserName || "-",
+  };
+
   return (
     <div className="flex flex-col gap-6 w-full max-w-full pb-10">
       <Toast isVisible={showToast} onClose={() => setShowToast(false)} type={toastType} message={toastMessage} />
@@ -196,7 +218,7 @@ export default function AntrianTimbanganDetailPage() {
         </div>
       </div>
 
-      <ReceiptModal isOpen={isReceiptOpen} onClose={() => setIsReceiptOpen(false)} data={{ customer: formData.customer, nopol: formData.nopol, masuk: formData.masuk, keluar: formData.keluar, bruto: formData.bruto, tara: formData.tara, netto: nettoKw.toFixed(2), hargaPerKw: hargaVal.toLocaleString("id-ID"), total: totalHargaDisplay, operator: "Dadang Utama Jaya" }} />
+      <ReceiptModal isOpen={isReceiptOpen} onClose={() => setIsReceiptOpen(false)} data={receiptData} />
     </div>
   );
 }
