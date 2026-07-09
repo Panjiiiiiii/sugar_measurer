@@ -157,6 +157,7 @@ export default function InputTimbanganPage() {
   const selectStyles = React.useMemo(() => getSelectStyles(theme), [theme]);
 
   const [authUserId, setAuthUserId] = useState("");
+  const [authUserName, setAuthUserName] = useState("");
   const [authLocationId, setAuthLocationId] = useState("");
   const [isMounted, setIsMounted] = useState(false);
 
@@ -187,10 +188,11 @@ export default function InputTimbanganPage() {
   useEffect(() => { setIsMounted(true); }, []);
 
   useEffect(() => {
-    axios.get<{ data?: { id?: string; location_id?: string } }>("/api/auth/me")
+    axios.get<{ data?: { id?: string; name?: string; location_id?: string } }>("/api/auth/me")
       .then((res) => {
         const data = res.data?.data;
         if (data?.id) setAuthUserId(data.id);
+        if (data?.name) setAuthUserName(data.name);
         if (data?.location_id) setAuthLocationId(data.location_id);
       }).catch(() => {});
   }, []);
@@ -325,7 +327,7 @@ export default function InputTimbanganPage() {
     masuk: formData.jamMasuk, keluar: formData.jamKeluar,
     bruto: formData.bruto, tara: formData.tara,
     netto: nettoKw.toFixed(2), hargaPerKw: hargaVal.toLocaleString("id-ID"),
-    total: totalHargaDisplay, operator: "Dadang Utama Jaya",
+    total: totalHargaDisplay, operator: authUserName || "-",
   };
 
   return (
