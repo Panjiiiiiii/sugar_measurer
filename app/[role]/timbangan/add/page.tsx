@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import axios from "@/lib/axios";
 import ReactSelect, { type SingleValue } from "react-select";
-import { CaretDown, ArrowLeft } from "@phosphor-icons/react";
+import { CaretDown, ArrowLeft, ArrowClockwise, LockSimple, LockSimpleOpen } from "@phosphor-icons/react";
 import { Card } from "@/components/ui/Card";
 import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -182,6 +182,12 @@ export default function InputTimbanganPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "warning">("success");
 
+  // ── Timbangan (weight scale) fetch state — Bruto & Tara ──────────────────
+  const [isBrutoLocked, setIsBrutoLocked] = useState(false);
+  const [isTaraLocked, setIsTaraLocked] = useState(false);
+  const [isFetchingBruto, setIsFetchingBruto] = useState(false);
+  const [isFetchingTara, setIsFetchingTara] = useState(false);
+
   const resolvedLocationId = authLocationId;
   const resolvedUserId = authUserId;
 
@@ -255,6 +261,76 @@ export default function InputTimbanganPage() {
     } else {
       setFormData((cur) => ({ ...cur, harga: locationPrice !== null ? String(locationPrice) : cur.harga, isHargaSpesial: false }));
     }
+  };
+
+  // ── Ambil berat dari timbangan (langsung ke NEXT_PUBLIC_LOAD_URL) ────────
+  const fetchScaleWeight = async (): Promise<number | null> => {
+    const url = process.env.NEXT_PUBLIC_LOAD_URL;
+    if (!url) {
+      showErrorToast("URL timbangan belum dikonfigurasi");
+      return null;
+    }
+    try {
+      const response = await axios.get(url);
+      console.log("Scale response (res.data):", response.data);
+      const weight = response.data?.data?.weight;
+      if (typeof weight !== "number" || Number.isNaN(weight)) return null;
+      return weight;
+    } catch (error) {
+      console.error("Error fetching scale weight:", error);
+      return null;
+    }
+  };
+
+  // ── Tembak API timbangan otomatis begitu halaman selesai mount ───────────
+  useEffect(() => {
+    if (!isMounted) return;
+    let cancelled = false;
+    (async () => {
+      setIsFetchingBruto(true);
+      const weight = await fetchScaleWeight();
+      if (cancelled) return;
+      setIsFetchingBruto(false);
+      if (weight !== null) {
+        setFormData((cur) => ({ ...cur, bruto: String(weight) }));
+        setIsBrutoLocked(true);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted]);
+
+  const handleFetchBruto = async () => {
+    // Jika sudah terkunci, tombol berfungsi sebagai unlock untuk ambil ulang / edit manual
+    if (isBrutoLocked) {
+      setIsBrutoLocked(false);
+      return;
+    }
+    setIsFetchingBruto(true);
+    const weight = await fetchScaleWeight();
+    setIsFetchingBruto(false);
+    if (weight === null) {
+      showErrorToast("Gagal mengambil berat bruto dari timbangan");
+      return;
+    }
+    setFormData((cur) => ({ ...cur, bruto: String(weight) }));
+    setIsBrutoLocked(true);
+  };
+
+  const handleFetchTara = async () => {
+    if (isTaraLocked) {
+      setIsTaraLocked(false);
+      return;
+    }
+    setIsFetchingTara(true);
+    const weight = await fetchScaleWeight();
+    setIsFetchingTara(false);
+    if (weight === null) {
+      showErrorToast("Gagal mengambil berat tara dari timbangan");
+      return;
+    }
+    setFormData((cur) => ({ ...cur, tara: String(weight) }));
+    setIsTaraLocked(true);
   };
 
   const isFormValid = !!formData.nopol && !!formData.customer && !!formData.supir && !!formData.jamMasuk && !!formData.bruto && !!formData.paymentMethod && !!formData.truck_id && !!formData.owner_id;
@@ -370,8 +446,78 @@ export default function InputTimbanganPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Bruto(Kg)" required type="number" placeholder="0" value={formData.bruto} onChange={(e) => setFormData({ ...formData, bruto: e.target.value })} />
-                <Input label="Tara(Kg)" type="number" placeholder="0" value={formData.tara} onChange={(e) => setFormData({ ...formData, tara: e.target.value })} />
+                {/* Bruto — dengan tombol ambil dari timbangan */}
+                <div className="flex flex-col gap-2 w-full">
+                  <label className="text-xs font-bold text-gray-600">Bruto(Kg) <span className="text-red-500">*</span></label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      required
+                      type="number"
+                      placeholder="0"
+                      value={formData.bruto}
+                      disabled={isBrutoLocked}
+                      readOnly={isBrutoLocked}
+                      onChange={(e) => setFormData({ ...formData, bruto: e.target.value })}
+                      className={`flex-1 ${isBrutoLocked ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="white"
+                      size="sm"
+                      onClick={handleFetchBruto}
+                      disabled={isFetchingBruto}
+                      title={isBrutoLocked ? "Buka kunci untuk ubah manual" : "Ambil berat dari timbangan"}
+                      className="p-2 shrink-0"
+                      icon={
+                        isFetchingBruto ? (
+                          <ArrowClockwise size={18} className="animate-spin text-gray-500" />
+                        ) : isBrutoLocked ? (
+                          <LockSimple size={18} weight="bold" className="text-[#00A3FF]" />
+                        ) : (
+                          <LockSimpleOpen size={18} weight="bold" className="text-gray-600" />
+                        )
+                      }
+                    >
+                      {null}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Tara — dengan tombol ambil dari timbangan */}
+                <div className="flex flex-col gap-2 w-full">
+                  <label className="text-xs font-bold text-gray-600">Tara(Kg)</label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={formData.tara}
+                      disabled={isTaraLocked}
+                      readOnly={isTaraLocked}
+                      onChange={(e) => setFormData({ ...formData, tara: e.target.value })}
+                      className={`flex-1 ${isTaraLocked ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="white"
+                      size="sm"
+                      onClick={handleFetchTara}
+                      disabled={isFetchingTara}
+                      title={isTaraLocked ? "Buka kunci untuk ubah manual" : "Ambil berat dari timbangan"}
+                      className="p-2 shrink-0"
+                      icon={
+                        isFetchingTara ? (
+                          <ArrowClockwise size={18} className="animate-spin text-gray-500" />
+                        ) : isTaraLocked ? (
+                          <LockSimple size={18} weight="bold" className="text-[#00A3FF]" />
+                        ) : (
+                          <LockSimpleOpen size={18} weight="bold" className="text-gray-600" />
+                        )
+                      }
+                    >
+                      {null}
+                    </Button>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-between py-2">
