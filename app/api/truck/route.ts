@@ -54,6 +54,7 @@ export async function GET(request: Request) {
         if (search) {
             whereClause.license_plate = {
                 contains: search,
+                mode: "insensitive",
             };
         }
         const [trucks, totalData] = await Promise.all([

@@ -164,7 +164,7 @@ export async function GET(request: Request) {
                     is: {
                       ...(ownershipType ? { ownership_type: ownershipType as any } : {}),
                       ...(customerFilter
-                        ? { name: { contains: customerFilter } }
+                        ? { name: { contains: customerFilter, mode: "insensitive" } }
                         : {}),
                     },
                   },
