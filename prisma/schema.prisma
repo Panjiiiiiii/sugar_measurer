@@ -4,8 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model user {
@@ -22,6 +23,8 @@ model user {
   transactions     transaction[]
   notification     notification[]
   pushSubscription push_subscription[]
+
+  @@map("users")
 }
 
 model owner {
@@ -81,7 +84,7 @@ model transaction {
   location         location       @relation(fields: [location_id], references: [id])
   truck            truck          @relation(fields: [truck_id], references: [id], onDelete: Cascade)
   owner            owner?         @relation(fields: [owner_id], references: [id])
-  user             user?          @relation(fields: [user_id], references: [id])
+  user             user           @relation(fields: [user_id], references: [id])
   logTransfers     logTransfer[]
 }
 
