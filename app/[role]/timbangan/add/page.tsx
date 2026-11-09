@@ -12,6 +12,7 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
 import { Toast } from "@/components/ui/Toast";
 import { useTheme } from "@/components/ThemeProvider";
+import { fetchScaleWeight } from "@/lib/scale";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -263,37 +264,19 @@ export default function InputTimbanganPage() {
     }
   };
 
-  // ── Ambil berat dari timbangan (langsung ke NEXT_PUBLIC_LOAD_URL) ────────
-  const fetchScaleWeight = async (): Promise<number | null> => {
-    const url = process.env.NEXT_PUBLIC_LOAD_URL;
-    if (!url) {
-      showErrorToast("URL timbangan belum dikonfigurasi");
-      return null;
-    }
-    try {
-      const response = await axios.get(url);
-      console.log("Scale response (res.data):", response.data);
-      const weight = response.data?.data?.weight;
-      if (typeof weight !== "number" || Number.isNaN(weight)) return null;
-      return weight;
-    } catch (error) {
-      console.error("Error fetching scale weight:", error);
-      return null;
-    }
-  };
-
   // ── Tembak API timbangan otomatis begitu halaman selesai mount ───────────
   useEffect(() => {
     if (!isMounted) return;
     let cancelled = false;
     (async () => {
       setIsFetchingBruto(true);
-      const weight = await fetchScaleWeight();
+      const { weight, isFallback } = await fetchScaleWeight();
       if (cancelled) return;
       setIsFetchingBruto(false);
-      if (weight !== null) {
-        setFormData((cur) => ({ ...cur, bruto: String(weight) }));
-        setIsBrutoLocked(true);
+      setFormData((cur) => ({ ...cur, bruto: String(weight) }));
+      setIsBrutoLocked(!isFallback);
+      if (isFallback) {
+        showWarningToast("Timbangan tidak terhubung. Berat diisi default 5 Kg, mohon periksa/ubah manual.");
       }
     })();
     return () => { cancelled = true; };
@@ -307,14 +290,13 @@ export default function InputTimbanganPage() {
       return;
     }
     setIsFetchingBruto(true);
-    const weight = await fetchScaleWeight();
+    const { weight, isFallback } = await fetchScaleWeight();
     setIsFetchingBruto(false);
-    if (weight === null) {
-      showErrorToast("Gagal mengambil berat bruto dari timbangan");
-      return;
-    }
     setFormData((cur) => ({ ...cur, bruto: String(weight) }));
-    setIsBrutoLocked(true);
+    setIsBrutoLocked(!isFallback);
+    if (isFallback) {
+      showWarningToast("Timbangan tidak terhubung. Berat diisi default 5 Kg, mohon periksa/ubah manual.");
+    }
   };
 
   const handleFetchTara = async () => {
@@ -323,19 +305,19 @@ export default function InputTimbanganPage() {
       return;
     }
     setIsFetchingTara(true);
-    const weight = await fetchScaleWeight();
+    const { weight, isFallback } = await fetchScaleWeight();
     setIsFetchingTara(false);
-    if (weight === null) {
-      showErrorToast("Gagal mengambil berat tara dari timbangan");
-      return;
-    }
     setFormData((cur) => ({ ...cur, tara: String(weight) }));
-    setIsTaraLocked(true);
+    setIsTaraLocked(!isFallback);
+    if (isFallback) {
+      showWarningToast("Timbangan tidak terhubung. Berat diisi default 5 Kg, mohon periksa/ubah manual.");
+    }
   };
 
   const isFormValid = !!formData.nopol && !!formData.customer && !!formData.supir && !!formData.jamMasuk && !!formData.bruto && !!formData.paymentMethod && !!formData.truck_id && !!formData.owner_id;
 
   const showErrorToast = (message: string) => { setToastType("error"); setToastMessage(message); setShowToast(true); };
+  const showWarningToast = (message: string) => { setToastType("warning"); setToastMessage(message); setShowToast(true); };
 
   const handleSubmit = async () => {
     if (!formData.truck_id) { showErrorToast("Silakan pilih truk terlebih dahulu"); return; }
