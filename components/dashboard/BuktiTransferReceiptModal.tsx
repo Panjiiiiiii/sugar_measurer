@@ -22,6 +22,11 @@ function normalizeImageSrc(imageSrc?: string | null) {
     return null;
   }
 
+  // URL penuh (Supabase Storage): pakai apa adanya
+  if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
+    return imageSrc;
+  }
+
   // sudah berupa path lengkap (mis. /api/files/finance/transfer/xxx.jpg)
   if (imageSrc.startsWith("/api/files/")) {
     return imageSrc;
