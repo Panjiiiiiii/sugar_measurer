@@ -142,6 +142,12 @@ function buildReceiptImageSrc(value: string | null) {
     return null;
   }
 
+  // If it's already a full URL (Supabase Storage), return as-is
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  // Otherwise, extract filename and build relative path for local files
   const fileName = value.split("/").pop()?.trim();
 
   if (!fileName) {

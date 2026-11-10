@@ -7,6 +7,8 @@ import { Card, Input, Select, Button, Breadcrumbs } from "@/components/ui";
 import { ReceiptModal } from "@/components/dashboard/ReceiptModal";
 import { Toast } from "@/components/ui/Toast";
 import axios from "@/lib/axios";
+import { fetchScaleWeight } from "@/lib/scale";
+import { ArrowClockwise, LockSimple, LockSimpleOpen } from "@phosphor-icons/react";
 
 // ─── Draft helpers ────────────────────────────────────────────────────────────
 
@@ -63,6 +65,12 @@ export default function AntrianTimbanganDetailPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"success" | "error" | "warning">("success");
 
+  // ── Timbangan (weight scale) fetch state — Bruto & Tara ──────────────────
+  const [isBrutoLocked, setIsBrutoLocked] = useState(true); // Bruto is from DB, locked by default
+  const [isTaraLocked, setIsTaraLocked] = useState(false);
+  const [isFetchingBruto, setIsFetchingBruto] = useState(false);
+  const [isFetchingTara, setIsFetchingTara] = useState(false);
+
   useEffect(() => {
     axios.get<{ data?: { name?: string } }>("/api/auth/me")
       .then((res) => {
@@ -96,6 +104,38 @@ export default function AntrianTimbanganDetailPage() {
     }
     if (transactionId) fetchTransaction(transactionId);
   }, [transactionId]);
+
+  // Auto-fetch TARA on mount (after DB data loads)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function autoFetchTara() {
+      // Wait until DB data has been loaded (data object populated)
+      if (!data || Object.keys(data).length === 0) return;
+      
+      // Only auto-fetch if TARA is still at default/zero
+      const currentTara = parseFloat(formData.tara) || 0;
+      if (currentTara > 0) return;
+
+      setIsFetchingTara(true);
+      const { weight, isFallback } = await fetchScaleWeight();
+      
+      if (!cancelled) {
+        setIsFetchingTara(false);
+        setFormData((cur) => ({ ...cur, tara: String(weight) }));
+        setIsTaraLocked(!isFallback);
+        if (isFallback) {
+          showWarningToast("Timbangan tidak terhubung. Tara diisi default 5 Kg, mohon periksa/ubah manual.");
+        }
+      }
+    }
+
+    autoFetchTara();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data]); // Runs when data changes (after DB load)
 
   const buildLoadingOutDateTime = (timeValue: string) => {
     const [hours, minutes] = timeValue.split(":");
@@ -134,6 +174,39 @@ export default function AntrianTimbanganDetailPage() {
   };
 
   const isFormValid = formData.nopol && formData.customer && formData.supir && formData.masuk && formData.keluar && formData.bruto && formData.tara && formData.harga && formData.paymentMethod;
+
+  const showErrorToast = (message: string) => { setToastType("error"); setToastMessage(message); setShowToast(true); };
+  const showWarningToast = (message: string) => { setToastType("warning"); setToastMessage(message); setShowToast(true); };
+
+  const handleFetchBruto = async () => {
+    if (isBrutoLocked) {
+      setIsBrutoLocked(false);
+      return;
+    }
+    setIsFetchingBruto(true);
+    const { weight, isFallback } = await fetchScaleWeight();
+    setIsFetchingBruto(false);
+    setFormData((cur) => ({ ...cur, bruto: String(weight) }));
+    setIsBrutoLocked(!isFallback);
+    if (isFallback) {
+      showWarningToast("Timbangan tidak terhubung. Berat diisi default 5 Kg, mohon periksa/ubah manual.");
+    }
+  };
+
+  const handleFetchTara = async () => {
+    if (isTaraLocked) {
+      setIsTaraLocked(false);
+      return;
+    }
+    setIsFetchingTara(true);
+    const { weight, isFallback } = await fetchScaleWeight();
+    setIsFetchingTara(false);
+    setFormData((cur) => ({ ...cur, tara: String(weight) }));
+    setIsTaraLocked(!isFallback);
+    if (isFallback) {
+      showWarningToast("Timbangan tidak terhubung. Berat diisi default 5 Kg, mohon periksa/ubah manual.");
+    }
+  };
 
   const brutoVal = parseFloat(formData.bruto) || 0;
   const taraVal = parseFloat(formData.tara) || 0;
@@ -181,8 +254,78 @@ export default function AntrianTimbanganDetailPage() {
                 <Input label="Keluar" type="time" value={formData.keluar} onChange={(e) => setFormData({ ...formData, keluar: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Bruto(Kg)" required type="number" disabled value={formData.bruto} />
-                <Input label="Tara(Kg)" type="number" value={formData.tara} onChange={(e) => setFormData({ ...formData, tara: e.target.value })} />
+                {/* Bruto — dengan tombol ambil dari timbangan */}
+                <div className="flex flex-col gap-2 w-full">
+                  <label className="text-xs font-bold text-gray-600">Bruto(Kg) <span className="text-red-500">*</span></label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      required
+                      type="number"
+                      placeholder="0"
+                      value={formData.bruto}
+                      disabled={isBrutoLocked}
+                      readOnly={isBrutoLocked}
+                      onChange={(e) => setFormData({ ...formData, bruto: e.target.value })}
+                      className={`flex-1 ${isBrutoLocked ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="white"
+                      size="sm"
+                      onClick={handleFetchBruto}
+                      disabled={isFetchingBruto}
+                      title={isBrutoLocked ? "Buka kunci untuk ubah manual" : "Ambil berat dari timbangan"}
+                      className="p-2 shrink-0"
+                      icon={
+                        isFetchingBruto ? (
+                          <ArrowClockwise size={18} className="animate-spin text-gray-500" />
+                        ) : isBrutoLocked ? (
+                          <LockSimple size={18} weight="bold" className="text-[#00A3FF]" />
+                        ) : (
+                          <LockSimpleOpen size={18} weight="bold" className="text-gray-600" />
+                        )
+                      }
+                    >
+                      {null}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Tara — dengan tombol ambil dari timbangan */}
+                <div className="flex flex-col gap-2 w-full">
+                  <label className="text-xs font-bold text-gray-600">Tara(Kg)</label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={formData.tara}
+                      disabled={isTaraLocked}
+                      readOnly={isTaraLocked}
+                      onChange={(e) => setFormData({ ...formData, tara: e.target.value })}
+                      className={`flex-1 ${isTaraLocked ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="white"
+                      size="sm"
+                      onClick={handleFetchTara}
+                      disabled={isFetchingTara}
+                      title={isTaraLocked ? "Buka kunci untuk ubah manual" : "Ambil berat dari timbangan"}
+                      className="p-2 shrink-0"
+                      icon={
+                        isFetchingTara ? (
+                          <ArrowClockwise size={18} className="animate-spin text-gray-500" />
+                        ) : isTaraLocked ? (
+                          <LockSimple size={18} weight="bold" className="text-[#00A3FF]" />
+                        ) : (
+                          <LockSimpleOpen size={18} weight="bold" className="text-gray-600" />
+                        )
+                      }
+                    >
+                      {null}
+                    </Button>
+                  </div>
+                </div>
               </div>
               <div className="flex items-center justify-between py-2">
                 <label className="text-xs font-bold text-gray-600">Harga Spesial <span className="text-red-500">*</span></label>
