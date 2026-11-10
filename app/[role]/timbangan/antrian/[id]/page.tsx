@@ -105,6 +105,38 @@ export default function AntrianTimbanganDetailPage() {
     if (transactionId) fetchTransaction(transactionId);
   }, [transactionId]);
 
+  // Auto-fetch TARA on mount (after DB data loads)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function autoFetchTara() {
+      // Wait until DB data has been loaded (data object populated)
+      if (!data || Object.keys(data).length === 0) return;
+      
+      // Only auto-fetch if TARA is still at default/zero
+      const currentTara = parseFloat(formData.tara) || 0;
+      if (currentTara > 0) return;
+
+      setIsFetchingTara(true);
+      const { weight, isFallback } = await fetchScaleWeight();
+      
+      if (!cancelled) {
+        setIsFetchingTara(false);
+        setFormData((cur) => ({ ...cur, tara: String(weight) }));
+        setIsTaraLocked(!isFallback);
+        if (isFallback) {
+          showWarningToast("Timbangan tidak terhubung. Tara diisi default 5 Kg, mohon periksa/ubah manual.");
+        }
+      }
+    }
+
+    autoFetchTara();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data]); // Runs when data changes (after DB load)
+
   const buildLoadingOutDateTime = (timeValue: string) => {
     const [hours, minutes] = timeValue.split(":");
     const d = new Date();
