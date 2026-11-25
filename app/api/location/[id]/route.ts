@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma";
+import { getCurrentUserId, logSugarPriceChange } from "@/lib/sugar-price-log";
 
 export async function GET(
   _request: Request,
@@ -55,16 +56,26 @@ export async function PUT(
         { status: 404 },
       );
     }
-    await prisma.location.update({
-      where: { id },
-      data: {
-        name: locationData.name ?? existingLocation.name,
-        sugar_price: locationData.sugar_price ?? existingLocation.sugar_price,
-        account_number:
-          locationData.account_number ?? existingLocation.account_number,
-        account_balance:
-          locationData.account_balance ?? existingLocation.account_balance,
-      },
+    const userId = await getCurrentUserId();
+
+    await prisma.$transaction(async (tx) => {
+      const updated = await tx.location.update({
+        where: { id },
+        data: {
+          name: locationData.name ?? existingLocation.name,
+          sugar_price: locationData.sugar_price ?? existingLocation.sugar_price,
+          account_number:
+            locationData.account_number ?? existingLocation.account_number,
+          account_balance:
+            locationData.account_balance ?? existingLocation.account_balance,
+        },
+      });
+      await logSugarPriceChange(tx, {
+        locationId: id,
+        oldPrice: existingLocation.sugar_price,
+        newPrice: updated.sugar_price,
+        userId,
+      });
     });
     return Response.json(
       {

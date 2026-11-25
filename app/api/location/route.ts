@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { validateCreateLocationInput } from "@/schema/location";
 import { z } from "zod";
+import { getCurrentUserId, logSugarPriceChange } from "@/lib/sugar-price-log";
 
 interface PaginationMeta {
   number_page: number;
@@ -79,8 +80,18 @@ export async function POST(request: Request) {
     const rawData = await request.json();
     const locationData = validateCreateLocationInput(rawData);
 
-    const location = await prisma.location.create({
-      data: locationData,
+    const userId = await getCurrentUserId();
+
+    await prisma.$transaction(async (tx) => {
+      const location = await tx.location.create({
+        data: locationData,
+      });
+      await logSugarPriceChange(tx, {
+        locationId: location.id,
+        oldPrice: null,
+        newPrice: location.sugar_price,
+        userId,
+      });
     });
     return Response.json(
       {
