@@ -86,31 +86,31 @@ function PriceDiff({ oldPrice, newPrice }: { oldPrice: number | null; newPrice: 
   const diff = newPrice - oldPrice;
   if (diff > 0) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-bold text-[#009262]">
-        <ArrowUp size={14} weight="bold" />
+      <Badge variant="success" className="rounded-lg px-3 py-1 text-[10px] font-bold gap-1">
+        <ArrowUp size={12} weight="bold" />
         {formatRupiah(diff)}
-      </span>
+      </Badge>
     );
   }
   if (diff < 0) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-bold text-[#FF0000]">
-        <ArrowDown size={14} weight="bold" />
+      <Badge variant="danger" className="rounded-lg px-3 py-1 text-[10px] font-bold gap-1">
+        <ArrowDown size={12} weight="bold" />
         {formatRupiah(Math.abs(diff))}
-      </span>
+      </Badge>
     );
   }
-  return <span className="text-xs font-medium text-gray-400">{formatRupiah(0)}</span>;
+  return (
+    <Badge variant="gray" className="rounded-lg px-3 py-1 text-[10px] font-bold">
+      {formatRupiah(0)}
+    </Badge>
+  );
 }
 
 function HargaTebuContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  // Works for /finance/harga-tebu (static app/finance route, no [role] param)
-  // and /manager/harga-tebu (dynamic [role] route).
-  const role = pathname.split("/")[1] || "finance";
 
   const currentPage = Number(searchParams.get("page") || 1);
   const currentLocationId = searchParams.get("location_id") || "";
@@ -226,20 +226,9 @@ function HargaTebuContent() {
     });
   };
 
-  const dateLabel =
-    currentStartDate || currentEndDate
-      ? `${currentStartDate || "…"} – ${currentEndDate || "…"}`
-      : "Tanggal";
-
   return (
     <div className="flex flex-col w-full max-w-full pb-10">
-      <PageHeader
-        title="Riwayat Harga Tebu"
-        breadcrumbs={[
-          { label: "Dashboard", href: `/${role}/dashboard` },
-          { label: "Riwayat Harga Tebu", active: true },
-        ]}
-      />
+      <PageHeader title="Riwayat Harga Tebu" />
 
       <Card
         title="Data Perubahan Harga"
@@ -253,7 +242,7 @@ function HargaTebuContent() {
               icon={<CaretDown size={14} weight="bold" />}
               iconPosition="right"
             >
-              {dateLabel}
+              Tanggal
             </Button>
             <Select
               value={currentLocationId}
@@ -262,7 +251,7 @@ function HargaTebuContent() {
                 { value: "", label: "Semua Lokasi" },
                 ...locations.map((l) => ({ value: l.id, label: l.name })),
               ]}
-              className="min-w-40"
+              className="min-w-30"
             />
           </div>
         }
@@ -292,9 +281,12 @@ function HargaTebuContent() {
                   ))
               ) : error ? (
                 <tr>
-                  <td colSpan={COLUMN_COUNT} className="px-8 py-10 text-center">
+                  <td
+                    colSpan={COLUMN_COUNT}
+                    className="px-8 py-10 text-center text-sm font-medium text-red-400"
+                  >
                     <div className="flex flex-col items-center gap-3">
-                      <span className="text-sm text-[#FF0000]">{error}</span>
+                      <span>{error}</span>
                       <Button
                         variant="white"
                         className="px-6 py-2 text-xs font-bold h-10 border-gray-100"
@@ -323,7 +315,7 @@ function HargaTebuContent() {
                     <td className="px-4 py-4 text-xs font-medium text-gray-600">
                       {row.old_price === null ? "-" : formatRupiah(row.old_price)}
                     </td>
-                    <td className="px-4 py-4 text-xs font-bold text-gray-900">
+                    <td className="px-4 py-4 text-xs font-medium text-gray-600">
                       {formatRupiah(row.new_price)}
                     </td>
                     <td className="px-4 py-4">
@@ -332,7 +324,7 @@ function HargaTebuContent() {
                     <td className="px-8 py-4">
                       {row.changed_by_name ? (
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-gray-900">
+                          <span className="text-xs font-medium text-gray-600">
                             {row.changed_by_name}
                           </span>
                           <span className="text-[11px] font-medium text-gray-400">
