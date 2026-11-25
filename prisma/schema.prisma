@@ -23,6 +23,7 @@ model user {
   transactions     transaction[]
   notification     notification[]
   pushSubscription push_subscription[]
+  sugarPriceLogs   sugar_price_log[]
 
   @@map("users")
 }
@@ -49,6 +50,7 @@ model location {
   logTransfer     logTransfer[]
   transactions    transaction[]
   users           user[]
+  sugarPriceLogs  sugar_price_log[]
 }
 
 model truck {
@@ -121,6 +123,19 @@ model push_subscription {
   auth       String
   created_at DateTime @default(now())
   user       user     @relation(fields: [user_id], references: [id])
+}
+
+model sugar_price_log {
+  id          String   @id @default(uuid())
+  location_id String
+  old_price   Int?
+  new_price   Int
+  changed_by  String?
+  created_at  DateTime @default(now())
+  location    location @relation(fields: [location_id], references: [id], onDelete: Cascade)
+  user        user?    @relation(fields: [changed_by], references: [id], onDelete: SetNull)
+
+  @@index([location_id, created_at])
 }
 
 enum role {
