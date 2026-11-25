@@ -60,8 +60,6 @@ function formatDateTime(value: string) {
     day: "2-digit",
     month: "long",
     year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   }).format(date);
 }
 
@@ -260,7 +258,7 @@ function HargaTebuContent() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-50 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                <th className="px-8 py-5">Tanggal &amp; Waktu</th>
+                <th className="px-8 py-5">Tanggal </th>
                 <th className="px-4 py-5">Lokasi</th>
                 <th className="px-4 py-5">Harga Lama</th>
                 <th className="px-4 py-5">Harga Baru</th>
