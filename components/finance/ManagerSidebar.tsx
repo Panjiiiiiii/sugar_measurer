@@ -9,6 +9,7 @@ import {
   ArrowsLeftRight,
   User,
   MapPin,
+  ChartLineUp,
   Users,
   CaretDown,
   Lightning,
@@ -105,6 +106,15 @@ export default function ManagerSidebar() {
       href: `/${role}/lokasi`,
     },
   ];
+
+  // Riwayat Harga: finance and manager only
+  if (role === "finance" || role === "manager") {
+    menuItems.push({
+      name: "Riwayat Harga",
+      icon: ChartLineUp,
+      href: `/${role}/harga-tebu`,
+    });
+  }
 
   // Add Data User for manager role flow
   if (role === "manager") {

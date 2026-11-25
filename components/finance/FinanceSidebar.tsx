@@ -9,6 +9,7 @@ import {
   ArrowsLeftRight,
   User,
   MapPin,
+  ChartLineUp,
   CaretDown,
   Lightning,
   Sun,
@@ -111,6 +112,11 @@ export default function FinanceSidebar() {
       name: "Data Lokasi",
       icon: MapPin,
       href: "/finance/lokasi",
+    },
+    {
+      name: "Riwayat Harga",
+      icon: ChartLineUp,
+      href: "/finance/harga-tebu",
     },
   ];
 
